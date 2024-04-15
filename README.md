@@ -24,7 +24,6 @@ You can obtain these parameters by opening [Twitter](https://twitter.com/message
 
 Next, open the **Developer Tools**, go to the **Network** tab, and refresh the page. Then, click on **Search** and type `uuid` as shown in the screenshot below — all of these constants should be under the **Request Headers** section. Refer to the table above on where to find each of the constant value.
 
-![Screenshot](twitter_dm_browser.png)
 
 ## Start the notary server
 At the root level of this repository, run 
