@@ -178,7 +178,7 @@ async fn main()  -> Result<(), Box<dyn std::error::Error>> {
     debug!("Notarization complete!");
 
     // Dump the notarized session to a file
-    let mut file = tokio::fs::File::create("twitter_dm_notarized_session.json")
+    let mut file = tokio::fs::File::create("twitter_notarized_session.json")
         .await
         .unwrap();
     file.write_all(
@@ -206,7 +206,7 @@ async fn main()  -> Result<(), Box<dyn std::error::Error>> {
     };
 
     // Dump the proof to a file.
-    let mut file = tokio::fs::File::create("twitter_dm_proof.json")
+    let mut file = tokio::fs::File::create("twitter_proof.json")
         .await
         .unwrap();
     file.write_all(serde_json::to_string_pretty(&proof).unwrap().as_bytes())
