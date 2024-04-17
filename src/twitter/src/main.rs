@@ -1,6 +1,6 @@
 
 use futures::AsyncWriteExt;
-use hyper::{body::to_bytes, client::conn::Parts, Body, Request, StatusCode};
+use hyper::{body::to_bytes, client::conn::Parts, Body, Request, StatusCode, Method};
 use rustls::{Certificate, ClientConfig, RootCertStore};
 use serde::{Deserialize, Serialize};
 use std::{env, ops::Range, str, sync::Arc};
@@ -70,6 +70,8 @@ async fn main()  -> Result<(), Box<dyn std::error::Error>> {
         .send().await?.json::<HashMap<String, String>>().await?;
 
     let access_token = bearer_resp.get("access_token").unwrap();
+
+    debug!("Bearer token obtained");
     // println!("Bearer token {:?}", access_token);
 
     let (notary_tls_socket, session_id) = setup_notary_connection().await;
@@ -110,7 +112,15 @@ async fn main()  -> Result<(), Box<dyn std::error::Error>> {
         .uri(format!(
             "https://{SERVER_DOMAIN}/2/tweets?ids={conversation_id}&tweet.fields=created_at&expansions=author_id&user.fields=created_at"
         ))
+        .method(Method::GET)
         .header("Authorization", format!("Bearer {access_token}"))
+        .header("Host", SERVER_DOMAIN)
+        .header("Accept", "*/*")
+        .header("Cache-Control", "no-cache")
+        .header("Connection", "close")
+        // Using "identity" instructs the Server not to use compression for its HTTP response.
+        // TLSNotary tooling does not support compression.
+        .header("Accept-Encoding", "identity")
         .body(Body::empty())
         .unwrap();
 
@@ -140,6 +150,8 @@ async fn main()  -> Result<(), Box<dyn std::error::Error>> {
     // Prepare for notarization
     let mut prover = prover.start_notarize();
 
+    debug!("Start notarize");
+
     // Identify the ranges in the transcript that contain secrets
     let (public_ranges, private_ranges) =
         find_ranges(prover.sent_transcript().data(), &[access_token.as_bytes()]);
@@ -154,6 +166,8 @@ async fn main()  -> Result<(), Box<dyn std::error::Error>> {
         .chain(private_ranges.iter())
         .map(|range| builder.commit_sent(range.clone()).unwrap())
         .collect::<Vec<_>>();
+
+    debug!("Collect commitments {}", commitment_ids.len());
 
     // Commit to the full received transcript in one shot, as we don't need to redact anything
     commitment_ids.push(builder.commit_recv(0..recv_len).unwrap());
