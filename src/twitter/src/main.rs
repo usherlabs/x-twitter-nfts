@@ -1,7 +1,4 @@
-/// This example shows how to notarize twitter DMs.
-///
-/// The example uses the notary server implemented in ../../../notary
-/// 
+
 use futures::AsyncWriteExt;
 use hyper::{body::to_bytes, client::conn::Parts, Body, Request, StatusCode};
 use rustls::{Certificate, ClientConfig, RootCertStore};
@@ -12,6 +9,8 @@ use tokio::{io::AsyncWriteExt as _, net::TcpStream};
 use tokio_rustls::TlsConnector;
 use tokio_util::compat::{FuturesAsyncReadCompatExt, TokioAsyncReadCompatExt};
 use tracing::debug;
+use reqwest;
+use std::collections::HashMap;
 
 use tlsn_prover::tls::{Prover, ProverConfig};
 
@@ -20,9 +19,7 @@ const NOTARY_HOST: &str = "127.0.0.1";
 const NOTARY_PORT: u16 = 7047;
 
 // Setting of the application server
-const SERVER_DOMAIN: &str = "twitter.com";
-const ROUTE: &str = "i/api/1.1/dm/conversation";
-const USER_AGENT: &str = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36";
+const SERVER_DOMAIN: &str = "api.twitter.com";
 
 // Configuration of notarization
 const NOTARY_MAX_TRANSCRIPT_SIZE: usize = 16384;
@@ -53,16 +50,27 @@ pub enum ClientType {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main()  -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
     // Load secret variables frome environment for twitter server connection
     dotenv::dotenv().ok();
+    let api_key = env::var("API_KEY").unwrap();
+    let api_key_secret = env::var("API_KEY_SECRET").unwrap();
     let conversation_id = env::var("CONVERSATION_ID").unwrap();
-    let auth_token = env::var("AUTH_TOKEN").unwrap();
-    let access_token = env::var("ACCESS_TOKEN").unwrap();
-    let csrf_token = env::var("CSRF_TOKEN").unwrap();
 
+    // Fetch bearer token
+    // as per https://developer.twitter.com/en/docs/authentication/oauth-2-0/bearer-tokens
+    let client = reqwest::Client::new();
+    let bearer_resp = client.post(format!(
+            "https://{SERVER_DOMAIN}/oauth2/token"
+        ))
+        .basic_auth(api_key, Some(api_key_secret))
+        .form(&[("grant_type", "client_credentials")])
+        .send().await?.json::<HashMap<String, String>>().await?;
+
+    let access_token = bearer_resp.get("access_token").unwrap();
+    // println!("Bearer token {:?}", access_token);
 
     let (notary_tls_socket, session_id) = setup_notary_connection().await;
 
@@ -100,22 +108,9 @@ async fn main() {
     // Build the HTTP request to fetch the DMs
     let request = Request::builder()
         .uri(format!(
-            "https://{SERVER_DOMAIN}/{ROUTE}/{conversation_id}.json"
+            "https://{SERVER_DOMAIN}/2/tweets?ids={conversation_id}&tweet.fields=created_at&expansions=author_id&user.fields=created_at"
         ))
-        .header("Host", SERVER_DOMAIN)
-        .header("Accept", "*/*")
-        .header("Accept-Encoding", "identity")
-        .header("Connection", "close")
-        .header("User-Agent", USER_AGENT)
         .header("Authorization", format!("Bearer {access_token}"))
-        .header(
-            "Cookie",
-            format!("auth_token={auth_token}; ct0={csrf_token}"),
-        )
-        .header("Authority", SERVER_DOMAIN)
-        .header("X-Twitter-Auth-Type", "OAuth2Session")
-        .header("x-twitter-active-user", "yes")
-        .header("X-Csrf-Token", csrf_token.clone())
         .body(Body::empty())
         .unwrap();
 
@@ -147,7 +142,7 @@ async fn main() {
 
     // Identify the ranges in the transcript that contain secrets
     let (public_ranges, private_ranges) =
-        find_ranges(prover.sent_transcript().data(), &[auth_token.as_bytes()]);
+        find_ranges(prover.sent_transcript().data(), &[access_token.as_bytes()]);
 
     let recv_len = prover.recv_transcript().data().len();
 
@@ -203,6 +198,8 @@ async fn main() {
     file.write_all(serde_json::to_string_pretty(&proof).unwrap().as_bytes())
         .await
         .unwrap();
+
+    Ok(())
 }
 
 async fn setup_notary_connection() -> (tokio_rustls::client::TlsStream<TcpStream>, String) {

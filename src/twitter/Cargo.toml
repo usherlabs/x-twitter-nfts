@@ -1,5 +1,5 @@
 [package]
-name = "progcrypto_workshop_discord"
+name = "x-twitter-proofs"
 version = "0.1.0"
 edition = "2021"
 
@@ -40,3 +40,5 @@ http-body-util = "0.1"
 hyper-util = { version = "0.1", features = ["full"] }
 
 regex = "1.10.3"
+base64 = "0.22.0"
+reqwest = { version = "0.12.3", features = ["json"] }
