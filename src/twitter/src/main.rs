@@ -167,10 +167,10 @@ async fn main()  -> Result<(), Box<dyn std::error::Error>> {
         .map(|range| builder.commit_sent(range.clone()).unwrap())
         .collect::<Vec<_>>();
 
-    debug!("Collect commitments {}", commitment_ids.len());
-
     // Commit to the full received transcript in one shot, as we don't need to redact anything
     commitment_ids.push(builder.commit_recv(0..recv_len).unwrap());
+
+    debug!("Collect commitments {}", commitment_ids.len());
 
     // Finalize, returning the notarized session
     let notarized_session = prover.finalize().await.unwrap();
@@ -178,7 +178,7 @@ async fn main()  -> Result<(), Box<dyn std::error::Error>> {
     debug!("Notarization complete!");
 
     // Dump the notarized session to a file
-    let mut file = tokio::fs::File::create("twitter_notarized_session.json")
+    let mut file = tokio::fs::File::create("twitter_proof.json")
         .await
         .unwrap();
     file.write_all(
@@ -334,8 +334,11 @@ async fn setup_notary_connection() -> (tokio_rustls::client::TlsStream<TcpStream
 fn find_ranges(seq: &[u8], sub_seq: &[&[u8]]) -> (Vec<Range<usize>>, Vec<Range<usize>>) {
     let mut private_ranges = Vec::new();
     for s in sub_seq {
+        // .windows chunks the seq into arrays of length s.len()
+        // .enumerate transforms the iterator into a new iterator that pairs (index, element)
         for (idx, w) in seq.windows(s.len()).enumerate() {
             if w == *s {
+                // private_ranges resulsts in an array of Ranges - where the range is the start and end of sub_seq[x]
                 private_ranges.push(idx..(idx + w.len()));
             }
         }
@@ -346,6 +349,7 @@ fn find_ranges(seq: &[u8], sub_seq: &[&[u8]]) -> (Vec<Range<usize>>, Vec<Range<u
 
     let mut public_ranges = Vec::new();
     let mut last_end = 0;
+    // This process here is just omitting the private_ranges
     for r in sorted_ranges {
         if r.start > last_end {
             public_ranges.push(last_end..r.start);
@@ -353,6 +357,7 @@ fn find_ranges(seq: &[u8], sub_seq: &[&[u8]]) -> (Vec<Range<usize>>, Vec<Range<u
         last_end = r.end;
     }
 
+    // This completes any remaining range
     if last_end < seq.len() {
         public_ranges.push(last_end..seq.len());
     }
