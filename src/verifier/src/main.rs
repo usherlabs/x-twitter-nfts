@@ -8,7 +8,7 @@ use tlsn_core::proof::{SessionProof, TlsProof};
 /// it and prints the verified data to the console.
 fn main() {
     // Deserialize the proof
-    let proof = std::fs::read_to_string("../../../twitter_proof.json").unwrap();
+    let proof = std::fs::read_to_string("../../twitter_proof.json").unwrap();
     let proof: TlsProof = serde_json::from_str(proof.as_str()).unwrap();
 
     let TlsProof {
@@ -33,7 +33,7 @@ fn main() {
         header,
         // This is the session_info, which contains the server_name, that is checked against the
         // certificate chain shared in the TLS handshake.
-        session_info,
+        // session_info,
         ..
     } = session;
 
@@ -52,7 +52,7 @@ fn main() {
     println!("-------------------------------------------------------------------");
     println!(
         "Successfully verified that the bytes below came from a session with {:?} at {}.",
-        session_info.server_name, time
+        session.server_name, time
     );
     println!("Note that the bytes which the Prover chose not to disclose are shown as X.");
     println!();
@@ -69,7 +69,7 @@ fn main() {
 /// Returns a Notary pubkey trusted by this Verifier
 fn notary_pubkey() -> p256::PublicKey {
     let pem_file = str::from_utf8(include_bytes!(
-        "../../../notary-server/fixture/notary/notary.pub"
+        "../../../src/notary/fixture/notary/notary.pub"
     ))
     .unwrap();
     p256::PublicKey::from_public_key_pem(pem_file).unwrap()

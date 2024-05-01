@@ -72,146 +72,146 @@ async fn main()  -> Result<(), Box<dyn std::error::Error>> {
     let access_token = bearer_resp.get("access_token").unwrap();
 
     debug!("Bearer token obtained");
-    // println!("Bearer token {:?}", access_token);
+    println!("Bearer token {:?}", access_token);
 
-    let (notary_tls_socket, session_id) = setup_notary_connection().await;
+    // let (notary_tls_socket, session_id) = setup_notary_connection().await;
 
-    // Basic default prover config using the session_id returned from /session endpoint just now
-    let config = ProverConfig::builder()
-        .id(session_id)
-        .server_dns(SERVER_DOMAIN)
-        .build()
-        .unwrap();
+    // // Basic default prover config using the session_id returned from /session endpoint just now
+    // let config = ProverConfig::builder()
+    //     .id(session_id)
+    //     .server_dns(SERVER_DOMAIN)
+    //     .build()
+    //     .unwrap();
 
-    // Create a new prover and set up the MPC backend.
-    let prover = Prover::new(config)
-        .setup(notary_tls_socket.compat())
-        .await
-        .unwrap();
+    // // Create a new prover and set up the MPC backend.
+    // let prover = Prover::new(config)
+    //     .setup(notary_tls_socket.compat())
+    //     .await
+    //     .unwrap();
 
-    let client_socket = tokio::net::TcpStream::connect((SERVER_DOMAIN, 443))
-        .await
-        .unwrap();
+    // let client_socket = tokio::net::TcpStream::connect((SERVER_DOMAIN, 443))
+    //     .await
+    //     .unwrap();
 
-    // Bind the Prover to server connection
-    let (tls_connection, prover_fut) = prover.connect(client_socket.compat()).await.unwrap();
+    // // Bind the Prover to server connection
+    // let (tls_connection, prover_fut) = prover.connect(client_socket.compat()).await.unwrap();
 
-    // Spawn the Prover to be run concurrently
-    let prover_task = tokio::spawn(prover_fut);
+    // // Spawn the Prover to be run concurrently
+    // let prover_task = tokio::spawn(prover_fut);
 
-    // Attach the hyper HTTP client to the TLS connection
-    let (mut request_sender, connection) = hyper::client::conn::handshake(tls_connection.compat())
-        .await
-        .unwrap();
+    // // Attach the hyper HTTP client to the TLS connection
+    // let (mut request_sender, connection) = hyper::client::conn::handshake(tls_connection.compat())
+    //     .await
+    //     .unwrap();
 
-    // Spawn the HTTP task to be run concurrently
-    let connection_task = tokio::spawn(connection.without_shutdown());
+    // // Spawn the HTTP task to be run concurrently
+    // let connection_task = tokio::spawn(connection.without_shutdown());
 
-    // Build the HTTP request to fetch the DMs
-    let request = Request::builder()
-        .uri(format!(
-            "https://{SERVER_DOMAIN}/2/tweets?ids={conversation_id}&tweet.fields=created_at&expansions=author_id&user.fields=created_at"
-        ))
-        .method(Method::GET)
-        .header("Authorization", format!("Bearer {access_token}"))
-        .header("Host", SERVER_DOMAIN)
-        .header("Accept", "*/*")
-        .header("Cache-Control", "no-cache")
-        .header("Connection", "close")
-        // Using "identity" instructs the Server not to use compression for its HTTP response.
-        // TLSNotary tooling does not support compression.
-        .header("Accept-Encoding", "identity")
-        .body(Body::empty())
-        .unwrap();
+    // // Build the HTTP request to fetch the DMs
+    // let request = Request::builder()
+    //     .uri(format!(
+    //         "https://{SERVER_DOMAIN}/2/tweets?ids={conversation_id}&tweet.fields=created_at&expansions=author_id&user.fields=created_at"
+    //     ))
+    //     .method(Method::GET)
+    //     .header("Authorization", format!("Bearer {access_token}"))
+    //     .header("Host", SERVER_DOMAIN)
+    //     .header("Accept", "*/*")
+    //     .header("Cache-Control", "no-cache")
+    //     .header("Connection", "close")
+    //     // Using "identity" instructs the Server not to use compression for its HTTP response.
+    //     // TLSNotary tooling does not support compression.
+    //     .header("Accept-Encoding", "identity")
+    //     .body(Body::empty())
+    //     .unwrap();
 
-    debug!("Sending request");
+    // debug!("Sending request");
 
-    let response = request_sender.send_request(request).await.unwrap();
+    // let response = request_sender.send_request(request).await.unwrap();
 
-    debug!("Sent request");
+    // debug!("Sent request");
 
-    assert!(response.status() == StatusCode::OK, "{}", response.status());
+    // assert!(response.status() == StatusCode::OK, "{}", response.status());
 
-    debug!("Request OK");
+    // debug!("Request OK");
 
-    // Pretty printing :)
-    let payload = to_bytes(response.into_body()).await.unwrap().to_vec();
-    let parsed =
-        serde_json::from_str::<serde_json::Value>(&String::from_utf8_lossy(&payload)).unwrap();
-    debug!("{}", serde_json::to_string_pretty(&parsed).unwrap());
+    // // Pretty printing :)
+    // let payload = to_bytes(response.into_body()).await.unwrap().to_vec();
+    // let parsed =
+    //     serde_json::from_str::<serde_json::Value>(&String::from_utf8_lossy(&payload)).unwrap();
+    // debug!("{}", serde_json::to_string_pretty(&parsed).unwrap());
 
-    // Close the connection to the server
-    let mut client_socket = connection_task.await.unwrap().unwrap().io.into_inner();
-    client_socket.close().await.unwrap();
+    // // Close the connection to the server
+    // let mut client_socket = connection_task.await.unwrap().unwrap().io.into_inner();
+    // client_socket.close().await.unwrap();
 
-    // The Prover task should be done now, so we can grab it.
-    let prover = prover_task.await.unwrap().unwrap();
+    // // The Prover task should be done now, so we can grab it.
+    // let prover = prover_task.await.unwrap().unwrap();
 
-    // Prepare for notarization
-    let mut prover = prover.start_notarize();
+    // // Prepare for notarization
+    // let mut prover = prover.start_notarize();
 
-    debug!("Start notarize");
+    // debug!("Start notarize");
 
-    // Identify the ranges in the transcript that contain secrets
-    let (public_ranges, private_ranges) =
-        find_ranges(prover.sent_transcript().data(), &[access_token.as_bytes()]);
+    // // Identify the ranges in the transcript that contain secrets
+    // let (public_ranges, private_ranges) =
+    //     find_ranges(prover.sent_transcript().data(), &[access_token.as_bytes()]);
 
-    let recv_len = prover.recv_transcript().data().len();
+    // let recv_len = prover.recv_transcript().data().len();
 
-    let builder = prover.commitment_builder();
+    // let builder = prover.commitment_builder();
 
-    // Collect commitment ids for the outbound transcript
-    let mut commitment_ids = public_ranges
-        .iter()
-        .chain(private_ranges.iter())
-        .map(|range| builder.commit_sent(range.clone()).unwrap())
-        .collect::<Vec<_>>();
+    // // Collect commitment ids for the outbound transcript
+    // let mut commitment_ids = public_ranges
+    //     .iter()
+    //     .chain(private_ranges.iter())
+    //     .map(|range| builder.commit_sent(range.clone()).unwrap())
+    //     .collect::<Vec<_>>();
 
-    // Commit to the full received transcript in one shot, as we don't need to redact anything
-    commitment_ids.push(builder.commit_recv(0..recv_len).unwrap());
+    // // Commit to the full received transcript in one shot, as we don't need to redact anything
+    // commitment_ids.push(builder.commit_recv(0..recv_len).unwrap());
 
-    debug!("Collect commitments {}", commitment_ids.len());
+    // debug!("Collect commitments {}", commitment_ids.len());
 
-    // Finalize, returning the notarized session
-    let notarized_session = prover.finalize().await.unwrap();
+    // // Finalize, returning the notarized session
+    // let notarized_session = prover.finalize().await.unwrap();
 
-    debug!("Notarization complete!");
+    // debug!("Notarization complete!");
 
-    // Dump the notarized session to a file
-    let mut file = tokio::fs::File::create("twitter_proof.json")
-        .await
-        .unwrap();
-    file.write_all(
-        serde_json::to_string_pretty(&notarized_session)
-            .unwrap()
-            .as_bytes(),
-    )
-    .await
-    .unwrap();
+    // // Dump the notarized session to a file
+    // let mut file = tokio::fs::File::create("twitter_proof.json")
+    //     .await
+    //     .unwrap();
+    // file.write_all(
+    //     serde_json::to_string_pretty(&notarized_session)
+    //         .unwrap()
+    //         .as_bytes(),
+    // )
+    // .await
+    // .unwrap();
 
-    let session_proof = notarized_session.session_proof();
+    // let session_proof = notarized_session.session_proof();
 
-    let mut proof_builder = notarized_session.data().build_substrings_proof();
+    // let mut proof_builder = notarized_session.data().build_substrings_proof();
 
-    // Reveal everything but the auth token (which was assigned commitment id 2)
-    proof_builder.reveal(commitment_ids[0]).unwrap();
-    proof_builder.reveal(commitment_ids[1]).unwrap();
-    proof_builder.reveal(commitment_ids[3]).unwrap();
+    // // Reveal everything but the auth token (which was assigned commitment id 2)
+    // proof_builder.reveal(commitment_ids[0]).unwrap();
+    // proof_builder.reveal(commitment_ids[1]).unwrap();
+    // proof_builder.reveal(commitment_ids[3]).unwrap();
 
-    let substrings_proof = proof_builder.build().unwrap();
+    // let substrings_proof = proof_builder.build().unwrap();
 
-    let proof = TlsProof {
-        session: session_proof,
-        substrings: substrings_proof,
-    };
+    // let proof = TlsProof {
+    //     session: session_proof,
+    //     substrings: substrings_proof,
+    // };
 
-    // Dump the proof to a file.
-    let mut file = tokio::fs::File::create("twitter_proof.json")
-        .await
-        .unwrap();
-    file.write_all(serde_json::to_string_pretty(&proof).unwrap().as_bytes())
-        .await
-        .unwrap();
+    // // Dump the proof to a file.
+    // let mut file = tokio::fs::File::create("twitter_proof.json")
+    //     .await
+    //     .unwrap();
+    // file.write_all(serde_json::to_string_pretty(&proof).unwrap().as_bytes())
+    //     .await
+    //     .unwrap();
 
     Ok(())
 }
