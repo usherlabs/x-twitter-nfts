@@ -1,0 +1,23 @@
+[package]
+name = "guests"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "verify"
+path = "src/bin/verify.rs"
+
+[workspace]
+
+[dependencies]
+alloy-primitives = { version = "0.6", default-features = false, features = ["rlp", "serde", "std"] }
+alloy-sol-types = { version = "0.6" }
+risc0-zkvm = {  version = "0.21", default-features = false, features = ['std'] }
+serde_json = "1.0.107"
+serde = { version = "1.0", features = ["derive", "std"] }
+tlsn-substrings-verifier = { path = "../../tlsn-substrings-verifier" }
+sha256 = "1.5.0"
+hex = "0.4.3"
+
+[profile.release]
+lto = "thin"

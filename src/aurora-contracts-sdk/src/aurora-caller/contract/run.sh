@@ -1,0 +1,3 @@
+cargo build --target wasm32-unknown-unknown --release
+near contract deploy xand9r.testnet use-file ./target/wasm32-unknown-unknown/release/uniswap_from_near.wasm without-init-call network-config testnet sign-with-keychain send
+near contract call-function as-transaction xand9r.testnet verify_proof json-args '{}' prepaid-gas '300.0 Tgas' attached-deposit '0 NEAR' sign-as xand9r.testnet network-config testnet sign-with-keychain send
