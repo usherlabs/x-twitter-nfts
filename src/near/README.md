@@ -1,6 +1,6 @@
-## **Near Contract**
+# Near Contract
 
-The near contract is responsible for checking if a proof has been verified on the aurora chain, it does this my checking a mapping `isJournalVerified` and throwing an error if it has not been.
+The near contract is responsible for checking if a proof has been verified on the aurora chain, it does this my checking a mapping `isJournalVerified` on the aurora smart contract and throws an error if the variable returns false, indicating it has not been verified.
 
 ### Prerequisites:
 
@@ -11,7 +11,7 @@ The near contract is responsible for checking if a proof has been verified on th
 ### Deployment
 
 - Initial deployment can be performed by running `sh deploy_contract.sh`
-- subsequently after initial deployment, further upgrades to the contract by calling `sh deploy_contract.sh`
+- subsequently after initial deployment, further deployments are considered upgrades to the contract and can be persisted by running `sh upgrade_contract.sh`
 
 ### Calling the contract
 
