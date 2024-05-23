@@ -1,7 +1,0 @@
-# cargo artifacts
-**/target
-**/Cargo.lock
-
-# forge artifacts
-**/cache
-**/out

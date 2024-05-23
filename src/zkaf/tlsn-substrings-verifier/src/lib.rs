@@ -11,6 +11,8 @@ pub mod merkle;
 pub mod proof;
 pub mod transcript;
 
+use proof::{SessionHeader, SubstringsProof};
+use serde::{Deserialize, Serialize};
 pub use transcript::{Direction, RedactedTranscript, Transcript, TranscriptSlice};
 
 use mpz_garble_core::{encoding_state, EncodedValue};
@@ -43,4 +45,15 @@ impl EncodingId {
     pub(crate) fn to_inner(self) -> u64 {
         self.0
     }
+}
+
+/// The input parameters for teh zk_circuit
+///
+/// Containing the details needed for verification of a proof
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ZkInputParam {
+    /// session header.
+    pub header: SessionHeader,
+    /// substrings proof.
+    pub substrings: SubstringsProof,
 }

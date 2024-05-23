@@ -2,6 +2,7 @@
 name = "apps"
 version = { workspace = true }
 edition = { workspace = true }
+build = "build.rs"
 
 [dependencies]
 alloy-primitives = { workspace = true }
@@ -28,3 +29,6 @@ near-crypto = "0.21.1"
 near-primitives = "0.21.1"
 near-chain-configs = "0.21.1"
 near-jsonrpc-primitives = "0.21.1"
+risc0-build = { version = "0.21.0" }
+tlsn-core = { git = "https://github.com/tlsnotary/tlsn", rev = "6152883" }
+p256 = { version = "0.13", features = ["ecdsa"] }

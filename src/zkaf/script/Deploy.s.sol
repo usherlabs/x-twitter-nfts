@@ -39,7 +39,7 @@ contract VerifierDeploy is Script {
         console2.log("Deployed RiscZeroGroth16Verifier to", address(verifier));
 
         Verifier proofVerifier = new Verifier(verifier);
-        console2.log("Deployed EvenNumber to", address(proofVerifier));
+        console2.log("Deployed Verifier to", address(proofVerifier));
 
         vm.stopBroadcast();
     }

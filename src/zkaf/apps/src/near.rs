@@ -12,11 +12,11 @@ use tokio::time;
 use std::env;
 
 
-pub async fn verify_near_proof(journal_output: Vec<u8>, post_state_digest: Vec<u8>, seal: Vec<u8>) -> Result<RpcTransactionResponse, Box<dyn std::error::Error>> {
-    let rpc_url = env::var("RPC_URL").expect("RPC_URL_NOT_PRESENT");
-    let account_id = env::var("ACCOUNT_ID").expect("ACCOUNT_ID_NOT_PRESENT");
-    let secret_key = env::var("SECRET_KEY").expect("SECRET_KEY_NOT_PRESENT");
-    let contract_account_id = env::var("CONTRACT_ACCOUNT_ID").expect("CONTRACT_ACCOUNT_ID_NOT_PRESENT");
+pub async fn verify_near_proof(journal_output: Vec<u8>) -> Result<RpcTransactionResponse, Box<dyn std::error::Error>> {
+    let rpc_url = env::var("NEAR_RPC_URL").expect("RPC_URL_NOT_PRESENT");
+    let account_id = env::var("NEAR_ACCOUNT_ID").expect("ACCOUNT_ID_NOT_PRESENT");
+    let secret_key = env::var("NEAR_ACCOUNT_SECRET_KEY").expect("SECRET_KEY_NOT_PRESENT");
+    let contract_account_id = env::var("NEAR_CONTRACT_ACCOUNT_ID").expect("CONTRACT_ACCOUNT_ID_NOT_PRESENT");
     
     let signer_account_id: near_primitives::types::AccountId = account_id.parse()?;
     let signer_secret_key: near_crypto::SecretKey = secret_key.parse()?;
@@ -50,8 +50,6 @@ pub async fn verify_near_proof(journal_output: Vec<u8>, post_state_digest: Vec<u
             method_name: "verify_proof".to_string(),
             args: json!({
                 "journal_output": journal_output,
-                "post_state_digest": post_state_digest,
-                "seal": seal,
             })
             .to_string()
             .into_bytes(),

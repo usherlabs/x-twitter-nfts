@@ -17,37 +17,31 @@ include!(concat!(env!("OUT_DIR"), "/methods.rs"));
 
 #[cfg(test)]
 mod tests {
-    use alloy_primitives::U256;
     use alloy_sol_types::SolValue;
     use risc0_zkvm::{default_executor, ExecutorEnv};
+    use tlsn_substrings_verifier::ZkInputParam;
 
-    // #[test]
-    // fn proves_even_number() {
-    //     let even_number = U256::from(1304);
+    #[test]
+    fn proves_verification() {
+        let proof_params = std::fs::read_to_string("fixtures/zk_params.json").unwrap();
+        let proof_params: ZkInputParam = serde_json::from_str(proof_params.as_str()).unwrap();
+        let expected_req_res_hash = "4f8ad5ce1d0fc577d04d618880b8c77c9aced63740ca43b708f32425a95b11b7".to_string();
+        
+        let input = serde_json::to_string(&proof_params).unwrap();
+        let input: &[u8] = input.as_bytes();
 
-    //     let env = ExecutorEnv::builder()
-    //         .write_slice(&even_number.abi_encode())
-    //         .build()
-    //         .unwrap();
+        let env = ExecutorEnv::builder()
+            .write_slice(input)
+            .build()
+            .unwrap();
 
-    //     // NOTE: Use the executor to run tests without proving.
-    //     let session_info = default_executor().execute(env, super::IS_EVEN_ELF).unwrap();
+        // NOTE: Use the executor to run tests without proving.
+        let session_info = default_executor().execute(env, super::VERIFY_ELF).unwrap();
 
-    //     let x = U256::abi_decode(&session_info.journal.bytes, true).unwrap();
-    //     assert_eq!(x, even_number);
-    // }
+        let req_res_hash = <Vec<u8>>::abi_decode(&session_info.journal.bytes, true).unwrap();
+        let req_res_hash_hex_string = hex::encode(&req_res_hash);
 
-    // #[test]
-    // #[should_panic(expected = "number is not even")]
-    // fn rejects_odd_number() {
-    //     let odd_number = U256::from(75);
+        assert_eq!(req_res_hash_hex_string, expected_req_res_hash);
+    }
 
-    //     let env = ExecutorEnv::builder()
-    //         .write_slice(&odd_number.abi_encode())
-    //         .build()
-    //         .unwrap();
-
-    //     // NOTE: Use the executor to run tests without proving.
-    //     default_executor().execute(env, super::IS_EVEN_ELF).unwrap();
-    // }
 }

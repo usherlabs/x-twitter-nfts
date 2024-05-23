@@ -2,6 +2,8 @@ use mpz_garble_core::ChaChaEncoder;
 use serde::{Deserialize, Serialize};
 use crate::merkle::MerkleRoot;
 
+// use super::SubstringsProof;
+
 /// A session proof which is created from a [crate::session::NotarizedSession]
 ///
 /// Proof of the TLS handshake, server identity, and commitments to the transcript.
@@ -14,6 +16,7 @@ pub struct SessionProof {
     // /// Information about the server
     // pub session_info: SessionInfo,
 }
+
 
 /// An authentic session header from the Notary
 #[derive(Debug, Clone, Serialize, Deserialize)]

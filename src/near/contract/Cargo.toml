@@ -1,0 +1,12 @@
+[package]
+name = "verifier"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+aurora-sdk = { git="https://github.com/aurora-is-near/aurora-contracts-sdk", branch = "main"}
+serde = { version = "1", features = ["derive"] }
+hex = "0.4"
