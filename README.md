@@ -15,10 +15,20 @@
 **TL;DR** 
 
 To run the repo:
-- [ ] Navigate to the `zkaf` directory
+- [ ] Install dependencies  
+  First, [install Rust] and [Foundry], and then restart your terminal.
+
+    ```sh
+    # Install Rust
+    curl https://sh.rustup.rs -sSf | sh
+    # Install Foundry
+    curl -L https://foundry.paradigm.xyz | bash
+    ```
+
+- [ ] Navigate to the `zkaf` directory  
     Moved into X (Twitter) NFTs — https://github.com/usherlabs/x-twitter-nfts/blob/f6c7fb0448408eda30ba0c0402014e94a5c0b868/src/zkaf
     
-- [ ]  Provide all environment variables.
+- [ ]  Provide all environment variables  
     1. See all requires env variables: https://github.com/usherlabs/x-twitter-nfts/blob/f6c7fb0448408eda30ba0c0402014e94a5c0b868/src/zkaf/.env.sh.sample
     2. Visit [env.usher.so](http://env.usher.so) to fetch all env variables from the relevant repository.
 
