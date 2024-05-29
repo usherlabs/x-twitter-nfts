@@ -9,7 +9,7 @@ use tlsn_substrings_verifier::{self, ZkInputParam};
 
 fn main() -> Result<()> {
     env_logger::init();
-
+    println!("Proof generation process started");
     // read in the input parameter fom the processed json which contains the substrings
     let proof_params = std::fs::read_to_string("inputs/zk_params.json").unwrap();
     let proof_params: ZkInputParam = serde_json::from_str(proof_params.as_str()).unwrap();
@@ -19,6 +19,7 @@ fn main() -> Result<()> {
     let input: &[u8] = input.as_bytes();
 
     // Send an off-chain proof request to the Bonsai proving service.
+    println!("Generating proof using Bonsai");
     let (journal, post_state_digest, seal) = BonsaiProver::prove(VERIFY_ELF, input)?;
 
     // Decode the journal. Must match what was written in the guest
