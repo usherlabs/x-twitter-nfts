@@ -26,7 +26,7 @@ mod tests {
         let proof_params = std::fs::read_to_string("fixtures/zk_params.json").unwrap();
         let proof_params: ZkInputParam = serde_json::from_str(proof_params.as_str()).unwrap();
         let expected_req_res_hash = "4f8ad5ce1d0fc577d04d618880b8c77c9aced63740ca43b708f32425a95b11b7".to_string();
-        
+
         let input = serde_json::to_string(&proof_params).unwrap();
         let input: &[u8] = input.as_bytes();
 

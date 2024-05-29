@@ -1,3 +1,5 @@
+// ! Entry point for host executing ZK Proof Generation
+
 use alloy_sol_types::SolValue;
 use anyhow::{Context, Result};
 use apps::{aurora::TxSender, near::verify_near_proof, BonsaiProver};
@@ -23,7 +25,7 @@ fn main() -> Result<()> {
     let journal_output = <Vec<u8>>::abi_decode(&journal, true).context("decoding journal data")?;
     let hex_string = hex::encode(&journal_output);
     println!("{hex_string} was committed to the journal");
-    
+
     // perform initial verification on aurora
     let runtime = tokio::runtime::Runtime::new()?;
     let aurora_client = TxSender::default();

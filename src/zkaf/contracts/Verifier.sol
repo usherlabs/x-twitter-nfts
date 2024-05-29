@@ -45,7 +45,7 @@ contract Verifier {
         bytes memory journal = abi.encode(journalOutput);
 
         require(verifier.verify(seal, imageId, postStateDigest, sha256(journal)), "VERIFICATION_FAILED");
-        
+
         emit ProofVerified(msg.sender, journalOutput);
 
         isJournalVerified[journalOutput] = true;
