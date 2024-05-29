@@ -51,7 +51,7 @@ fn build_proof() -> Result<(), Box<dyn std::error::Error>> {
 
     let json = serde_json::to_string(&params)?;
 
-    let file_path = "./inputs/zk_params.json";
+    let file_path = "../inputs/zk_params.json";
     let path = Path::new(file_path);
     // Check if the parent directory exists, and create it if it does not.
     if let Some(parent) = path.parent() {
