@@ -44,8 +44,6 @@ mod tests {
         let result = contract.get_verifier_address().await.unwrap();
         let result = remove_quotes(&result);
         assert_eq!(result, dummy_address);
-
-        // assert_eq!(result, dummy_address.to_string())
     }
 
 
@@ -77,7 +75,6 @@ mod tests {
             }
 
             pub async fn get_verifier_address(&self) -> Result<String, workspaces::error::Error>  {
-
                 let response = self.contract.call("get_verifier_address").max_gas()
                 .view()
                 .await?;

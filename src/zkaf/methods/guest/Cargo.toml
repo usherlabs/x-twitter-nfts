@@ -18,6 +18,8 @@ serde = { version = "1.0", features = ["derive", "std"] }
 tlsn-substrings-verifier = { path = "../../tlsn-substrings-verifier" }
 sha256 = "1.5.0"
 hex = "0.4.3"
+ahash = "=0.8.6"
+
 
 [profile.release]
 lto = "thin"
