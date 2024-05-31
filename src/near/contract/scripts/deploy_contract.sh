@@ -1,5 +1,5 @@
-export NEAR_CONTRACT_ACCOUNT=zkaf.testnet
-export VERIFIER_ADDRESS="0xa4015D18436d266074eC43bb9D2f8DfBAb2a45D5"
+export NEAR_CONTRACT_ACCOUNT=usherzkaf.testnet
+export VERIFIER_ADDRESS="0xa82219472Be3faC01D0b20F043a5B03AeA64FB25"
 
 
 cargo build --target wasm32-unknown-unknown --release
