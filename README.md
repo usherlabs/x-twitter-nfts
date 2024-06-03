@@ -16,7 +16,7 @@
 
 To run the repo:
 1. Install dependencies  
-    First, [install Rust] and [Foundry], and then restart your terminal.
+    1. First, [install Rust](https://www.rust-lang.org/tools/install) and [Foundry](https://book.getfoundry.sh/getting-started/installation), and then restart your terminal.
 
     ```sh
     # Install Rust
@@ -24,6 +24,9 @@ To run the repo:
     # Install Foundry
     curl -L https://foundry.paradigm.xyz | bash
     ```
+    
+    2. Install the [necessary tool-chain to build the program](https://dev.risczero.com/api/zkvm/install)
+    3. Install Docker
 
 2. Navigate to the `zkaf` directory  
     Moved into X (Twitter) NFTs — https://github.com/usherlabs/x-twitter-nfts/blob/f6c7fb0448408eda30ba0c0402014e94a5c0b868/src/zkaf
