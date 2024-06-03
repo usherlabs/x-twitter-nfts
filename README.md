@@ -15,8 +15,8 @@
 **TL;DR** 
 
 To run the repo:
-- [ ] Install dependencies  
-  First, [install Rust] and [Foundry], and then restart your terminal.
+1. Install dependencies  
+    First, [install Rust] and [Foundry], and then restart your terminal.
 
     ```sh
     # Install Rust
@@ -25,16 +25,17 @@ To run the repo:
     curl -L https://foundry.paradigm.xyz | bash
     ```
 
-- [ ] Navigate to the `zkaf` directory  
+2. Navigate to the `zkaf` directory  
     Moved into X (Twitter) NFTs — https://github.com/usherlabs/x-twitter-nfts/blob/f6c7fb0448408eda30ba0c0402014e94a5c0b868/src/zkaf
     
-- [ ]  Provide all environment variables  
-    1. See all requires env variables: https://github.com/usherlabs/x-twitter-nfts/blob/f6c7fb0448408eda30ba0c0402014e94a5c0b868/src/zkaf/.env.sh.sample
-    2. Visit [env.usher.so](http://env.usher.so) to fetch all env variables from the relevant repository.
+3. Provide all environment variables  
+    See all requires env variables: https://github.com/usherlabs/x-twitter-nfts/blob/f6c7fb0448408eda30ba0c0402014e94a5c0b868/src/zkaf/.env.sh.sample
 
-```shell
-cargo run --bin publisher
-```
+4. Run the publisher to generate and verify the proof.  
+
+    ```shell
+    cargo run --bin publisher
+    ```
 
 ### Near Contract
 
