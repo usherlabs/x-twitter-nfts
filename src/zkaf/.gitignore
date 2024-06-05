@@ -23,3 +23,7 @@ target/
 .DS_Store
 .idea
 broadcast
+
+# ZK
+./inputs/*
+!./inputs/.gitkeep
