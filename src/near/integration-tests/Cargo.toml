@@ -1,10 +1,9 @@
 [package]
-name = "uniswap-from-near-integration-tests"
+name = "near-integration-tests"
 version = "0.1.0"
 edition = "2021"
 
-
 [dependencies]
-aurora-sdk-integration-tests = { git="https://github.com/aurora-is-near/aurora-contracts-sdk", branch = "main"}
+aurora-sdk-integration-tests = { git="https://github.com/aurora-is-near/aurora-contracts-sdk.git", branch = "main" }
 near-abi-client = "0.1.0"
 serde = "1"

@@ -1,5 +1,5 @@
 [package]
-name = "verifier"
+name = "near-x-twitter-nfts"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,6 +7,6 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-aurora-sdk = { git="https://github.com/aurora-is-near/aurora-contracts-sdk", branch = "main"}
+aurora-sdk = { git="https://github.com/aurora-is-near/aurora-contracts-sdk.git", branch = "main"}
 serde = { version = "1", features = ["derive"] }
 hex = "0.4"

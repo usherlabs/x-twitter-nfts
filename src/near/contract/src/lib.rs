@@ -36,8 +36,8 @@ impl VerifierProxy {
 
 
     pub fn verify_proof(&self, journal_output: Vec<u8>) -> Promise{
-        let journal_output = ethabi::Token::Bytes(journal_output.into());        
- 
+        let journal_output = ethabi::Token::Bytes(journal_output.into());
+
 
         let evm_input = ethabi::encode(&[journal_output]);
         let aurora_call_args = CallArgs::V1(FunctionCallArgsV1 {

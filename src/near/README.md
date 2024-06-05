@@ -21,10 +21,6 @@ The respective methods on the contract can be called by running the correspondin
 
 The contract can be tested by running `cargo test` at the root of the `integration-tests` folder.
 
-
-
-## Notes for Developers
-
 ### Workspace organization
 
 This example is organized into two crates: the contract that would be deployed to a Near network, and a crate for integration testing of the contract.
