@@ -6,6 +6,10 @@ The near contract is responsible for checking if a proof has been verified on th
 
 - [ ]  A near testnet account (https://testnet.mynearwallet.com/)
 - [ ]  Near Rust CLI (https://docs.near.org/tools/near-cli-rs)
+- [ ]  Ensure `wasm32-unknown-unknown` is installed
+       ```shell
+        rustup target add wasm32-unknown-unknown
+       ```
 - [ ]  Login to near on the CLI by running  `sh login.sh`
 
 ### Deployment

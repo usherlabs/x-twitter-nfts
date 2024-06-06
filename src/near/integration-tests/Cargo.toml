@@ -7,3 +7,6 @@ edition = "2021"
 aurora-sdk-integration-tests = { git="https://github.com/aurora-is-near/aurora-contracts-sdk.git", branch = "main" }
 near-abi-client = "0.1.0"
 serde = "1"
+
+[patch.crates-io]
+parity-secp256k1 = { path = "./vendor/parity-secp256k1" }
