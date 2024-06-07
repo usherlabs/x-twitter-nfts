@@ -1,0 +1,4 @@
+#! temporarily disable cargo workspaces as it causes tests on near to fail
+# [workspace]
+# resolver = "2"
+# members = ["src/twitter", "src/notary", "src/verifier"]
