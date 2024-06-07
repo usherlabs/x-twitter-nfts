@@ -31,10 +31,12 @@ To run the repo:
 2. Navigate to the `zkaf` directory  
     Moved into X (Twitter) NFTs — https://github.com/usherlabs/x-twitter-nfts/blob/f6c7fb0448408eda30ba0c0402014e94a5c0b868/src/zkaf
     
-3. Provide all environment variables  
-    See all requires env variables: https://github.com/usherlabs/x-twitter-nfts/blob/f6c7fb0448408eda30ba0c0402014e94a5c0b868/src/zkaf/.env.sh.sample
+3. Create environment variables  
+    See all requires env variables: [.env.sample](https://github.com/usherlabs/x-twitter-nfts/blob/f6c7fb0448408eda30ba0c0402014e94a5c0b868/src/zkaf/.env.sample)
+    
+4. To deterministically build the ZK Circuit / Guest, Docker must be running — [Learn more](https://dev.risczero.com/terminology#deterministic-builds)
 
-4. Run the publisher to generate and verify the proof.  
+5. Run the publisher to generate and verify the proof.  
 
     ```shell
     cargo run --bin publisher

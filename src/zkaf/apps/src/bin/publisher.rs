@@ -6,15 +6,18 @@ use apps::{aurora::TxSender, near::verify_near_proof, BonsaiProver};
 use methods::VERIFY_ELF;
 use tlsn_substrings_verifier::{self, ZkInputParam};
 
+use dotenv;
 
 fn main() -> Result<()> {
+    dotenv::dotenv().ok();
+
     env_logger::init();
     println!("Proof generation process started");
     // read in the input parameter fom the processed json which contains the substrings
     let proof_params = std::fs::read_to_string("inputs/zk_params.json").unwrap();
     let proof_params: ZkInputParam = serde_json::from_str(proof_params.as_str()).unwrap();
 
-    // serialize the inputs to bytes to pass to the remote prover 
+    // serialize the inputs to bytes to pass to the remote prover
     let input = serde_json::to_string(&proof_params).unwrap();
     let input: &[u8] = input.as_bytes();
 

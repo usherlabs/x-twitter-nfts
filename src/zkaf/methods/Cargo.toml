@@ -11,6 +11,7 @@ hex = { workspace = true }
 risc0-build = { workspace = true }
 risc0-build-ethereum = { workspace = true }
 risc0-zkp = { workspace = true }
+dotenv = { workspace = true }
 
 [dev-dependencies]
 alloy-primitives = { workspace = true }

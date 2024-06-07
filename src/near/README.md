@@ -6,6 +6,10 @@ The near contract is responsible for checking if a proof has been verified on th
 
 - [ ]  A near testnet account (https://testnet.mynearwallet.com/)
 - [ ]  Near Rust CLI (https://docs.near.org/tools/near-cli-rs)
+- [ ]  Ensure `wasm32-unknown-unknown` is installed
+       ```shell
+        rustup target add wasm32-unknown-unknown
+       ```
 - [ ]  Login to near on the CLI by running  `sh login.sh`
 
 ### Deployment
@@ -20,10 +24,6 @@ The respective methods on the contract can be called by running the correspondin
 ### Testing the contract
 
 The contract can be tested by running `cargo test` at the root of the `integration-tests` folder.
-
-
-
-## Notes for Developers
 
 ### Workspace organization
 
