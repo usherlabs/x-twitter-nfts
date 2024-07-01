@@ -1,9 +1,10 @@
 # ERC20 Example
-We provide an example that uses the ERC20 interface's `balanceOf` method.
-> ***WARNING***: This software is still experimental, we do not recommend it for production use.
+
+**An example that uses the ERC20 interface's `balanceOf` method.**
 
 ## Prerequisites
-To get started, you need to have Rust installed. If you haven't done so, follow the instructions [here][install-rust]. 
+
+To get started, you need to have Rust installed. If you haven't done so, follow the instructions [here][install-rust].
 
 Next, install the `cargo risczero` tool. We'll use `cargo binstall` to facilitate this. Detailed instructions can be found at [cargo-binstall].
 
@@ -21,6 +22,7 @@ cargo risczero install
 You'll also need access to an Ethereum RPC node, such as through [Alchemy](www.alchemy.com).
 
 ## Run the example
+
 To run the example, which queries the USDT balance of `0x9737100D2F42a196DE56ED0d1f6fF598a250E7E4` on Sepolia, execute the following command:
 
 ```bash
@@ -29,27 +31,24 @@ RPC_URL=https://eth-sepolia.g.alchemy.com/v2/<API_KEY> RUST_LOG=info cargo run -
 
 The output should resemble the following:
 
-```
-2024-03-12T11:06:14.549457Z  INFO view_call::host: preflight 'balanceOf(address)' method by 0xf08A50178dfcDe18524640EA6618a1f965821715 on 0xaA8E23Fb1079EA71e0a56F48a2aA51851D8433D0
-For block 5470081 `balanceOf(address)` returns: 399534748753251
+```text
+2024-06-04T09:32:22.119650Z  INFO risc0_steel::contract: Executing preflight for 'balanceOf(address)' on contract 0xaA8E23Fb1079EA71e0a56F48a2aA51851D8433D0    
+For block 6037045 `balanceOf(address)` returns: 399534748753251
 Running the guest with the constructed input:
 View call result: 399534748753251
-2024-03-12T11:06:17.018205Z  INFO executor: risc0_zkvm::host::server::exec::executor: execution time: 538.5ms
-2024-03-12T11:06:17.018224Z  INFO executor: risc0_zkvm::host::server::session: number of segments: 6
-2024-03-12T11:06:17.018227Z  INFO executor: risc0_zkvm::host::server::session: total cycles: 5505024
-2024-03-12T11:06:17.018229Z  INFO executor: risc0_zkvm::host::server::session: user cycles: 4179903
-2024-03-12T11:06:17.018231Z  INFO executor: risc0_zkvm::host::server::session: cycle efficiency: 75%
+2024-06-04T09:32:24.152552Z  INFO executor: risc0_zkvm::host::server::exec::executor: execution time: 218.576666ms
+2024-06-04T09:32:24.152578Z  INFO executor: risc0_zkvm::host::server::session: number of segments: 5
+2024-06-04T09:32:24.152581Z  INFO executor: risc0_zkvm::host::server::session: total cycles: 5242880
+2024-06-04T09:32:24.152583Z  INFO executor: risc0_zkvm::host::server::session: user cycles: 4126244
 ```
 
 ### Guest Code
+
 Here is a snippet of the [relevant code](./methods/guest/src/main.rs) of the guest:
 
 ```rust
 /// Specify the function to call using the [`sol!`] macro.
-/// This parses the Solidity syntax to generate a struct that implements the [SolCall] trait.
-/// The struct instantiated with the arguments can then be passed to the [ViewCall] to execute the
-/// call. For example:
-/// `IERC20::balanceOfCall { account: address!("9737100D2F42a196DE56ED0d1f6fF598a250E7E4") }`
+/// This parses the Solidity syntax to generate a struct that implements the `SolCall` trait.
 sol! {
     /// ERC-20 balance function signature.
     interface IERC20 {
@@ -57,28 +56,30 @@ sol! {
     }
 }
 
-/// Function to call, implements [SolCall] trait.
-const CALL: IERC20::balanceOfCall =
-    IERC20::balanceOfCall { account: address!("9737100D2F42a196DE56ED0d1f6fF598a250E7E4") };
+/// Function to call, implements the `SolCall` trait.
+const CALL: IERC20::balanceOfCall = IERC20::balanceOfCall {
+    account: address!("9737100D2F42a196DE56ED0d1f6fF598a250E7E4"),
+};
 
-/// Address of the deployed contract to call the function on. Here: USDT contract on Sepolia
+/// Address of the deployed contract to call the function on (USDT contract on Sepolia).
 const CONTRACT: Address = address!("aA8E23Fb1079EA71e0a56F48a2aA51851D8433D0");
-/// Address of the caller of the function. If not provided, the caller will be the [CONTRACT].
+/// Address of the caller. If not provided, the caller will be the [CONTRACT].
 const CALLER: Address = address!("f08A50178dfcDe18524640EA6618a1f965821715");
 
 fn main() {
     // Read the input from the guest environment.
-    let input: EthViewCallInput = env::read();
+    let input: EthEvmInput = env::read();
 
-    // Converts the input into a `ViewCallEnv` for execution. The `with_chain_spec` method is used
+    // Converts the input into a `EvmEnv` for execution. The `with_chain_spec` method is used
     // to specify the chain configuration. It checks that the state matches the state root in the
     // header provided in the input.
-    let view_call_env = input.into_env().with_chain_spec(&ETH_SEPOLIA_CHAIN_SPEC);
-    // Commit the block hash and number used when deriving `view_call_env` to the journal.
-    env::commit_slice(&view_call_env.block_commitment().abi_encode());
+    let env = input.into_env().with_chain_spec(&ETH_SEPOLIA_CHAIN_SPEC);
+    // Commit the block hash and number used when deriving `EvmEnv` to the journal.
+    env::commit_slice(&env.block_commitment().abi_encode());
 
     // Execute the view call; it returns the result in the type generated by the `sol!` macro.
-    let returns = ViewCall::new(CALL, CONTRACT).with_caller(CALLER).execute(view_call_env);
+    let contract = Contract::new(CONTRACT, &env);
+    let returns = contract.call_builder(&CALL).from(CALLER).call();
     println!("View call result: {}", returns._0);
 }
 ```
@@ -88,17 +89,19 @@ fn main() {
 Here is a snippet to the [relevant code](./host/src/main.rs) on the host, it requires the same arguments as the guest:
 
 ```rust
-// Create a view call environment from an RPC endpoint and a block number. If no block number is
-// provided, the latest block is used. The `with_chain_spec` method is used to specify the
-// chain configuration.
-let env = EthViewCallEnv::from_rpc(&RPC_URL, None)?
-    .with_chain_spec(&ETH_SEPOLIA_CHAIN_SPEC);
+// Create an EVM environment from an RPC endpoint and a block number. If no block number is
+// provided, the latest block is used.
+let mut env = EthEvmEnv::from_rpc(&args.rpc_url, None)?;
+//  The `with_chain_spec` method is used to specify the chain configuration.
+env = env.with_chain_spec(&ETH_SEPOLIA_CHAIN_SPEC);
 
-// Preflight the view call to construct the input that is required to execute the function in
-// the guest. It also returns the result of the call.
-let (input, returns) = ViewCall::new(CALL, CONTRACT)
-    .with_caller(CALLER)
-    .preflight(env)?;
+// Preflight the call to prepare the input that is required to execute the function in
+// the guest without RPC access. It also returns the result of the call.
+let mut contract = Contract::preflight(CONTRACT, &mut env);
+let returns = contract.call_builder(&CALL).from(CALLER).call()?;
+
+// Finally, construct the input from the environment.
+let input = env.into_input()?;
 ```
 
 [install-rust]: https://doc.rust-lang.org/cargo/getting-started/installation.html

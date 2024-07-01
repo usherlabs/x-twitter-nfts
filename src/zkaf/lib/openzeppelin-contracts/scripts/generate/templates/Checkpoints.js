@@ -1,5 +1,5 @@
 const format = require('../format-lines');
-const { OPTS } = require('./Checkpoints.opts');
+const { OPTS } = require('./Checkpoints.opts.js');
 
 // TEMPLATE
 const header = `\
@@ -121,7 +121,7 @@ function latestCheckpoint(${opts.historyTypeName} storage self)
     if (pos == 0) {
         return (false, 0, 0);
     } else {
-        ${opts.checkpointTypeName} storage ckpt = _unsafeAccess(self.${opts.checkpointFieldName}, pos - 1);
+        ${opts.checkpointTypeName} memory ckpt = _unsafeAccess(self.${opts.checkpointFieldName}, pos - 1);
         return (true, ckpt.${opts.keyFieldName}, ckpt.${opts.valueFieldName});
     }
 }
@@ -152,22 +152,21 @@ function _insert(
     uint256 pos = self.length;
 
     if (pos > 0) {
-        ${opts.checkpointTypeName} storage last = _unsafeAccess(self, pos - 1);
-        ${opts.keyTypeName} lastKey = last.${opts.keyFieldName};
-        ${opts.valueTypeName} lastValue = last.${opts.valueFieldName};
+        // Copying to memory is important here.
+        ${opts.checkpointTypeName} memory last = _unsafeAccess(self, pos - 1);
 
         // Checkpoint keys must be non-decreasing.
-        if (lastKey > key) {
+        if(last.${opts.keyFieldName} > key) {
             revert CheckpointUnorderedInsertion();
         }
 
         // Update or push new checkpoint
-        if (lastKey == key) {
+        if (last.${opts.keyFieldName} == key) {
             _unsafeAccess(self, pos - 1).${opts.valueFieldName} = value;
         } else {
             self.push(${opts.checkpointTypeName}({${opts.keyFieldName}: key, ${opts.valueFieldName}: value}));
         }
-        return (lastValue, value);
+        return (last.${opts.valueFieldName}, value);
     } else {
         self.push(${opts.checkpointTypeName}({${opts.keyFieldName}: key, ${opts.valueFieldName}: value}));
         return (0, value);

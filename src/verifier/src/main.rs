@@ -8,7 +8,7 @@ use tlsn_core::proof::{SessionProof, TlsProof};
 /// it and prints the verified data to the console.
 fn main() {
     // Deserialize the proof
-    let proof = std::fs::read_to_string("../../twitter_proof.json").unwrap();
+    let proof = std::fs::read_to_string("../twitter/tweet_proof.json").unwrap();
     let proof: TlsProof = serde_json::from_str(proof.as_str()).unwrap();
 
     let TlsProof {
@@ -37,9 +37,6 @@ fn main() {
         ..
     } = session;
 
-    // The time at which the session was recorded
-    let time = chrono::DateTime::UNIX_EPOCH + Duration::from_secs(header.time());
-
     // Verify the substrings proof against the session header.
     //
     // This returns the redacted transcripts
@@ -50,10 +47,6 @@ fn main() {
     recv.set_redacted(b'X');
 
     println!("-------------------------------------------------------------------");
-    println!(
-        "Successfully verified that the bytes below came from a session with {:?} at {}.",
-        session.server_name, time
-    );
     println!("Note that the bytes which the Prover chose not to disclose are shown as X.");
     println!();
     println!("Bytes sent:");

@@ -13,7 +13,7 @@ IMPORTANT: OpenZeppelin Contracts uses semantic versioning to communicate backwa
 [[install]]
 === Installation
 
-==== Hardhat (npm)
+==== Hardhat, Truffle (npm)
 
 ```console
 $ npm install @openzeppelin/contracts

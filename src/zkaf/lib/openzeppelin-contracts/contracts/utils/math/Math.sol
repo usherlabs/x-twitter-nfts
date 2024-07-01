@@ -3,13 +3,15 @@
 
 pragma solidity ^0.8.20;
 
-import {Panic} from "../Panic.sol";
-import {SafeCast} from "./SafeCast.sol";
-
 /**
  * @dev Standard math utilities missing in the Solidity language.
  */
 library Math {
+    /**
+     * @dev Muldiv operation overflow.
+     */
+    error MathOverflowedMulDiv();
+
     enum Rounding {
         Floor, // Toward negative infinity
         Ceil, // Toward positive infinity
@@ -18,9 +20,9 @@ library Math {
     }
 
     /**
-     * @dev Returns the addition of two unsigned integers, with an success flag (no overflow).
+     * @dev Returns the addition of two unsigned integers, with an overflow flag.
      */
-    function tryAdd(uint256 a, uint256 b) internal pure returns (bool success, uint256 result) {
+    function tryAdd(uint256 a, uint256 b) internal pure returns (bool, uint256) {
         unchecked {
             uint256 c = a + b;
             if (c < a) return (false, 0);
@@ -29,9 +31,9 @@ library Math {
     }
 
     /**
-     * @dev Returns the subtraction of two unsigned integers, with an success flag (no overflow).
+     * @dev Returns the subtraction of two unsigned integers, with an overflow flag.
      */
-    function trySub(uint256 a, uint256 b) internal pure returns (bool success, uint256 result) {
+    function trySub(uint256 a, uint256 b) internal pure returns (bool, uint256) {
         unchecked {
             if (b > a) return (false, 0);
             return (true, a - b);
@@ -39,9 +41,9 @@ library Math {
     }
 
     /**
-     * @dev Returns the multiplication of two unsigned integers, with an success flag (no overflow).
+     * @dev Returns the multiplication of two unsigned integers, with an overflow flag.
      */
-    function tryMul(uint256 a, uint256 b) internal pure returns (bool success, uint256 result) {
+    function tryMul(uint256 a, uint256 b) internal pure returns (bool, uint256) {
         unchecked {
             // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
             // benefit is lost if 'b' is also tested.
@@ -54,9 +56,9 @@ library Math {
     }
 
     /**
-     * @dev Returns the division of two unsigned integers, with a success flag (no division by zero).
+     * @dev Returns the division of two unsigned integers, with a division by zero flag.
      */
-    function tryDiv(uint256 a, uint256 b) internal pure returns (bool success, uint256 result) {
+    function tryDiv(uint256 a, uint256 b) internal pure returns (bool, uint256) {
         unchecked {
             if (b == 0) return (false, 0);
             return (true, a / b);
@@ -64,9 +66,9 @@ library Math {
     }
 
     /**
-     * @dev Returns the remainder of dividing two unsigned integers, with a success flag (no division by zero).
+     * @dev Returns the remainder of dividing two unsigned integers, with a division by zero flag.
      */
-    function tryMod(uint256 a, uint256 b) internal pure returns (bool success, uint256 result) {
+    function tryMod(uint256 a, uint256 b) internal pure returns (bool, uint256) {
         unchecked {
             if (b == 0) return (false, 0);
             return (true, a % b);
@@ -105,24 +107,17 @@ library Math {
     function ceilDiv(uint256 a, uint256 b) internal pure returns (uint256) {
         if (b == 0) {
             // Guarantee the same behavior as in a regular Solidity division.
-            Panic.panic(Panic.DIVISION_BY_ZERO);
+            return a / b;
         }
 
-        // The following calculation ensures accurate ceiling division without overflow.
-        // Since a is non-zero, (a - 1) / b will not overflow.
-        // The largest possible result occurs when (a - 1) / b is type(uint256).max,
-        // but the largest value we can obtain is type(uint256).max - 1, which happens
-        // when a = type(uint256).max and b = 1.
-        unchecked {
-            return a == 0 ? 0 : (a - 1) / b + 1;
-        }
+        // (a + b - 1) / b can overflow on addition, so we distribute.
+        return a == 0 ? 0 : (a - 1) / b + 1;
     }
 
     /**
-     * @dev Calculates floor(x * y / denominator) with full precision. Throws if result overflows a uint256 or
+     * @notice Calculates floor(x * y / denominator) with full precision. Throws if result overflows a uint256 or
      * denominator == 0.
-     *
-     * Original credit to Remco Bloemen under MIT license (https://xn--2-umb.com/21/muldiv) with further edits by
+     * @dev Original credit to Remco Bloemen under MIT license (https://xn--2-umb.com/21/muldiv) with further edits by
      * Uniswap Labs also under MIT license.
      */
     function mulDiv(uint256 x, uint256 y, uint256 denominator) internal pure returns (uint256 result) {
@@ -147,7 +142,7 @@ library Math {
 
             // Make sure the result is less than 2^256. Also prevents denominator == 0.
             if (denominator <= prod1) {
-                Panic.panic(denominator == 0 ? Panic.DIVISION_BY_ZERO : Panic.UNDER_OVERFLOW);
+                revert MathOverflowedMulDiv();
             }
 
             ///////////////////////////////////////////////
@@ -207,178 +202,14 @@ library Math {
     }
 
     /**
-     * @dev Calculates x * y / denominator with full precision, following the selected rounding direction.
+     * @notice Calculates x * y / denominator with full precision, following the selected rounding direction.
      */
     function mulDiv(uint256 x, uint256 y, uint256 denominator, Rounding rounding) internal pure returns (uint256) {
-        return mulDiv(x, y, denominator) + SafeCast.toUint(unsignedRoundsUp(rounding) && mulmod(x, y, denominator) > 0);
-    }
-
-    /**
-     * @dev Calculate the modular multiplicative inverse of a number in Z/nZ.
-     *
-     * If n is a prime, then Z/nZ is a field. In that case all elements are inversible, expect 0.
-     * If n is not a prime, then Z/nZ is not a field, and some elements might not be inversible.
-     *
-     * If the input value is not inversible, 0 is returned.
-     *
-     * NOTE: If you know for sure that n is (big) a prime, it may be cheaper to use Ferma's little theorem and get the
-     * inverse using `Math.modExp(a, n - 2, n)`.
-     */
-    function invMod(uint256 a, uint256 n) internal pure returns (uint256) {
-        unchecked {
-            if (n == 0) return 0;
-
-            // The inverse modulo is calculated using the Extended Euclidean Algorithm (iterative version)
-            // Used to compute integers x and y such that: ax + ny = gcd(a, n).
-            // When the gcd is 1, then the inverse of a modulo n exists and it's x.
-            // ax + ny = 1
-            // ax = 1 + (-y)n
-            // ax ≡ 1 (mod n) # x is the inverse of a modulo n
-
-            // If the remainder is 0 the gcd is n right away.
-            uint256 remainder = a % n;
-            uint256 gcd = n;
-
-            // Therefore the initial coefficients are:
-            // ax + ny = gcd(a, n) = n
-            // 0a + 1n = n
-            int256 x = 0;
-            int256 y = 1;
-
-            while (remainder != 0) {
-                uint256 quotient = gcd / remainder;
-
-                (gcd, remainder) = (
-                    // The old remainder is the next gcd to try.
-                    remainder,
-                    // Compute the next remainder.
-                    // Can't overflow given that (a % gcd) * (gcd // (a % gcd)) <= gcd
-                    // where gcd is at most n (capped to type(uint256).max)
-                    gcd - remainder * quotient
-                );
-
-                (x, y) = (
-                    // Increment the coefficient of a.
-                    y,
-                    // Decrement the coefficient of n.
-                    // Can overflow, but the result is casted to uint256 so that the
-                    // next value of y is "wrapped around" to a value between 0 and n - 1.
-                    x - y * int256(quotient)
-                );
-            }
-
-            if (gcd != 1) return 0; // No inverse exists.
-            return x < 0 ? (n - uint256(-x)) : uint256(x); // Wrap the result if it's negative.
-        }
-    }
-
-    /**
-     * @dev Returns the modular exponentiation of the specified base, exponent and modulus (b ** e % m)
-     *
-     * Requirements:
-     * - modulus can't be zero
-     * - underlying staticcall to precompile must succeed
-     *
-     * IMPORTANT: The result is only valid if the underlying call succeeds. When using this function, make
-     * sure the chain you're using it on supports the precompiled contract for modular exponentiation
-     * at address 0x05 as specified in https://eips.ethereum.org/EIPS/eip-198[EIP-198]. Otherwise,
-     * the underlying function will succeed given the lack of a revert, but the result may be incorrectly
-     * interpreted as 0.
-     */
-    function modExp(uint256 b, uint256 e, uint256 m) internal view returns (uint256) {
-        (bool success, uint256 result) = tryModExp(b, e, m);
-        if (!success) {
-            Panic.panic(Panic.DIVISION_BY_ZERO);
+        uint256 result = mulDiv(x, y, denominator);
+        if (unsignedRoundsUp(rounding) && mulmod(x, y, denominator) > 0) {
+            result += 1;
         }
         return result;
-    }
-
-    /**
-     * @dev Returns the modular exponentiation of the specified base, exponent and modulus (b ** e % m).
-     * It includes a success flag indicating if the operation succeeded. Operation will be marked has failed if trying
-     * to operate modulo 0 or if the underlying precompile reverted.
-     *
-     * IMPORTANT: The result is only valid if the success flag is true. When using this function, make sure the chain
-     * you're using it on supports the precompiled contract for modular exponentiation at address 0x05 as specified in
-     * https://eips.ethereum.org/EIPS/eip-198[EIP-198]. Otherwise, the underlying function will succeed given the lack
-     * of a revert, but the result may be incorrectly interpreted as 0.
-     */
-    function tryModExp(uint256 b, uint256 e, uint256 m) internal view returns (bool success, uint256 result) {
-        if (m == 0) return (false, 0);
-        /// @solidity memory-safe-assembly
-        assembly {
-            let ptr := mload(0x40)
-            // | Offset    | Content    | Content (Hex)                                                      |
-            // |-----------|------------|--------------------------------------------------------------------|
-            // | 0x00:0x1f | size of b  | 0x0000000000000000000000000000000000000000000000000000000000000020 |
-            // | 0x20:0x3f | size of e  | 0x0000000000000000000000000000000000000000000000000000000000000020 |
-            // | 0x40:0x5f | size of m  | 0x0000000000000000000000000000000000000000000000000000000000000020 |
-            // | 0x60:0x7f | value of b | 0x<.............................................................b> |
-            // | 0x80:0x9f | value of e | 0x<.............................................................e> |
-            // | 0xa0:0xbf | value of m | 0x<.............................................................m> |
-            mstore(ptr, 0x20)
-            mstore(add(ptr, 0x20), 0x20)
-            mstore(add(ptr, 0x40), 0x20)
-            mstore(add(ptr, 0x60), b)
-            mstore(add(ptr, 0x80), e)
-            mstore(add(ptr, 0xa0), m)
-
-            // Given the result < m, it's guaranteed to fit in 32 bytes,
-            // so we can use the memory scratch space located at offset 0.
-            success := staticcall(gas(), 0x05, ptr, 0xc0, 0x00, 0x20)
-            result := mload(0x00)
-        }
-    }
-
-    /**
-     * @dev Variant of {modExp} that supports inputs of arbitrary length.
-     */
-    function modExp(bytes memory b, bytes memory e, bytes memory m) internal view returns (bytes memory) {
-        (bool success, bytes memory result) = tryModExp(b, e, m);
-        if (!success) {
-            Panic.panic(Panic.DIVISION_BY_ZERO);
-        }
-        return result;
-    }
-
-    /**
-     * @dev Variant of {tryModExp} that supports inputs of arbitrary length.
-     */
-    function tryModExp(
-        bytes memory b,
-        bytes memory e,
-        bytes memory m
-    ) internal view returns (bool success, bytes memory result) {
-        if (_zeroBytes(m)) return (false, new bytes(0));
-
-        uint256 mLen = m.length;
-
-        // Encode call args in result and move the free memory pointer
-        result = abi.encodePacked(b.length, e.length, mLen, b, e, m);
-
-        /// @solidity memory-safe-assembly
-        assembly {
-            let dataPtr := add(result, 0x20)
-            // Write result on top of args to avoid allocating extra memory.
-            success := staticcall(gas(), 0x05, dataPtr, mload(result), dataPtr, mLen)
-            // Overwrite the length.
-            // result.length > returndatasize() is guaranteed because returndatasize() == m.length
-            mstore(result, mLen)
-            // Set the memory pointer after the returned data.
-            mstore(0x40, add(dataPtr, mLen))
-        }
-    }
-
-    /**
-     * @dev Returns whether the provided byte array is zero.
-     */
-    function _zeroBytes(bytes memory byteArray) private pure returns (bool) {
-        for (uint256 i = 0; i < byteArray.length; ++i) {
-            if (byteArray[i] != 0) {
-                return false;
-            }
-        }
-        return true;
     }
 
     /**
@@ -421,12 +252,12 @@ library Math {
     }
 
     /**
-     * @dev Calculates sqrt(a), following the selected rounding direction.
+     * @notice Calculates sqrt(a), following the selected rounding direction.
      */
     function sqrt(uint256 a, Rounding rounding) internal pure returns (uint256) {
         unchecked {
             uint256 result = sqrt(a);
-            return result + SafeCast.toUint(unsignedRoundsUp(rounding) && result * result < a);
+            return result + (unsignedRoundsUp(rounding) && result * result < a ? 1 : 0);
         }
     }
 
@@ -436,37 +267,38 @@ library Math {
      */
     function log2(uint256 value) internal pure returns (uint256) {
         uint256 result = 0;
-        uint256 exp;
         unchecked {
-            exp = 128 * SafeCast.toUint(value > (1 << 128) - 1);
-            value >>= exp;
-            result += exp;
-
-            exp = 64 * SafeCast.toUint(value > (1 << 64) - 1);
-            value >>= exp;
-            result += exp;
-
-            exp = 32 * SafeCast.toUint(value > (1 << 32) - 1);
-            value >>= exp;
-            result += exp;
-
-            exp = 16 * SafeCast.toUint(value > (1 << 16) - 1);
-            value >>= exp;
-            result += exp;
-
-            exp = 8 * SafeCast.toUint(value > (1 << 8) - 1);
-            value >>= exp;
-            result += exp;
-
-            exp = 4 * SafeCast.toUint(value > (1 << 4) - 1);
-            value >>= exp;
-            result += exp;
-
-            exp = 2 * SafeCast.toUint(value > (1 << 2) - 1);
-            value >>= exp;
-            result += exp;
-
-            result += SafeCast.toUint(value > 1);
+            if (value >> 128 > 0) {
+                value >>= 128;
+                result += 128;
+            }
+            if (value >> 64 > 0) {
+                value >>= 64;
+                result += 64;
+            }
+            if (value >> 32 > 0) {
+                value >>= 32;
+                result += 32;
+            }
+            if (value >> 16 > 0) {
+                value >>= 16;
+                result += 16;
+            }
+            if (value >> 8 > 0) {
+                value >>= 8;
+                result += 8;
+            }
+            if (value >> 4 > 0) {
+                value >>= 4;
+                result += 4;
+            }
+            if (value >> 2 > 0) {
+                value >>= 2;
+                result += 2;
+            }
+            if (value >> 1 > 0) {
+                result += 1;
+            }
         }
         return result;
     }
@@ -478,7 +310,7 @@ library Math {
     function log2(uint256 value, Rounding rounding) internal pure returns (uint256) {
         unchecked {
             uint256 result = log2(value);
-            return result + SafeCast.toUint(unsignedRoundsUp(rounding) && 1 << result < value);
+            return result + (unsignedRoundsUp(rounding) && 1 << result < value ? 1 : 0);
         }
     }
 
@@ -527,7 +359,7 @@ library Math {
     function log10(uint256 value, Rounding rounding) internal pure returns (uint256) {
         unchecked {
             uint256 result = log10(value);
-            return result + SafeCast.toUint(unsignedRoundsUp(rounding) && 10 ** result < value);
+            return result + (unsignedRoundsUp(rounding) && 10 ** result < value ? 1 : 0);
         }
     }
 
@@ -539,25 +371,26 @@ library Math {
      */
     function log256(uint256 value) internal pure returns (uint256) {
         uint256 result = 0;
-        uint256 isGt;
         unchecked {
-            isGt = SafeCast.toUint(value > (1 << 128) - 1);
-            value >>= isGt * 128;
-            result += isGt * 16;
-
-            isGt = SafeCast.toUint(value > (1 << 64) - 1);
-            value >>= isGt * 64;
-            result += isGt * 8;
-
-            isGt = SafeCast.toUint(value > (1 << 32) - 1);
-            value >>= isGt * 32;
-            result += isGt * 4;
-
-            isGt = SafeCast.toUint(value > (1 << 16) - 1);
-            value >>= isGt * 16;
-            result += isGt * 2;
-
-            result += SafeCast.toUint(value > (1 << 8) - 1);
+            if (value >> 128 > 0) {
+                value >>= 128;
+                result += 16;
+            }
+            if (value >> 64 > 0) {
+                value >>= 64;
+                result += 8;
+            }
+            if (value >> 32 > 0) {
+                value >>= 32;
+                result += 4;
+            }
+            if (value >> 16 > 0) {
+                value >>= 16;
+                result += 2;
+            }
+            if (value >> 8 > 0) {
+                result += 1;
+            }
         }
         return result;
     }
@@ -569,7 +402,7 @@ library Math {
     function log256(uint256 value, Rounding rounding) internal pure returns (uint256) {
         unchecked {
             uint256 result = log256(value);
-            return result + SafeCast.toUint(unsignedRoundsUp(rounding) && 1 << (result << 3) < value);
+            return result + (unsignedRoundsUp(rounding) && 1 << (result << 3) < value ? 1 : 0);
         }
     }
 

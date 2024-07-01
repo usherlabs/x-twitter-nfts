@@ -1,7 +1,7 @@
 # RISC Zero Ethereum
 
 [RISC Zero] is a zero-knowledge verifiable general computing platform, with [Ethereum] integration.
-This repository contains [Solidity verifier contracts][contracts], [Relay], [View Call] library, and supporting libraries.
+This repository contains [Solidity verifier contracts][contracts],[Steel] EVM view call library, and supporting code.
 
 If you are looking to get started using RISC Zero in the application on Ethereum, the best place to look is the [Foundry template][template].
 
@@ -9,29 +9,21 @@ You can also find the documentation for RISC Zero, including guides for [writing
 
 ## Contracts
 
-RISC Zero's Ethereum contracts, including the on-chain verifier, can be found in the [contracts] directory.
+RISC Zero's Ethereum contracts, including the on-chain verifier for all RISC Zero Groth16 proofs, can be found in the [contracts] directory.
 
-## Relay
+## Steel
 
-The Relay is a service that can be run to accept proving requests from on-chain events or via REST Request, and post receipts to the developer's application contract as a callback.
-It represents one way of accepting requests, and posting proofs to Ethereum.
-It is also possible to write your application without using the Relay.
+A powerful library for querying and generating verifiable proofs over Ethereum or other EVM-based blockchain state. It leverages [alloy], giving developers a familiar and high quality interface for querying Ethereum via view calls. Steel makes it easy to securely move execution off chain saving gas and unlocking new use cases on Ethereum.
 
-You can find and overview of how the Relay works, [in our documentation][relay-overview].
-Source code for the Relay is in the [relay] directory.
 
-## View Call
-A library to query Ethereum state, or any other EVM-based blockchain state. It leverages the [alloy] library to make its use Solidity-friendly.
-
+You can install [Steel] with `cargo add risc0-steel`, check out the examples in the [examples directory](./examples/erc20-counter).
 
 [RISC Zero]: https://github.com/risc0/risc0
 [Ethereum]: https://ethereum.org/
 [contracts]: ./contracts
-[relay]: ./relay
-[View Call]: ./view-call
+[Steel]: ./steel
 [template]: https://github.com/risc0/bonsai-foundry-template
 [dev.risczero.com]: https://dev.risczero.com
 [risc0-quickstart]: https://dev.risczero.com/api/zkvm/quickstart
 [bonsai-quickstart]: https://dev.risczero.com/api/bonsai/quickstart
-[relay-overview]: https://dev.risczero.com/api/bonsai/bonsai-on-eth#bonsai-relay
 [alloy]: https://github.com/alloy-rs

@@ -7,8 +7,11 @@ edition = "2021"
 
 [dependencies]
 
-tlsn-core = { git = "https://github.com/tlsnotary/tlsn", rev = "6152883" }
-tlsn-verifier = { git = "https://github.com/tlsnotary/tlsn", rev = "6152883" }
+tlsn-core = { git = "https://github.com/tlsnotary/tlsn", tag = "v0.1.0-alpha.6" }
+tlsn-verifier = { git = "https://github.com/tlsnotary/tlsn", tag = "v0.1.0-alpha.6" }
+tlsn-prover = { git = "https://github.com/tlsnotary/tlsn", tag = "v0.1.0-alpha.6" }
+notary-client = { git = "https://github.com/tlsnotary/tlsn", tag = "v0.1.0-alpha.6" }
+
 p256 = { version = "0.13", features = ["ecdsa"] }
 tokio = { version = "1.33.0", features = [
     "rt",
@@ -20,8 +23,8 @@ tokio = { version = "1.33.0", features = [
 ] }
 tokio-util = { version = "0.7.9", features = ["compat"] }
 tracing-subscriber = "0.3.17"
-tlsn-prover = { git = "https://github.com/tlsnotary/tlsn", rev = "6152883" }
-hyper = { version = "0.14", features = ["full"] }
+hyper = { version = "1.1", features = ["client", "http1", "server"] }
+hyper-util = { version = "0.1", features = ["full"] }
 serde_json = "1.0.107"
 futures = "0.3.28"
 elliptic-curve = { version = "0.13.5", features = ["pkcs8"] }
@@ -37,13 +40,6 @@ async-tls = { version = "0.12", default-features = false, features = [
     "client",
 ] }
 http-body-util = "0.1"
-hyper-util = { version = "0.1", features = ["full"] }
-
 regex = "1.10.3"
 base64 = "0.22.0"
 reqwest = { version = "0.12.3", features = ["json"] }
-
-
-[[example]]
-name="verifier"
-path="./examples/verifier.rs"

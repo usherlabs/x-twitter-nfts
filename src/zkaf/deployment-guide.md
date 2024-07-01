@@ -39,9 +39,10 @@ export EVM_VERIFIER_CONTRACT=0xa4015D18436d266074eC43bb9D2f8DfBAb2a45D5
 
 # NEAR parameters
 export NEAR_RPC_URL="https://rpc.testnet.near.org"
-export NEAR_ACCOUNT_ID="zkaf.testnet"
+export NEAR_SIGNER_ACCOUNT_ID="local-verifier.testnet"
 export NEAR_ACCOUNT_SECRET_KEY=""
-export NEAR_CONTRACT_ACCOUNT_ID="zkaf.testnet"
+export NEAR_VERIFIER_CONTRACT_ACCOUNT_ID="local-verifier.testnet"
+export NEAR_NFT_CONTRACT_ACCOUNT_ID="local-nft.testnet"
 
 # BONSAI parameters
 export BONSAI_API_KEY="" # provided with your api key

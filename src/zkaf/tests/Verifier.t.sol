@@ -16,7 +16,7 @@
 
 pragma solidity ^0.8.20;
 
-import {RiscZeroCheats} from "risc0/RiscZeroCheats.sol";
+import {RiscZeroCheats} from "risc0/test/RiscZeroCheats.sol";
 import {console2} from "forge-std/console2.sol";
 import {Test} from "forge-std/Test.sol";
 import {IRiscZeroVerifier} from "risc0/IRiscZeroVerifier.sol";
@@ -25,10 +25,9 @@ import {Elf} from "./Elf.sol"; // auto-generated contract after running `cargo b
 
 contract VerifierTest is RiscZeroCheats, Test {
     Verifier public proof;
-    bytes correctJournalOutput = hex"4f8ad5ce1d0fc577d04d618880b8c77c9aced63740ca43b708f32425a95b11b7";
+    bytes correctJournalOutput = hex"87532ef9e4e9d2ae58ce81ed14f5aa9b50babb2dda3a9266af790876c4bc02bd";
     bytes incorrectJournalOutput = hex"5f8ad5ce1d0fc577d04d618880b8c77c9aced63740ca43b708f32425a95b11b7";
-    bytes32 postStateDigest = 0x861ffac3fc1be3ec222139c10070c668284c85b2e8906cc2546b889c6ca8fe2d;
-    bytes seal = hex"028ddfd058a2e818bf25fb9d710359042fb5e7200c28105944b2b9c8c3e2af4d1cb77b9730fcb22b0c182c791678d6895ac436cab7fb99e15e773d2a97e4e1d526ee8e31b492c6ebfc66418ffa8c0e5ed0b84ca66d5a35174640bc01c8f779a218d3be19a74b952697f7fe73520e2d12795309c67e9e255d5a890bb7aa415bbe277d73cc765337c91c2f65c8f4617144bc4bc76bf95f01d49328e27de3820a6910a2bdc481bb93ddaf6d688223abad6a53245be7676e505e702ff0b4cb5d5d6a22c30923e5db696f5c94dc9a3ad736d909eec7da10ce00476b31f5d678ae05dc1e293717c3dafe22a942f693ebfb4c75eb5c08f75dd1e45b74d9f455860088b2";
+    bytes seal = hex"310fe5981b766275439ea2c51bd00cc04d4e8e4071df29561ec6559223a70a124589da5a2d046276699b7c22f2891dffe92a0ed3323770d63973ed0bef406560dfc7efe71f0f2e592e7c95ab6072aa8c4e3701274262f4ba15bd3dbb3652d5b672b8138a09e360d8b9f97f66e0c96ead29ba2e7609214c14351eeb428576345df7990b78281c314e163f3321599af437d75533a36b6562f7380e1433a3c38f90d8c9c31820789673c6cfba165e6cb40ed315533e3c2d21a111ff7fdef834ed7a09b426ea149815dcf692155afe08ea5556c44542b09a4e1d5721963c917dc1c0f32dddf4260330dd0a7ce9cee09e68c54776995ca3ea5de9cb8c4756dddf3b6f81ba3246";
 
     function setUp() public {
         IRiscZeroVerifier verifier = deployRiscZeroVerifier();
@@ -39,7 +38,6 @@ contract VerifierTest is RiscZeroCheats, Test {
 
         proof.verify_proof(
             correctJournalOutput,
-            postStateDigest,
             seal
         );
 
@@ -50,9 +48,7 @@ contract VerifierTest is RiscZeroCheats, Test {
         vm.expectRevert();
         proof.verify_proof(
             incorrectJournalOutput,
-            postStateDigest,
             seal
         );
     }
-
 }

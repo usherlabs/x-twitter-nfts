@@ -190,7 +190,7 @@ pub enum SubstringsProofError {
 ///
 /// This substring proof contains the commitment openings and a proof
 /// that the corresponding commitments are present in the merkle tree.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct SubstringsProof {
     pub openings: HashMap<CommitmentId, (CommitmentInfo, CommitmentOpening)>,
     pub inclusion_proof: MerkleProof,
