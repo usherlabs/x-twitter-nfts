@@ -1,5 +1,5 @@
 [package]
-name = "progcrypto_workshop_notary"
+name = "notary_server"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,9 +7,10 @@ edition = "2021"
 
 [dependencies]
 
-tlsn-core = { git = "https://github.com/tlsnotary/tlsn", rev = "6152883" }
-tlsn-verifier = { git = "https://github.com/tlsnotary/tlsn", rev = "6152883" }
-notary-server = { git = "https://github.com/tlsnotary/tlsn", rev = "6152883" }
+tlsn-core = { git = "https://github.com/tlsnotary/tlsn", tag = "v0.1.0-alpha.6" }
+tlsn-verifier = { git = "https://github.com/tlsnotary/tlsn", tag = "v0.1.0-alpha.6" }
+notary-server = { git = "https://github.com/tlsnotary/tlsn", tag = "v0.1.0-alpha.6" }
+tlsn-prover = { git = "https://github.com/tlsnotary/tlsn", tag = "v0.1.0-alpha.6" }
 
 p256 = { version = "0.13", features = ["ecdsa"] }
 tokio = { version = "1.33.0", features = [
@@ -22,7 +23,6 @@ tokio = { version = "1.33.0", features = [
 ] }
 tokio-util = { version = "0.7.9", features = ["compat"] }
 tracing-subscriber = "0.3.17"
-tlsn-prover = { git = "https://github.com/tlsnotary/tlsn", branch = "dev" }
 hyper = { version = "0.14", features = ["client", "http1"] }
 serde_json = "1.0.107"
 futures = "0.3.28"

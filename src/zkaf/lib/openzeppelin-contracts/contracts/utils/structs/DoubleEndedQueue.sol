@@ -2,8 +2,6 @@
 // OpenZeppelin Contracts (last updated v5.0.0) (utils/structs/DoubleEndedQueue.sol)
 pragma solidity ^0.8.20;
 
-import {Panic} from "../Panic.sol";
-
 /**
  * @dev A sequence of items with the ability to efficiently push and pop items (i.e. insert and remove) on both ends of
  * the sequence (called front and back). Among other access patterns, it can be used to implement efficient LIFO and
@@ -17,6 +15,21 @@ import {Panic} from "../Panic.sol";
  * ```
  */
 library DoubleEndedQueue {
+    /**
+     * @dev An operation (e.g. {front}) couldn't be completed due to the queue being empty.
+     */
+    error QueueEmpty();
+
+    /**
+     * @dev A push operation couldn't be completed due to the queue being full.
+     */
+    error QueueFull();
+
+    /**
+     * @dev An operation (e.g. {at}) couldn't be completed due to an index being out of bounds.
+     */
+    error QueueOutOfBounds();
+
     /**
      * @dev Indices are 128 bits so begin and end are packed in a single storage slot for efficient access.
      *
@@ -35,12 +48,12 @@ library DoubleEndedQueue {
     /**
      * @dev Inserts an item at the end of the queue.
      *
-     * Reverts with {Panic-RESOURCE_ERROR} if the queue is full.
+     * Reverts with {QueueFull} if the queue is full.
      */
     function pushBack(Bytes32Deque storage deque, bytes32 value) internal {
         unchecked {
             uint128 backIndex = deque._end;
-            if (backIndex + 1 == deque._begin) Panic.panic(Panic.RESOURCE_ERROR);
+            if (backIndex + 1 == deque._begin) revert QueueFull();
             deque._data[backIndex] = value;
             deque._end = backIndex + 1;
         }
@@ -49,12 +62,12 @@ library DoubleEndedQueue {
     /**
      * @dev Removes the item at the end of the queue and returns it.
      *
-     * Reverts with {Panic-EMPTY_ARRAY_POP} if the queue is empty.
+     * Reverts with {QueueEmpty} if the queue is empty.
      */
     function popBack(Bytes32Deque storage deque) internal returns (bytes32 value) {
         unchecked {
             uint128 backIndex = deque._end;
-            if (backIndex == deque._begin) Panic.panic(Panic.EMPTY_ARRAY_POP);
+            if (backIndex == deque._begin) revert QueueEmpty();
             --backIndex;
             value = deque._data[backIndex];
             delete deque._data[backIndex];
@@ -65,12 +78,12 @@ library DoubleEndedQueue {
     /**
      * @dev Inserts an item at the beginning of the queue.
      *
-     * Reverts with {Panic-RESOURCE_ERROR} if the queue is full.
+     * Reverts with {QueueFull} if the queue is full.
      */
     function pushFront(Bytes32Deque storage deque, bytes32 value) internal {
         unchecked {
             uint128 frontIndex = deque._begin - 1;
-            if (frontIndex == deque._end) Panic.panic(Panic.RESOURCE_ERROR);
+            if (frontIndex == deque._end) revert QueueFull();
             deque._data[frontIndex] = value;
             deque._begin = frontIndex;
         }
@@ -79,12 +92,12 @@ library DoubleEndedQueue {
     /**
      * @dev Removes the item at the beginning of the queue and returns it.
      *
-     * Reverts with {Panic-EMPTY_ARRAY_POP} if the queue is empty.
+     * Reverts with `QueueEmpty` if the queue is empty.
      */
     function popFront(Bytes32Deque storage deque) internal returns (bytes32 value) {
         unchecked {
             uint128 frontIndex = deque._begin;
-            if (frontIndex == deque._end) Panic.panic(Panic.EMPTY_ARRAY_POP);
+            if (frontIndex == deque._end) revert QueueEmpty();
             value = deque._data[frontIndex];
             delete deque._data[frontIndex];
             deque._begin = frontIndex + 1;
@@ -94,20 +107,20 @@ library DoubleEndedQueue {
     /**
      * @dev Returns the item at the beginning of the queue.
      *
-     * Reverts with {Panic-ARRAY_OUT_OF_BOUNDS} if the queue is empty.
+     * Reverts with `QueueEmpty` if the queue is empty.
      */
     function front(Bytes32Deque storage deque) internal view returns (bytes32 value) {
-        if (empty(deque)) Panic.panic(Panic.ARRAY_OUT_OF_BOUNDS);
+        if (empty(deque)) revert QueueEmpty();
         return deque._data[deque._begin];
     }
 
     /**
      * @dev Returns the item at the end of the queue.
      *
-     * Reverts with {Panic-ARRAY_OUT_OF_BOUNDS} if the queue is empty.
+     * Reverts with `QueueEmpty` if the queue is empty.
      */
     function back(Bytes32Deque storage deque) internal view returns (bytes32 value) {
-        if (empty(deque)) Panic.panic(Panic.ARRAY_OUT_OF_BOUNDS);
+        if (empty(deque)) revert QueueEmpty();
         unchecked {
             return deque._data[deque._end - 1];
         }
@@ -117,10 +130,10 @@ library DoubleEndedQueue {
      * @dev Return the item at a position in the queue given by `index`, with the first item at 0 and last item at
      * `length(deque) - 1`.
      *
-     * Reverts with {Panic-ARRAY_OUT_OF_BOUNDS} if the index is out of bounds.
+     * Reverts with `QueueOutOfBounds` if the index is out of bounds.
      */
     function at(Bytes32Deque storage deque, uint256 index) internal view returns (bytes32 value) {
-        if (index >= length(deque)) Panic.panic(Panic.ARRAY_OUT_OF_BOUNDS);
+        if (index >= length(deque)) revert QueueOutOfBounds();
         // By construction, length is a uint128, so the check above ensures that index can be safely downcast to uint128
         unchecked {
             return deque._data[deque._begin + uint128(index)];

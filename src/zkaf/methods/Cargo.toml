@@ -13,11 +13,12 @@ risc0-build-ethereum = { workspace = true }
 risc0-zkp = { workspace = true }
 dotenv = { workspace = true }
 
+
 [dev-dependencies]
 alloy-primitives = { workspace = true }
 alloy-sol-types = { workspace = true }
+risc0-zkvm = { workspace = true, features = ["client"] }
 serde = { workspace = true }
 hex = { workspace = true }
-risc0-zkvm = { workspace = true, features = ["client"] }
 serde_json = "1.0.107"
 tlsn-substrings-verifier = { path = "../tlsn-substrings-verifier" }

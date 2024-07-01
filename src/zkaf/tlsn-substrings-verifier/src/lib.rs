@@ -10,6 +10,7 @@ pub mod commitment;
 pub mod merkle;
 pub mod proof;
 pub mod transcript;
+pub mod nft;
 
 use proof::{SessionHeader, SubstringsProof};
 use serde::{Deserialize, Serialize};
@@ -47,10 +48,10 @@ impl EncodingId {
     }
 }
 
-/// The input parameters for teh zk_circuit
+/// The input parameters for the zk_circuit
 ///
 /// Containing the details needed for verification of a proof
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ZkInputParam {
     /// session header.
     pub header: SessionHeader,

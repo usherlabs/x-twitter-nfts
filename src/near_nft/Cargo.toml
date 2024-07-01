@@ -1,0 +1,19 @@
+[profile.release]
+codegen-units = 1
+# Tell `rustc` to optimize for small code size.
+opt-level = "z"
+lto = true
+debug = false
+panic = "abort"
+overflow-checks = true
+
+[workspace]
+# remember to include a member for each contract
+members = [
+  "nft"
+]
+
+# This can be removed when near-sdk is updated
+# Unfortuantely, this crate was yanked by the author and this is needed
+[patch.crates-io]
+parity-secp256k1 = { git = 'https://github.com/paritytech/rust-secp256k1.git' }

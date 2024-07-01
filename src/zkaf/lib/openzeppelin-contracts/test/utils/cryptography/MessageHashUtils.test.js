@@ -1,68 +1,55 @@
-const { ethers } = require('hardhat');
-const { expect } = require('chai');
-const { loadFixture } = require('@nomicfoundation/hardhat-network-helpers');
-
+require('@openzeppelin/test-helpers');
+const { toEthSignedMessageHash, toDataWithIntendedValidatorHash } = require('../../helpers/sign');
 const { domainSeparator, hashTypedData } = require('../../helpers/eip712');
 
-async function fixture() {
-  const mock = await ethers.deployContract('$MessageHashUtils');
-  return { mock };
-}
+const { expect } = require('chai');
 
-describe('MessageHashUtils', function () {
+const MessageHashUtils = artifacts.require('$MessageHashUtils');
+
+contract('MessageHashUtils', function () {
   beforeEach(async function () {
-    Object.assign(this, await loadFixture(fixture));
+    this.messageHashUtils = await MessageHashUtils.new();
+
+    this.message = '0x' + Buffer.from('abcd').toString('hex');
+    this.messageHash = web3.utils.sha3(this.message);
+    this.verifyingAddress = web3.utils.toChecksumAddress(web3.utils.randomHex(20));
   });
 
-  describe('toEthSignedMessageHash', function () {
+  context('toEthSignedMessageHash', function () {
     it('prefixes bytes32 data correctly', async function () {
-      const message = ethers.randomBytes(32);
-      const expectedHash = ethers.hashMessage(message);
-
-      expect(await this.mock.getFunction('$toEthSignedMessageHash(bytes32)')(message)).to.equal(expectedHash);
+      expect(await this.messageHashUtils.methods['$toEthSignedMessageHash(bytes32)'](this.messageHash)).to.equal(
+        toEthSignedMessageHash(this.messageHash),
+      );
     });
 
     it('prefixes dynamic length data correctly', async function () {
-      const message = ethers.randomBytes(128);
-      const expectedHash = ethers.hashMessage(message);
-
-      expect(await this.mock.getFunction('$toEthSignedMessageHash(bytes)')(message)).to.equal(expectedHash);
-    });
-
-    it('version match for bytes32', async function () {
-      const message = ethers.randomBytes(32);
-      const fixed = await this.mock.getFunction('$toEthSignedMessageHash(bytes32)')(message);
-      const dynamic = await this.mock.getFunction('$toEthSignedMessageHash(bytes)')(message);
-
-      expect(fixed).to.equal(dynamic);
-    });
-  });
-
-  describe('toDataWithIntendedValidatorHash', function () {
-    it('returns the digest correctly', async function () {
-      const verifier = ethers.Wallet.createRandom().address;
-      const message = ethers.randomBytes(128);
-      const expectedHash = ethers.solidityPackedKeccak256(
-        ['string', 'address', 'bytes'],
-        ['\x19\x00', verifier, message],
+      expect(await this.messageHashUtils.methods['$toEthSignedMessageHash(bytes)'](this.message)).to.equal(
+        toEthSignedMessageHash(this.message),
       );
-
-      expect(await this.mock.$toDataWithIntendedValidatorHash(verifier, message)).to.equal(expectedHash);
     });
   });
 
-  describe('toTypedDataHash', function () {
+  context('toDataWithIntendedValidatorHash', function () {
+    it('returns the digest correctly', async function () {
+      expect(
+        await this.messageHashUtils.$toDataWithIntendedValidatorHash(this.verifyingAddress, this.message),
+      ).to.equal(toDataWithIntendedValidatorHash(this.verifyingAddress, this.message));
+    });
+  });
+
+  context('toTypedDataHash', function () {
     it('returns the digest correctly', async function () {
       const domain = {
         name: 'Test',
-        version: '1',
-        chainId: 1n,
-        verifyingContract: ethers.Wallet.createRandom().address,
+        version: 1,
+        chainId: 1,
+        verifyingContract: this.verifyingAddress,
       };
-      const structhash = ethers.randomBytes(32);
-      const expectedHash = hashTypedData(domain, structhash);
-
-      expect(await this.mock.$toTypedDataHash(domainSeparator(domain), structhash)).to.equal(expectedHash);
+      const structhash = web3.utils.randomHex(32);
+      const expectedDomainSeparator = await domainSeparator(domain);
+      expect(await this.messageHashUtils.$toTypedDataHash(expectedDomainSeparator, structhash)).to.equal(
+        hashTypedData(domain, structhash),
+      );
     });
   });
 });

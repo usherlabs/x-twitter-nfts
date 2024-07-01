@@ -1,5 +1,5 @@
 function Enum(...options) {
-  return Object.fromEntries(options.map((key, i) => [key, BigInt(i)]));
+  return Object.fromEntries(options.map((key, i) => [key, web3.utils.toBN(i)]));
 }
 
 module.exports = {
@@ -8,5 +8,4 @@ module.exports = {
   VoteType: Enum('Against', 'For', 'Abstain'),
   Rounding: Enum('Floor', 'Ceil', 'Trunc', 'Expand'),
   OperationState: Enum('Unset', 'Waiting', 'Ready', 'Done'),
-  RevertType: Enum('None', 'RevertWithoutMessage', 'RevertWithMessage', 'RevertWithCustomError', 'Panic'),
 };

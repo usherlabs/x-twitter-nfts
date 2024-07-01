@@ -1,22 +1,62 @@
+use near_contract_standards::non_fungible_token::{Token, TokenId};
 use near_jsonrpc_client::methods::tx::RpcTransactionResponse;
 use near_jsonrpc_client::{methods, JsonRpcClient};
 use near_jsonrpc_primitives::types::query::QueryResponseKind;
 use near_jsonrpc_primitives::types::transactions::{RpcTransactionError, TransactionInfo};
 use near_primitives::transaction::{Action, FunctionCallAction, Transaction};
-use near_primitives::types::BlockReference;
-use near_primitives::views::TxExecutionStatus;
+use near_primitives::types::{AccountId, BlockReference, Finality, FunctionArgs};
+use near_primitives::views::{QueryRequest, TxExecutionStatus};
+use near_contract_standards::non_fungible_token::metadata::TokenMetadata;
 
 use serde_json::json;
 use tokio::time;
-
+use serde_json::from_slice;
 use std::env;
 
+// TODO
+// ----- write a function to fetch/query the NFT contract 
+// make the contract call fail when it actually fails
+// fix twitter verifier
+// conjoin all the code in one repo
+// clean up all code
 
-pub async fn verify_near_proof(journal_output: Vec<u8>) -> Result<RpcTransactionResponse, Box<dyn std::error::Error>> {
+// monday potentially: close out tickets
+pub async fn get_nft_by_id(token_id: TokenId) -> Result<Token, Box<dyn std::error::Error>> {
     let rpc_url = env::var("NEAR_RPC_URL").expect("RPC_URL_NOT_PRESENT");
-    let account_id = env::var("NEAR_ACCOUNT_ID").expect("ACCOUNT_ID_NOT_PRESENT");
+    let contract_account_id = env::var("NEAR_NFT_CONTRACT_ACCOUNT_ID").expect("CONTRACT_ACCOUNT_ID_NOT_PRESENT");
+
+    let client = JsonRpcClient::connect(rpc_url);
+
+    let request = methods::query::RpcQueryRequest {
+        block_reference: BlockReference::Finality(Finality::Final),
+        request: QueryRequest::CallFunction {
+            account_id: contract_account_id.parse()?,
+            method_name: "nft_token".to_string(),
+            args: FunctionArgs::from(
+                json!({
+                    "token_id": token_id,
+                })
+                .to_string()
+                .into_bytes(),
+            ),
+        },
+    };
+
+    let response = client.call(request).await.unwrap();
+
+    if let QueryResponseKind::CallResult(result) = response.kind {
+        let token = from_slice::<Option<Token>>(&result.result).unwrap();
+        return Ok(token.unwrap());
+    }else {
+        Err("INVALID RESPONSE".into())
+    }
+}
+
+pub async fn verify_near_proof(journal_output: Vec<u8>, token_metadata: TokenMetadata) -> Result<RpcTransactionResponse, Box<dyn std::error::Error>> {
+    let rpc_url = env::var("NEAR_RPC_URL").expect("RPC_URL_NOT_PRESENT");
+    let account_id = env::var("NEAR_SIGNER_ACCOUNT_ID").expect("ACCOUNT_ID_NOT_PRESENT");
     let secret_key = env::var("NEAR_ACCOUNT_SECRET_KEY").expect("SECRET_KEY_NOT_PRESENT");
-    let contract_account_id = env::var("NEAR_CONTRACT_ACCOUNT_ID").expect("CONTRACT_ACCOUNT_ID_NOT_PRESENT");
+    let contract_account_id = env::var("NEAR_VERIFIER_CONTRACT_ACCOUNT_ID").expect("CONTRACT_ACCOUNT_ID_NOT_PRESENT");
     
     let signer_account_id: near_primitives::types::AccountId = account_id.parse()?;
     let signer_secret_key: near_crypto::SecretKey = secret_key.parse()?;
@@ -49,7 +89,8 @@ pub async fn verify_near_proof(journal_output: Vec<u8>) -> Result<RpcTransaction
         actions: vec![Action::FunctionCall(Box::new(FunctionCallAction {
             method_name: "verify_proof".to_string(),
             args: json!({
-                "journal_output": journal_output,
+                "journal": journal_output,
+                "token_metadata": token_metadata
             })
             .to_string()
             .into_bytes(),

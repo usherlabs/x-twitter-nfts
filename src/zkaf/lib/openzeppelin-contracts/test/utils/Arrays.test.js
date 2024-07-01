@@ -1,218 +1,123 @@
-const { ethers } = require('hardhat');
+require('@openzeppelin/test-helpers');
+
 const { expect } = require('chai');
-const { loadFixture } = require('@nomicfoundation/hardhat-network-helpers');
 
-const { generators } = require('../helpers/random');
+const AddressArraysMock = artifacts.require('AddressArraysMock');
+const Bytes32ArraysMock = artifacts.require('Bytes32ArraysMock');
+const Uint256ArraysMock = artifacts.require('Uint256ArraysMock');
 
-// See https://en.cppreference.com/w/cpp/algorithm/lower_bound
-const lowerBound = (array, value) => {
-  const i = array.findIndex(element => value <= element);
-  return i == -1 ? array.length : i;
-};
+contract('Arrays', function () {
+  describe('findUpperBound', function () {
+    context('Even number of elements', function () {
+      const EVEN_ELEMENTS_ARRAY = [11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
 
-// See https://en.cppreference.com/w/cpp/algorithm/upper_bound
-const upperBound = (array, value) => {
-  const i = array.findIndex(element => value < element);
-  return i == -1 ? array.length : i;
-};
+      beforeEach(async function () {
+        this.arrays = await Uint256ArraysMock.new(EVEN_ELEMENTS_ARRAY);
+      });
 
-const bigintSign = x => (x > 0n ? 1 : x < 0n ? -1 : 0);
-const hasDuplicates = array => array.some((v, i) => array.indexOf(v) != i);
+      it('returns correct index for the basic case', async function () {
+        expect(await this.arrays.findUpperBound(16)).to.be.bignumber.equal('5');
+      });
 
-describe('Arrays', function () {
-  const fixture = async () => {
-    return { mock: await ethers.deployContract('$Arrays') };
-  };
+      it('returns 0 for the first element', async function () {
+        expect(await this.arrays.findUpperBound(11)).to.be.bignumber.equal('0');
+      });
 
-  beforeEach(async function () {
-    Object.assign(this, await loadFixture(fixture));
+      it('returns index of the last element', async function () {
+        expect(await this.arrays.findUpperBound(20)).to.be.bignumber.equal('9');
+      });
+
+      it('returns first index after last element if searched value is over the upper boundary', async function () {
+        expect(await this.arrays.findUpperBound(32)).to.be.bignumber.equal('10');
+      });
+
+      it('returns 0 for the element under the lower boundary', async function () {
+        expect(await this.arrays.findUpperBound(2)).to.be.bignumber.equal('0');
+      });
+    });
+
+    context('Odd number of elements', function () {
+      const ODD_ELEMENTS_ARRAY = [11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
+
+      beforeEach(async function () {
+        this.arrays = await Uint256ArraysMock.new(ODD_ELEMENTS_ARRAY);
+      });
+
+      it('returns correct index for the basic case', async function () {
+        expect(await this.arrays.findUpperBound(16)).to.be.bignumber.equal('5');
+      });
+
+      it('returns 0 for the first element', async function () {
+        expect(await this.arrays.findUpperBound(11)).to.be.bignumber.equal('0');
+      });
+
+      it('returns index of the last element', async function () {
+        expect(await this.arrays.findUpperBound(21)).to.be.bignumber.equal('10');
+      });
+
+      it('returns first index after last element if searched value is over the upper boundary', async function () {
+        expect(await this.arrays.findUpperBound(32)).to.be.bignumber.equal('11');
+      });
+
+      it('returns 0 for the element under the lower boundary', async function () {
+        expect(await this.arrays.findUpperBound(2)).to.be.bignumber.equal('0');
+      });
+    });
+
+    context('Array with gap', function () {
+      const WITH_GAP_ARRAY = [11, 12, 13, 14, 15, 20, 21, 22, 23, 24];
+
+      beforeEach(async function () {
+        this.arrays = await Uint256ArraysMock.new(WITH_GAP_ARRAY);
+      });
+
+      it('returns index of first element in next filled range', async function () {
+        expect(await this.arrays.findUpperBound(17)).to.be.bignumber.equal('5');
+      });
+    });
+
+    context('Empty array', function () {
+      beforeEach(async function () {
+        this.arrays = await Uint256ArraysMock.new([]);
+      });
+
+      it('always returns 0 for empty array', async function () {
+        expect(await this.arrays.findUpperBound(10)).to.be.bignumber.equal('0');
+      });
+    });
   });
 
-  describe('search', function () {
-    for (const [title, { array, tests }] of Object.entries({
-      'Even number of elements': {
-        array: [11n, 12n, 13n, 14n, 15n, 16n, 17n, 18n, 19n, 20n],
-        tests: {
-          'basic case': 16n,
-          'first element': 11n,
-          'last element': 20n,
-          'searched value is over the upper boundary': 32n,
-          'searched value is under the lower boundary': 2n,
-        },
+  describe('unsafeAccess', function () {
+    for (const { type, artifact, elements } of [
+      {
+        type: 'address',
+        artifact: AddressArraysMock,
+        elements: Array(10)
+          .fill()
+          .map(() => web3.utils.randomHex(20)),
       },
-      'Odd number of elements': {
-        array: [11n, 12n, 13n, 14n, 15n, 16n, 17n, 18n, 19n, 20n, 21n],
-        tests: {
-          'basic case': 16n,
-          'first element': 11n,
-          'last element': 21n,
-          'searched value is over the upper boundary': 32n,
-          'searched value is under the lower boundary': 2n,
-        },
+      {
+        type: 'bytes32',
+        artifact: Bytes32ArraysMock,
+        elements: Array(10)
+          .fill()
+          .map(() => web3.utils.randomHex(32)),
       },
-      'Array with gap': {
-        array: [11n, 12n, 13n, 14n, 15n, 20n, 21n, 22n, 23n, 24n],
-        tests: {
-          'search value in gap': 17n,
-        },
+      {
+        type: 'uint256',
+        artifact: Uint256ArraysMock,
+        elements: Array(10)
+          .fill()
+          .map(() => web3.utils.randomHex(32)),
       },
-      'Array with duplicated elements': {
-        array: [0n, 10n, 10n, 10n, 10n, 10n, 10n, 10n, 20n],
-        tests: {
-          'search value is duplicated': 10n,
-        },
-      },
-      'Array with duplicated first element': {
-        array: [10n, 10n, 10n, 10n, 10n, 10n, 10n, 20n],
-        tests: {
-          'search value is duplicated first element': 10n,
-        },
-      },
-      'Array with duplicated last element': {
-        array: [0n, 10n, 10n, 10n, 10n, 10n, 10n, 10n],
-        tests: {
-          'search value is duplicated last element': 10n,
-        },
-      },
-      'Empty array': {
-        array: [],
-        tests: {
-          'always returns 0 for empty array': 10n,
-        },
-      },
-    })) {
-      describe(title, function () {
-        const fixture = async () => {
-          return { instance: await ethers.deployContract('Uint256ArraysMock', [array]) };
-        };
+    ]) {
+      it(type, async function () {
+        const contract = await artifact.new(elements);
 
-        beforeEach(async function () {
-          Object.assign(this, await loadFixture(fixture));
-        });
-
-        for (const [name, input] of Object.entries(tests)) {
-          describe(name, function () {
-            it('[deprecated] findUpperBound', async function () {
-              // findUpperBound does not support duplicated
-              if (hasDuplicates(array)) {
-                expect(await this.instance.findUpperBound(input)).to.equal(upperBound(array, input) - 1);
-              } else {
-                expect(await this.instance.findUpperBound(input)).to.equal(lowerBound(array, input));
-              }
-            });
-
-            it('lowerBound', async function () {
-              expect(await this.instance.lowerBound(input)).to.equal(lowerBound(array, input));
-              expect(await this.instance.lowerBoundMemory(array, input)).to.equal(lowerBound(array, input));
-            });
-
-            it('upperBound', async function () {
-              expect(await this.instance.upperBound(input)).to.equal(upperBound(array, input));
-              expect(await this.instance.upperBoundMemory(array, input)).to.equal(upperBound(array, input));
-            });
-          });
+        for (const i in elements) {
+          expect(await contract.unsafeAccess(i)).to.be.bignumber.equal(elements[i]);
         }
       });
     }
   });
-
-  for (const [type, { artifact, elements, comp }] of Object.entries({
-    address: {
-      artifact: 'AddressArraysMock',
-      elements: Array.from({ length: 10 }, generators.address),
-      comp: (a, b) => bigintSign(ethers.toBigInt(a) - ethers.toBigInt(b)),
-    },
-    bytes32: {
-      artifact: 'Bytes32ArraysMock',
-      elements: Array.from({ length: 10 }, generators.bytes32),
-      comp: (a, b) => bigintSign(ethers.toBigInt(a) - ethers.toBigInt(b)),
-    },
-    uint256: {
-      artifact: 'Uint256ArraysMock',
-      elements: Array.from({ length: 10 }, generators.uint256),
-      comp: (a, b) => bigintSign(a - b),
-    },
-  })) {
-    describe(type, function () {
-      const fixture = async () => {
-        return { instance: await ethers.deployContract(artifact, [elements]) };
-      };
-
-      beforeEach(async function () {
-        Object.assign(this, await loadFixture(fixture));
-      });
-
-      describe('sort', function () {
-        for (const length of [0, 1, 2, 8, 32, 128]) {
-          describe(`${type}[] of length ${length}`, function () {
-            beforeEach(async function () {
-              this.elements = Array.from({ length }, generators[type]);
-            });
-
-            afterEach(async function () {
-              const expected = Array.from(this.elements).sort(comp);
-              const reversed = Array.from(expected).reverse();
-              expect(await this.instance.sort(this.elements)).to.deep.equal(expected);
-              expect(await this.instance.sortReverse(this.elements)).to.deep.equal(reversed);
-            });
-
-            it('sort array', async function () {
-              // nothing to do here, beforeEach and afterEach already take care of everything.
-            });
-
-            if (length > 1) {
-              it('sort array for identical elements', async function () {
-                // duplicate the first value to all elements
-                this.elements.fill(this.elements.at(0));
-              });
-
-              it('sort already sorted array', async function () {
-                // pre-sort the elements
-                this.elements.sort(comp);
-              });
-
-              it('sort reversed array', async function () {
-                // pre-sort in reverse order
-                this.elements.sort(comp).reverse();
-              });
-
-              it('sort almost sorted array', async function () {
-                // pre-sort + rotate (move the last element to the front) for an almost sorted effect
-                this.elements.sort(comp);
-                this.elements.unshift(this.elements.pop());
-              });
-            }
-          });
-        }
-      });
-
-      describe('unsafeAccess', function () {
-        describe('storage', function () {
-          for (const i in elements) {
-            it(`unsafeAccess within bounds #${i}`, async function () {
-              expect(await this.instance.unsafeAccess(i)).to.equal(elements[i]);
-            });
-          }
-
-          it('unsafeAccess outside bounds', async function () {
-            await expect(this.instance.unsafeAccess(elements.length)).to.not.be.rejected;
-          });
-        });
-
-        describe('memory', function () {
-          const fragment = `$unsafeMemoryAccess(${type}[] arr, uint256 pos)`;
-
-          for (const i in elements) {
-            it(`unsafeMemoryAccess within bounds #${i}`, async function () {
-              expect(await this.mock[fragment](elements, i)).to.equal(elements[i]);
-            });
-          }
-
-          it('unsafeMemoryAccess outside bounds', async function () {
-            await expect(this.mock[fragment](elements, elements.length)).to.not.be.rejected;
-          });
-        });
-      });
-    });
-  }
 });

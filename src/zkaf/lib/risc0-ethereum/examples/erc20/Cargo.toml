@@ -3,21 +3,21 @@ resolver = "2"
 members = ["host", "methods"]
 
 [workspace.dependencies]
-alloy-primitives = { version = "0.6.4", features = ["serde", "rlp", "std"] }
+alloy-primitives = { version = "0.7", features = ["serde", "rlp", "std"] }
 alloy-rlp = { version = "0.3.4", default-features = false }
 alloy-rlp-derive = { version = "0.3.4", default-features = false }
-alloy-sol-types = { version = "0.6.4" }
+alloy-sol-types = { version = "0.7" }
 anyhow = "1.0"
 clap = { version = "4.4", features = ["derive", "env"] }
 ethers-core = "2.0"
 ethers-providers = "2.0"
 log = "0.4"
-methods = { path = "methods" }
+erc20-methods = { path = "methods" }
 nybbles = { version = "0.2.1", features = ["serde"] }
 once_cell = "1.19"
-revm = { version = "7.2", default-features = false, features = ["std"] }
-risc0-ethereum-view-call = { path = "../../view-call" }
-risc0-zkvm = { version = "0.21.0", default-features = false }
+revm = { version = "9.0", default-features = false, features = ["std"] }
+risc0-steel = { path = "../../steel" }
+risc0-zkvm = { version = "1.0", default-features = false }
 rlp = "0.5.2"
 serde = "1.0"
 thiserror = "1.0"

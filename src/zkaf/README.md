@@ -1,16 +1,12 @@
 # RISC Zero Foundry Template
 
-> **Note: This software is not production ready. Do not use in production.**
+> Prove computation with the [RISC Zero zkVM] and verify the results in your Ethereum contract.
 
-> Note: This template was recently updated to work without the relay.
-> If you'd like the relay version, head over to the [relay branch](https://github.com/risc0/bonsai-foundry-template/tree/relay)
+This repository implements an example application on Ethereum utilizing RISC Zero as a [coprocessor] to the smart contract application.
+It provides a starting point for building powerful new applications on Ethereum that offload work that is computationally intensive (i.e. gas expensive), or difficult to implement in Solidity (e.g. ed25519 signature verification, or HTML parsing).
 
-Starter template for writing an application using [RISC Zero] and Ethereum.
-
-This repository implements an application on Ethereum utilizing RISC Zero as a [coprocessor] to the smart contract application.
-It provides a starting point for building powerful new applications on Ethereum that offload computationally intensive (i.e. gas expensive), or would be difficult to implement Solidity (e.g. ed25519 signature verification, or HTML parsing).
-
-Prove computation with the [RISC Zero zkVM] and verify the results in your Ethereum contract.
+<!-- TODO(#100) Integrate support for Steel more directly into this repo -->
+Integrate with [Steel][steel-repo] to execute view calls and simulate transactions on Ethereum. Check out the [ERC-20 counter][erc20-counter] demo to see an example.
 
 ## Overview
 
@@ -95,19 +91,27 @@ Your new project consists of:
   RISC0_DEV_MODE=true forge test -vvv 
   ```
 
+- Run the same tests, with the full zkVM prover rather than dev-mode, by setting `RISC0_DEV_MODE=false`.
+
+  ```sh
+  RISC0_DEV_MODE=false forge test -vvv
+  ```
+
+  Producing the [Groth16 SNARK proofs][Groth16] for this test requires running on an x86 machine with [Docker] installed, or using [Bonsai](#configuring-bonsai). Apple silicon is currently unsupported for local proving, you can find out more info in the relevant issues [here](https://github.com/risc0/risc0/issues/1520) and [here](https://github.com/risc0/risc0/issues/1749). 
+
 ## Develop Your Application
 
-To build your application, you'll need to make changes in three folders:
+To build your application using the RISC Zero Foundry Template, you’ll need to make changes in three main areas:
 
-- write the code you want proven in the [methods/guest](./methods/guest/) folder.
-- write the on-chain part of your project in the [contracts](./contracts/) folder.
-- adjust the publisher example in the [apps](./apps/) folder.
+- ***Guest Code***: Write the code you want proven in the [methods/guest](./methods/guest/) folder. This code runs off-chain within the RISC Zero zkVM and performs the actual computations. For example, the provided template includes a computation to check if a given number is even and generate a proof of this computation.
+- ***Smart Contracts***: Write the on-chain part of your project in the [contracts](./contracts/) folder. The smart contract verifies zkVM proofs and updates the blockchain state based on the results of off-chain computations. For instance, in the [EvenNumber](./contracts/EvenNumber.sol) example, the smart contract verifies a proof that a number is even and stores that number on-chain if the proof is valid.
+- ***Publisher Application***: Adjust the publisher example in the [apps](./apps/) folder. The publisher application bridges off-chain computation with on-chain verification by submitting proof requests, receiving proofs, and publishing them to the smart contract on Ethereum.
 
 ### Configuring Bonsai
 
 ***Note:*** *To request an API key [complete the form here](https://bonsai.xyz/apply).*
 
-With the Bonsai proving service, you can produce a [Groth16 SNARK proof] that is verifiable on-chain.
+With the Bonsai proving service, you can produce a [Groth16 SNARK proof][Groth16] that is verifiable on-chain.
 You can get started by setting the following environment variables with your API key and associated URL.
 
 ```bash
@@ -130,11 +134,11 @@ The [image ID][image-id], and its importance to security, is explained in more d
 RISC0_USE_DOCKER=1 cargo build
 ```
 
-> ***Note:*** *This requires having Docker installed and in your PATH. To install Docker see [Get Docker].*
+> ***Note:*** *This requires having Docker installed and in your PATH. To install Docker see [Get Docker][Docker].*
 
 ## Deploy Your Application
 
-When you're ready, follow the [deployment guide] to get your application running on [Sepolia].
+When you're ready, follow the [deployment guide] to get your application running on [Sepolia] or Ethereum Mainnet.
 
 ## Project Structure
 
@@ -169,8 +173,8 @@ Below are the primary files in the project directory
 
 [Bonsai]: https://dev.bonsai.xyz/
 [Foundry]: https://getfoundry.sh/
-[Get Docker]: https://docs.docker.com/get-docker/
-[Groth16 SNARK proof]: https://www.risczero.com/news/on-chain-verification
+[Docker]: https://docs.docker.com/get-docker/
+[Groth16]: https://www.risczero.com/news/on-chain-verification
 [RISC Zero Verifier]: https://github.com/risc0/risc0/blob/release-0.21/bonsai/ethereum/contracts/IRiscZeroVerifier.sol
 [RISC Zero installation]: https://dev.risczero.com/api/zkvm/install
 [RISC Zero zkVM]: https://dev.risczero.com/zkvm
@@ -186,3 +190,5 @@ Below are the primary files in the project directory
 [journal]: https://dev.risczero.com/terminology#journal
 [publisher]: ./apps/README.md
 [zkVM program]: ./methods/guest/
+[steel-repo]: https://github.com/risc0/risc0-ethereum/tree/main/steel
+[erc20-counter]: https://github.com/risc0/risc0-ethereum/tree/main/examples/erc20-counter
