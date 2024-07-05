@@ -1,0 +1,14 @@
+{
+    "rust-analyzer.linkedProjects": [
+        "./src/near_nft/Cargo.toml",
+        "./src/near_verifier/contract/Cargo.toml",
+        "./src/near_verifier/integration-tests/Cargo.toml",
+        "./src/notary/Cargo.toml",
+        "./src/twitter/Cargo.toml",
+        "./src/verifier/Cargo.toml",
+        "./src/zkaf/Cargo.toml",
+    ],
+    "rust-analyzer.check.extraEnv": {
+        "RISC0_SKIP_BUILD": "1",
+    }
+}

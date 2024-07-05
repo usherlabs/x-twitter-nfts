@@ -30,10 +30,14 @@ pub struct VerifierProxy {
 impl VerifierProxy {
 
     #[init]
-    pub fn init(contract_address: String, nft_account_id: AccountId) -> Self {
+    pub fn init(
+        aurora: AccountId, //this can be safely set to "aurora"
+        contract_address: String,
+        nft_account_id: AccountId
+    ) -> Self {
         Self {
             // This value only needs to be changed if you are running the aurora testnet locally
-            aurora:  "aurora".parse().unwrap(),
+            aurora,
             contract_address: aurora_sdk::parse_address(&contract_address).unwrap(),
             nft_account_id
         }

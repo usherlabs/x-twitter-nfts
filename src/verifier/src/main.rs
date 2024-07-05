@@ -1,4 +1,4 @@
-use std::{str, time::Duration};
+use std::str;
 
 use elliptic_curve::pkcs8::DecodePublicKey;
 

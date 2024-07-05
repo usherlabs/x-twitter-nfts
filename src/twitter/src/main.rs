@@ -3,7 +3,7 @@
 // The example uses the notary server implemented in ../../../notary/server
 
 use http_body_util::{BodyExt, Empty};
-use hyper::{body::{Body, Bytes}, Method, Request, StatusCode};
+use hyper::{body::Bytes, Method, Request, StatusCode};
 use hyper_util::rt::TokioIo;
 use notary_client::{Accepted, NotarizationRequest, NotaryClient};
 use std::{collections::HashMap, env, str};
@@ -15,8 +15,6 @@ use tracing::debug;
 
 // Setting of the application server
 const SERVER_DOMAIN: &str = "api.twitter.com";
-const ROUTE: &str = "i/api/1.1/dm/conversation";
-const USER_AGENT: &str = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36";
 
 // Setting of the notary server — make sure these are the same with the config in ../../../notary/server
 const NOTARY_HOST: &str = "127.0.0.1";
