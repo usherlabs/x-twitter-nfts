@@ -114,7 +114,6 @@ impl VerifierProxy {
                         token_metadata.clone(),
                     )
                     .then(
-                        // Create a callback change_greeting_callback
                         Self::ext(env::current_account_id())
                         .with_static_gas(Gas(5_000_000_000_000))
                         .nft_creation_callback(),
