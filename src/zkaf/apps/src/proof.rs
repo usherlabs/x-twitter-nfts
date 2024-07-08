@@ -21,7 +21,6 @@ pub fn generate_groth16_proof(zk_inputs: ZkInputParam) -> (Vec<u8>,Vec<u8>){
         ).unwrap()
         .receipt;
 
-    
     // // Encode the seal with the selector.
     let seal = groth16::encode(receipt.inner.groth16().unwrap().seal.clone()).unwrap();
 

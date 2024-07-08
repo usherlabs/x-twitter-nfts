@@ -35,3 +35,4 @@ near-primitives = "0.21.1"
 near-chain-configs = "0.21.1"
 near-jsonrpc-primitives = "0.21.1"
 near-contract-standards = "4.1.1"
+dotenv = { workspace = true }

@@ -362,6 +362,7 @@ dependencies = [
  "alloy-sol-types 0.6.4",
  "anyhow",
  "clap",
+ "dotenv",
  "env_logger",
  "ethers",
  "hex",

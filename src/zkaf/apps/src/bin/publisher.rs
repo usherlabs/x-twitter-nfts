@@ -7,9 +7,11 @@ use apps::{aurora::TxSender, near::{get_nft_by_id, verify_near_proof}, proof::ge
 use tlsn_substrings_verifier::{nft::{generate_tweet_nft_payload, get_http_payload}, ZkInputParam};
 use sha256::digest;
 
+use dotenv;
 
 fn main() -> Result<()> {
     env_logger::init();
+    dotenv::dotenv().ok();
 
     println!("Proof generation process started");
     // read in the input parameter fom the processed json which contains the substrings
@@ -20,7 +22,7 @@ fn main() -> Result<()> {
     // generate the NFT payload
     let (_request, response) = get_http_payload(proof_params.clone());
     let (nft_payload, stringified_nft_payload) = generate_tweet_nft_payload(response);
-    
+
     // generate the proof and journal output
     let (seal, journal_output) = generate_groth16_proof(proof_params);
     let hex_encoded_journal_output = hex::encode(&journal_output);
@@ -43,7 +45,7 @@ fn main() -> Result<()> {
     let aurora_tx_response = runtime.block_on(aurora_tx_future).unwrap();
     println!("Aurora transation has been verified with response: {:?}\n", aurora_tx_response);
 
-    // perform verification near 
+    // perform verification near
     // mint NFT if near verification is successfull
     let near_tx_future = verify_near_proof(journal_output, nft_payload.clone());
     let near_tx_response = runtime.block_on(near_tx_future).unwrap();
