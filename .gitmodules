@@ -1,3 +1,0 @@
-[submodule "src/verity"]
-	path = src/verity
-	url = https://github.com/usherlabs/verity
