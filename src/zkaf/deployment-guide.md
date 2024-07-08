@@ -18,6 +18,18 @@ forge build
 forge test
 ```
 
+### Verifying the build
+
+After building the project, the image ID must be verified to ensure that the same proof is generated across multiple systems for this repository.
+
+The file `contracts/ImageID.sol` should match the following identifier following a succesfull build.
+
+```solidity
+library ImageID {
+    bytes32 public constant VERIFY_ID = bytes32(0xa68e16e0815455b36f043963fab7bc701e57e81876d0181e7a02d5d0faac1b23);
+}
+```
+
 ### Deploying the contract
 
 ```jsx
