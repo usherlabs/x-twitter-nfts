@@ -1,6 +1,11 @@
 const format = require('../format-lines');
 const { fromBytes32, toBytes32 } = require('./conversion');
-const { TYPES } = require('./EnumerableSet.opts');
+
+const TYPES = [
+  { name: 'Bytes32Set', type: 'bytes32' },
+  { name: 'AddressSet', type: 'address' },
+  { name: 'UintSet', type: 'uint256' },
+];
 
 /* eslint-disable max-len */
 const header = `\

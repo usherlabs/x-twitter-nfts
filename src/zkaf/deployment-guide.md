@@ -18,6 +18,18 @@ forge build
 forge test
 ```
 
+### Verifying the build
+
+After building the project, the image ID must be verified to ensure that the same proof is generated across multiple systems for this repository.
+
+The file `contracts/ImageID.sol` should match the following identifier following a succesfull build.
+
+```solidity
+library ImageID {
+    bytes32 public constant VERIFY_ID = bytes32(0xa68e16e0815455b36f043963fab7bc701e57e81876d0181e7a02d5d0faac1b23);
+}
+```
+
 ### Deploying the contract
 
 ```jsx
@@ -39,9 +51,10 @@ export EVM_VERIFIER_CONTRACT=0xa4015D18436d266074eC43bb9D2f8DfBAb2a45D5
 
 # NEAR parameters
 export NEAR_RPC_URL="https://rpc.testnet.near.org"
-export NEAR_ACCOUNT_ID="zkaf.testnet"
+export NEAR_SIGNER_ACCOUNT_ID="local-verifier.testnet"
 export NEAR_ACCOUNT_SECRET_KEY=""
-export NEAR_CONTRACT_ACCOUNT_ID="zkaf.testnet"
+export NEAR_VERIFIER_CONTRACT_ACCOUNT_ID="local-verifier.testnet"
+export NEAR_NFT_CONTRACT_ACCOUNT_ID="local-nft.testnet"
 
 # BONSAI parameters
 export BONSAI_API_KEY="" # provided with your api key

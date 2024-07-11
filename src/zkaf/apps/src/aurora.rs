@@ -1,4 +1,3 @@
-use alloy_primitives::FixedBytes;
 use ethers::prelude::*;
 use anyhow::Result;
 use alloy_sol_types::{sol, SolInterface};
@@ -8,17 +7,15 @@ use std::env;
 // `IVerifier` interface automatically generated via the alloy `sol!` macro.
 sol! {
     interface IVerifier {
-        function verify_proof(bytes memory journal_output, bytes32 post_state_digest, bytes calldata seal);
+        function verify_proof(bytes memory journal_output, bytes calldata seal);
     }
 }
-
 
 pub struct TxSender {
     chain_id: u64,
     client: SignerMiddleware<Provider<Http>, Wallet<k256::ecdsa::SigningKey>>,
     contract: Address,
 }
-
 
 impl TxSender {
     /// Creates a default `TxSender`.
@@ -27,7 +24,7 @@ impl TxSender {
         let rpc_url = env::var("EVM_RPC_URL").expect("EVM_RPC_URL_NOT_PRESENT");
         let private_key = env::var("ETH_WALLET_PRIVATE_KEY").expect("ETH_WALLET_PRIVATE_KEY_NOT_PRESENT");
         let contract_address = env::var("EVM_VERIFIER_CONTRACT").expect("EVM_VERIFIER_CONTRACT_NOT_PRESENT");
-        
+        println!("contract_address:{}", contract_address);
         return Self::new(chain_id, &rpc_url, &private_key, &contract_address).unwrap()
     }
 
@@ -63,10 +60,9 @@ impl TxSender {
     }
 
     /// verify a snark on aurora
-    pub async fn verify_proof_on_aurora(&self, journal_output: Vec<u8>, post_state_digest: FixedBytes<32>, seal: Vec<u8>)-> Option<TransactionReceipt>{
+    pub async fn verify_proof_on_aurora(&self, journal_output: Vec<u8>, seal: Vec<u8>)-> Option<TransactionReceipt>{
         let calldata = IVerifier::IVerifierCalls::verify_proof(IVerifier::verify_proofCall {
             journal_output: journal_output,
-            post_state_digest,
             seal,
         })
         .abi_encode();

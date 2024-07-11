@@ -4,12 +4,12 @@
 pragma solidity ^0.8.20;
 
 import {IERC20} from "../IERC20.sol";
-import {IERC1363} from "../../../interfaces/IERC1363.sol";
+import {IERC20Permit} from "../extensions/IERC20Permit.sol";
 import {Address} from "../../../utils/Address.sol";
 
 /**
  * @title SafeERC20
- * @dev Wrappers around ERC-20 operations that throw on failure (when the token
+ * @dev Wrappers around ERC20 operations that throw on failure (when the token
  * contract returns false). Tokens that return no value (and instead revert or
  * throw on failure) are also supported, non-reverting calls are assumed to be
  * successful.
@@ -20,7 +20,7 @@ library SafeERC20 {
     using Address for address;
 
     /**
-     * @dev An operation with an ERC-20 token failed.
+     * @dev An operation with an ERC20 token failed.
      */
     error SafeERC20FailedOperation(address token);
 
@@ -79,61 +79,6 @@ library SafeERC20 {
         if (!_callOptionalReturnBool(token, approvalCall)) {
             _callOptionalReturn(token, abi.encodeCall(token.approve, (spender, 0)));
             _callOptionalReturn(token, approvalCall);
-        }
-    }
-
-    /**
-     * @dev Performs an {ERC1363} transferAndCall, with a fallback to the simple {ERC20} transfer if the target has no
-     * code. This can be used to implement an {ERC721}-like safe transfer that rely on {ERC1363} checks when
-     * targeting contracts.
-     *
-     * Reverts if the returned value is other than `true`.
-     */
-    function transferAndCallRelaxed(IERC1363 token, address to, uint256 value, bytes memory data) internal {
-        if (to.code.length == 0) {
-            safeTransfer(token, to, value);
-        } else if (!token.transferAndCall(to, value, data)) {
-            revert SafeERC20FailedOperation(address(token));
-        }
-    }
-
-    /**
-     * @dev Performs an {ERC1363} transferFromAndCall, with a fallback to the simple {ERC20} transferFrom if the target
-     * has no code. This can be used to implement an {ERC721}-like safe transfer that rely on {ERC1363} checks when
-     * targeting contracts.
-     *
-     * Reverts if the returned value is other than `true`.
-     */
-    function transferFromAndCallRelaxed(
-        IERC1363 token,
-        address from,
-        address to,
-        uint256 value,
-        bytes memory data
-    ) internal {
-        if (to.code.length == 0) {
-            safeTransferFrom(token, from, to, value);
-        } else if (!token.transferFromAndCall(from, to, value, data)) {
-            revert SafeERC20FailedOperation(address(token));
-        }
-    }
-
-    /**
-     * @dev Performs an {ERC1363} approveAndCall, with a fallback to the simple {ERC20} approve if the target has no
-     * code. This can be used to implement an {ERC721}-like safe transfer that rely on {ERC1363} checks when
-     * targeting contracts.
-     *
-     * NOTE: When the recipient address (`to`) has no code (i.e. is an EOA), this function behaves as {forceApprove}.
-     * Opposedly, when the recipient address (`to`) has code, this function only attempts to call {ERC1363-approveAndCall}
-     * once without retrying, and relies on the returned value to be true.
-     *
-     * Reverts if the returned value is other than `true`.
-     */
-    function approveAndCallRelaxed(IERC1363 token, address to, uint256 value, bytes memory data) internal {
-        if (to.code.length == 0) {
-            forceApprove(token, to, value);
-        } else if (!token.approveAndCall(to, value, data)) {
-            revert SafeERC20FailedOperation(address(token));
         }
     }
 

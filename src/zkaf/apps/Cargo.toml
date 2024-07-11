@@ -5,40 +5,34 @@ edition = { workspace = true }
 build = "build.rs"
 
 [build-dependencies]
-risc0-build = { version = "0.21.0" }
+risc0-build = { workspace = true }
 serde = "1.0"
 serde_json = "1.0.107"
-tlsn-core = { git = "https://github.com/tlsnotary/tlsn", rev = "6152883" }
+tlsn-core = { git = "https://github.com/tlsnotary/tlsn", commit = "7272d9623a8cf0e04f59b1656e873476a5f17a13" }
 p256 = { version = "0.13", features = ["ecdsa"] }
 tlsn-substrings-verifier = { path = "../tlsn-substrings-verifier" }
 
-
 [dependencies]
 alloy-primitives = { workspace = true }
+tlsn-substrings-verifier = { workspace = true }
 alloy-sol-types = { workspace = true }
 anyhow = { workspace = true }
-bincode = { workspace = true }
-bonsai-sdk = { workspace = true }
-bytemuck = { workspace = true }
 clap = { version = "4.0", features = ["derive", "env"] }
 env_logger = { version = "0.10" }
 ethers = { workspace = true }
-hex = { workspace = true }
 log = { workspace = true }
 methods = { workspace = true }
 risc0-ethereum-contracts = { workspace = true }
-risc0-zkvm = { workspace = true }
-serde = { workspace = true }
+risc0-zkvm = { workspace = true, features = ["client"] }
 tokio = { version = "1.35", features = ["full"] }
+serde = "1.0"
+hex = { workspace = true }
 serde_json = "1.0.107"
-tlsn-substrings-verifier = { path = "../tlsn-substrings-verifier" }
+sha256 = "1.5.0"
 near-jsonrpc-client = "0.9.0"
 near-crypto = "0.21.1"
 near-primitives = "0.21.1"
 near-chain-configs = "0.21.1"
 near-jsonrpc-primitives = "0.21.1"
-risc0-build = { version = "0.21.0" }
-tlsn-core = { git = "https://github.com/tlsnotary/tlsn", rev = "6152883" }
-p256 = { version = "0.13", features = ["ecdsa"] }
-
+near-contract-standards = "4.1.1"
 dotenv = { workspace = true }
