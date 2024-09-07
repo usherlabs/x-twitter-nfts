@@ -1,0 +1,13 @@
+[package]
+name = "helper"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1.37", features = ["macros", "rt"] }
+futures = "0.3"
+headless_chrome = { version = "1.0.14", features = ["fetch"] }
+log = "0.4"
+
+[profile.dev]
+debug = true
