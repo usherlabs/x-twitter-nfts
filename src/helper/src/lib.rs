@@ -40,6 +40,9 @@ pub async fn create_twitter_post_image(url:String)->Result<Vec<u8>, Box<dyn Erro
     Ok(jpeg_data)
 }
 
+pub async fn create_twitter_post_image_from_id(tweetId :u64)->Result<Vec<u8>, Box<dyn Error>>  {
+    create_twitter_post_image(format!("https://x.com/x/status/{}", tweetId))
+}
 
 
 #[cfg(test)]
@@ -101,4 +104,3 @@ mod tests {
         assert!(result.is_err(), "The URL was expected to be invalid");
     }
 }
-
