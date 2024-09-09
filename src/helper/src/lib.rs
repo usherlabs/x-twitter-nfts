@@ -40,8 +40,8 @@ pub async fn create_twitter_post_image(url:String)->Result<Vec<u8>, Box<dyn Erro
     Ok(jpeg_data)
 }
 
-pub async fn create_twitter_post_image_from_id(tweetId :u64)->Result<Vec<u8>, Box<dyn Error>>  {
-    create_twitter_post_image(format!("https://x.com/x/status/{}", tweetId))
+pub async fn create_twitter_post_image_from_id(tweet_id :u64)->Result<Vec<u8>, Box<dyn Error>>  {
+    return create_twitter_post_image(format!("https://x.com/x/status/{}", tweet_id)).await;
 }
 
 
@@ -62,9 +62,8 @@ mod tests {
     async fn test_url_starts_with_twitter_com() {
 
         println!("{:?}", headless_chrome::browser::default_executable());
-        let url = "https://x.com/10015io/status/1495069139811061764".to_string();
-        // This should pass as the URL starts with "https://twitter.com", case-insensitively.
-        match create_twitter_post_image(url).await {
+        let tweet_id:u64 = 149506913981106176;
+        match create_twitter_post_image_from_id(tweet_id).await {
             Ok(bytes) => {
                 assert!(bytes.len() > 0, "Image bytes should not be empty");
                     // Save the screenshot to disc
