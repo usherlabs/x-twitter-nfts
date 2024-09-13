@@ -22,7 +22,7 @@ jobs:
         with:
             toolchain: stable
             # override: true
-            components: rustfmt, clippy, cargo, rustup
+            components: rustfmt, clippy, cargo
 
       - name: Install Prerequisites
         run: |
