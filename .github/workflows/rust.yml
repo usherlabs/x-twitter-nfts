@@ -34,9 +34,8 @@ jobs:
           ls
           cd ./src/near_nft/
           rustup target add wasm32-unknown-unknown
-          cargo update
-          cargo install near-cli-rs
-          cargo install cargo-near 
+          git clone https://github.com/near/cargo-near
+          cargo install --path cargo-near
           ./scripts/test.sh
 
       - name: run helper test
