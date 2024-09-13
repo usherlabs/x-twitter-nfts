@@ -36,4 +36,11 @@ jobs:
           cd ./src/helper/
           cargo test --lib
 
+      - name: run near_nft test
+        run: |
+          ls
+          cd ./src/near_nft/
+          cargo install cargo-near 
+          ./scripts/test.sh
+
       

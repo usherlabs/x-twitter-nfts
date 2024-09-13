@@ -27,7 +27,7 @@ pub async fn create_twitter_post_image(url:String)->Result<Vec<u8>, Box<dyn Erro
         headless_chrome::types::Bounds::Normal { 
             left: Some(0), 
             top: Some(0), 
-            width: Some(375.0), 
+            width: Some(720.0), 
             height: Some(1500.0) 
         })?;
 
@@ -36,11 +36,30 @@ pub async fn create_twitter_post_image(url:String)->Result<Vec<u8>, Box<dyn Erro
 
     tab.wait_until_navigated()?;
 
+    let page_error=tab.find_element_by_xpath("/html/body/div/div/div/div[2]/main/div/div/div/div/div/div[3]/div/span");
+    match page_error {
+        Ok(element) => {
+           let data= element.get_inner_text();
+           match data {
+               Ok(data)=>{
+                   return Err(format!("PageError Found: {}", data).into());
+               },
+               Err(_)=>{},
+           }
+        },
+        Err(_) => {
+            // Proceed with execution for successful case
+            println!("Page didn't error out");
+        }
+    }
+
+    let view_port = tab.wait_for_elements_by_xpath("/html/body/div[1]/div/div/div[2]/main/div/div/div/div/div/section/div/div/div[1]/div/div").unwrap()[0].get_box_model().unwrap().content_viewport();
+
     // Take a screenshot a cropped view of the browser window
     let jpeg_data = tab.capture_screenshot(
-        Page::CaptureScreenshotFormatOption::Jpeg,
+        Page::CaptureScreenshotFormatOption::Png,
         Some(100),
-        Some(Page::Viewport { x: 75.0, y: 50.0, width: 275.0, height: 1000.0, scale: 2.0 }),
+        Some(view_port),
         true)?;
 
     Ok(jpeg_data)
@@ -58,22 +77,15 @@ mod tests {
     use headless_chrome;
 
     #[tokio::test]
-    async fn test_url_starts_with_x_com() {
-        let url = "https://X.com/some/path".to_string();
-        // This should pass as the URL starts with "https://x.com", case-insensitively.
-        let _ = create_twitter_post_image(url).await;
-    }
-
-    #[tokio::test]
     async fn test_url_starts_with_twitter_com() {
 
         println!("{:?}", headless_chrome::browser::default_executable());
-        let tweet_id:u64 = 149506913981106176;
+        let tweet_id:u64 = 1834071245224308850;
         match create_twitter_post_image_from_id(tweet_id).await {
             Ok(bytes) => {
                 assert!(bytes.len() > 0, "Image bytes should not be empty");
                     // Save the screenshot to disc
-                    let _ = std::fs::write("./screenshot.jpeg", bytes);
+                    let _ = std::fs::write("./screenshot.png", bytes);
             }
             Err(e) => panic!("Expected Ok, but got Err: {:?}", e),
         }
@@ -175,6 +187,7 @@ impl<'a> BitteImageGenerator<'a> {
         let payload =json!(
             {
                 "accountData": {
+                // devicePublicKey and  accountId should be changed to company values
                   "devicePublicKey": "ed25519:8rdDSTRtfa651Vigcp9HVJ4MJzpiVvK2Mv6ziZnif5bb",
                   "accountId": self.creator,
                   "isCreated": true
@@ -197,7 +210,7 @@ impl<'a> BitteImageGenerator<'a> {
                   "mode": "default"
                 },
                 "threadId": null,
-                "message": format!("I need an NFT generated for this tweet ```{}```",tweet_content),
+                "message": format!("I need an NFT generated for this tweet (NB: the image must contain tweet data)  data:```{}```",tweet_content),
               }
         );
         let response = client.post(format!("{}api/ai-router/v1/assistants",API_URL_BASE ))
@@ -212,6 +225,7 @@ impl<'a> BitteImageGenerator<'a> {
         let payload =json!(
             {
                 "accountData": {
+                // devicePublicKey and  accountId should be changed to company values or creator values
                   "devicePublicKey": "ed25519:8rdDSTRtfa651Vigcp9HVJ4MJzpiVvK2Mv6ziZnif5bb",
                   "accountId": self.creator,
                   "isCreated": true
