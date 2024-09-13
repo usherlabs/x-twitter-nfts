@@ -21,7 +21,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
             toolchain: stable
-            # override: true
+            override: true
             components: rustfmt, clippy, cargo
 
       - name: Install Prerequisites
@@ -29,14 +29,18 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y chromium-browser
 
+      - name: Install Dependencies
+        uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          packages: libudev-dev # dependency for cargo-near
+          version: 1.0
+
       - name: run near_nft test
         run: |
           ls
           cd ./src/near_nft/
-          rustup target add wasm32-unknown-unknown
-          git clone https://github.com/near/cargo-near
-          cargo install --path cargo-near
-          ./scripts/test.sh
+          cargo install  cargo-make cargo-near
+          cargo make  test
 
       - name: run helper test
         run: |
