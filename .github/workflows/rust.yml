@@ -29,6 +29,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y chromium-browser
 
+      - name: run near_nft test
+        run: |
+          ls
+          cd ./src/near_nft/
+          rustup target add wasm32-unknown-unknown
+          cargo install wasmparser
+          cargo install cargo-near 
+          ./scripts/test.sh
 
       - name: run helper test
         run: |
@@ -36,12 +44,5 @@ jobs:
           cd ./src/helper/
           cargo test --lib
 
-      - name: run near_nft test
-        run: |
-          ls
-          cd ./src/near_nft/
-          rustup target add wasm32-unknown-unknown
-          cargo install cargo-near 
-          ./scripts/test.sh
 
       
