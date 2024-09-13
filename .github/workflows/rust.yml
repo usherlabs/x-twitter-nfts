@@ -22,7 +22,7 @@ jobs:
         with:
             toolchain: stable
             # override: true
-            components: rustfmt, clippy, cargo
+            components: rustfmt, clippy, cargo, rustup
 
       - name: Install Prerequisites
         run: |
@@ -40,6 +40,7 @@ jobs:
         run: |
           ls
           cd ./src/near_nft/
+          rustup target add wasm32-unknown-unknown
           cargo install cargo-near 
           ./scripts/test.sh
 
