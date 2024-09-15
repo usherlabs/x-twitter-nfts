@@ -15,15 +15,20 @@ NOTES:
   - To prevent the deployed contract from being modified or deleted, it should not have any access
     keys on its account.
 */
+mod events;
+
+use crate::events::TweetMintRequest;
+use events::CancelMintRequest;
 use near_contract_standards::non_fungible_token::metadata::{
     NFTContractMetadata, NonFungibleTokenMetadataProvider, TokenMetadata, NFT_METADATA_SPEC,
 };
 use near_contract_standards::non_fungible_token::{Token, TokenId};
 use near_contract_standards::non_fungible_token::NonFungibleToken;
+use near_contract_tools::standard::nep297::Event;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LazyOption,LookupMap};
 use near_sdk::{
-    env, near_bindgen, require, AccountId, BorshStorageKey, PanicOnDefault, Promise, PromiseOrValue
+    env, near_bindgen, require, AccountId, Balance, BorshStorageKey, PanicOnDefault, Promise, PromiseOrValue
 };
 
 #[near_bindgen]
@@ -47,8 +52,11 @@ enum StorageKey {
     TweetRequests
 }
 
+const MIN_DEPOSIT: Balance = 5870000000000000000000;
+
 #[near_bindgen]
 impl Contract {
+
     /// Initializes the contract owned by `owner_id` with
     /// default metadata (for example purposes only).
     #[init]
@@ -101,12 +109,14 @@ impl Contract {
         token_metadata: TokenMetadata,
     ) -> Token {
         assert_eq!(env::predecessor_account_id(), self.tokens.owner_id , "NOT OWNER");
-        let token =self.tokens.internal_mint(token_id, receiver_id, Some(token_metadata));
+        let token =self.tokens.internal_mint_with_refund(token_id, receiver_id.clone(), Some(token_metadata),Some(receiver_id));
         self.tweet_requests.remove(&token.token_id);
         token
     }
 
+    #[payable]
     pub fn mint_tweet_request(&mut self, tweet_id: String)-> (AccountId, u64) {
+        require!(env::attached_deposit().eq(&MIN_DEPOSIT),"Minimum deposit Not met");
         if self.tokens.owner_by_id.get(&tweet_id).is_some() {
             env::panic_str("tweet_id has been minted already");
         }
@@ -121,8 +131,30 @@ impl Contract {
          self.tweet_requests.insert(&tweet_id, &entry);
                 
         // Log an event-like message
-        env::log_str(format!("Tweet mint reserved: {} ", tweet_id).as_str());
+        let event = TweetMintRequest {
+            tweet_id: tweet_id, // You might want to generate a unique ID here
+            account: env::predecessor_account_id(),
+            deposit: env::attached_deposit()
+        };
+        event.emit();
+
         entry
+    }
+
+    pub fn cancel_mint_request(&mut self, tweet_id: String) {
+        let tweet_request= self.tweet_requests.get(&tweet_id);
+        if let Some((id,_))=tweet_request{
+            if id==env::predecessor_account_id(){
+                Promise::new(id).transfer(MIN_DEPOSIT/2);
+                self.tweet_requests.remove(&tweet_id);
+                let event = CancelMintRequest {
+                    tweet_id: tweet_id, // You might want to generate a unique ID here
+                    account: env::predecessor_account_id(),
+                    withdraw: MIN_DEPOSIT/2,
+                };
+                event.emit();
+            }
+        }
     }
 
     pub fn get_request(&self,tweet_id: String) ->  Option<(AccountId, u64)> {
