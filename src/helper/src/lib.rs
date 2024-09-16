@@ -59,7 +59,7 @@ pub async fn create_twitter_post_image(url:String)->Result<Vec<u8>, Box<dyn Erro
     let jpeg_data = tab.capture_screenshot(
         Page::CaptureScreenshotFormatOption::Png,
         Some(100),
-        Some(view_port),
+        Some(Page::Viewport { x: view_port.x, y: view_port.y, width:view_port.width, height: view_port.height-109.0, scale: 2.0 }),
         true)?;
 
     Ok(jpeg_data)
@@ -126,7 +126,7 @@ const API_URL_BASE: &str = "https://wallet.bitte.ai/";
 #[derive(Serialize, Deserialize, Debug)]
 struct Data {
     name: String,
-    description: String,
+    description: Option<String>,
     metadata: Metadata,
 }
 
@@ -181,8 +181,7 @@ impl<'a> BitteImageGenerator<'a> {
                 creator: creator
             })
     }
-
-    pub async fn generate(&mut self, tweet_content: &str) -> Result<String, Box<dyn Error>> {
+    pub async fn add_conversation(&mut self, conversation: &str) -> Result<String, Box<dyn Error>> {
         let client = reqwest::Client::new();
         let payload =json!(
             {
@@ -210,7 +209,7 @@ impl<'a> BitteImageGenerator<'a> {
                   "mode": "default"
                 },
                 "threadId": null,
-                "message": format!("I need an NFT generated for this tweet (NB: the image must contain tweet data)  data:```{}```",tweet_content),
+                "message": conversation,
               }
         );
         let response = client.post(format!("{}api/ai-router/v1/assistants",API_URL_BASE ))
@@ -263,7 +262,7 @@ impl<'a> BitteImageGenerator<'a> {
         // let response =from_str(response.as_str());
 
     // Filter messages to find the one with `name: "generate-image"`
-     if let Some(message) = response.messages.iter().find(|msg| {
+     if let Some(message) = response.messages.iter().rev().find(|msg| {
             if let Some(data) = &msg.data {
                 data.name == "generate-image"
             } else {
@@ -286,6 +285,11 @@ impl<'a> BitteImageGenerator<'a> {
             Err("Not Found".into())
         } 
     }
+
+    pub async fn generate(&mut self, tweet_content: &str) -> Result<String, Box<dyn Error>> {
+        let prompt =format!("I need an NFT generated for this tweet (NB: the image must contain tweet data)  data:```{}```",tweet_content.to_string());
+        self.add_conversation(&prompt).await
+    }
 }
 
 #[cfg(test)]
@@ -296,8 +300,8 @@ mod test_bitte_image_generator {
     async fn test_async_image_generator() {
         let mut generator = BitteImageGenerator::new("xlassix.near").await.unwrap();
         assert_eq!(generator.session_key.len(), 21);
-        let image_url=generator.generate("10015.io @10015io Hello world! 👋 Do you know that http://10015.io offers the best online tool for converting tweets into fancy images with lots of customization options? 🐦 ↪️ 🖼️ #tweet #image #converter").await.unwrap();
-        assert!(image_url.starts_with("https://arweave.net/"));
-
+        let image_url1=generator.generate("10015.io @10015io Hello world! 👋 Do you know that http://10015.io offers the best online tool for converting tweets into fancy images with lots of customization options? 🐦 ↪️ 🖼️ #tweet #image #converter").await.unwrap();
+        let image_url=generator.add_conversation("i need another image in abstract futuristic art style use the detail for NFT 1, Please don't forget the add the description into the image generated").await.unwrap();
+        assert_ne!(image_url,image_url1);
     }
 }

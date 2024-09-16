@@ -524,7 +524,7 @@ mod tests {
         testing_env!(context
             .storage_usage(env::storage_usage())
             .attached_deposit(150000000000000000000)
-            .predecessor_account_id(accounts(0))
+            .predecessor_account_id(accounts(0)).s
             .build());
         contract.nft_approve(token_id.clone(), accounts(1), None);
 
