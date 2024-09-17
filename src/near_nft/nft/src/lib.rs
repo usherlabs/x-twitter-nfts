@@ -36,7 +36,7 @@ use near_sdk::{
 pub struct Contract {
     tokens: NonFungibleToken,
     metadata: LazyOption<NFTContractMetadata>,
-    tweet_requests: LookupMap<String, (AccountId, u64)>,
+    tweet_requests: LookupMap<u128, (AccountId, u64)>,
     lock_time: u64,
 }
 
@@ -110,18 +110,18 @@ impl Contract {
     ) -> Token {
         assert_eq!(env::predecessor_account_id(), self.tokens.owner_id , "NOT OWNER");
         let token =self.tokens.internal_mint_with_refund(token_id, receiver_id.clone(), Some(token_metadata),Some(receiver_id));
-        self.tweet_requests.remove(&token.token_id);
+        self.tweet_requests.remove(&token.token_id.parse::<u128>().unwrap());
         token
     }
 
     #[payable]
-    pub fn mint_tweet_request(&mut self, tweet_id: String)-> (AccountId, u64) {
+    pub fn mint_tweet_request(&mut self, tweet_id: u128)-> (AccountId, u64) {
         require!(env::attached_deposit().eq(&MIN_DEPOSIT),"Minimum deposit Not met");
-        if self.tokens.owner_by_id.get(&tweet_id).is_some() {
+        if self.tokens.owner_by_id.get(&format!("{}",tweet_id)).is_some() {
             env::panic_str("tweet_id has been minted already");
         }
 
-        if !self.is_tweet_available(&tweet_id){
+        if !self.is_tweet_available(tweet_id){
             env::panic_str("This tweet_id has a lock on it");
         }
         // Get the signer's account ID
@@ -141,28 +141,38 @@ impl Contract {
         entry
     }
 
-    pub fn cancel_mint_request(&mut self, tweet_id: String) {
+    pub fn cancel_mint_request(&mut self, tweet_id: u128) {
         let tweet_request= self.tweet_requests.get(&tweet_id);
-        if let Some((id,_))=tweet_request{
-            if id==env::predecessor_account_id(){
-                Promise::new(id).transfer(MIN_DEPOSIT/2);
-                self.tweet_requests.remove(&tweet_id);
-                let event = CancelMintRequest {
-                    tweet_id: tweet_id, // You might want to generate a unique ID here
-                    account: env::predecessor_account_id(),
-                    withdraw: MIN_DEPOSIT/2,
-                };
-                event.emit();
+        if let Some((id,timestamp))=tweet_request{
+            if (env::block_timestamp_ms()-timestamp)<self.get_lock_time(){ 
+                if id==env::predecessor_account_id(){
+                    Promise::new(id).transfer(MIN_DEPOSIT/2);
+                    self.tweet_requests.remove(&tweet_id);
+                    let event = CancelMintRequest {
+                        tweet_id: tweet_id, // You might want to generate a unique ID here
+                        account: env::predecessor_account_id(),
+                        withdraw: MIN_DEPOSIT/2,
+                    };
+                    event.emit();
+                }
+                return;
+            }else {
+                self.claim_funds(tweet_id);
             }
         }
     }
 
-    pub fn get_request(&self,tweet_id: String) ->  Option<(AccountId, u64)> {
+    pub fn get_request(&self,tweet_id: u128) ->  Option<(AccountId, u64)> {
         self.tweet_requests.get(&tweet_id)
     }
 
-    fn is_tweet_available(&self, tweet_id: &String) -> bool {
-        let entry = self.tweet_requests.get(tweet_id);
+
+    fn is_tweet_available(&self, tweet_id: u128) -> bool {
+        let entry = self.tweet_requests.get(&tweet_id);
+
+        if self.tokens.owner_by_id.get(&format!("{}",tweet_id)).is_some() {
+            return  false;
+        }
         //replace env::block_timestamp with 
         match entry {
             Some((_, timestamp)) => (env::block_timestamp_ms()-timestamp)>self.get_lock_time(),
@@ -172,6 +182,20 @@ impl Contract {
 
     pub fn get_lock_time(&self) -> u64 {
         self.lock_time
+    }
+
+    #[private]
+    fn claim_funds(&mut self,tweet_id:u128 ) {
+        if let Some((id,_))= self.tweet_requests.get(&tweet_id){
+            Promise::new(id).transfer(MIN_DEPOSIT/2);
+            self.tweet_requests.remove(&tweet_id);
+            let event = CancelMintRequest {
+                tweet_id: tweet_id, // You might want to generate a unique ID here
+                account: env::predecessor_account_id(),
+                withdraw: MIN_DEPOSIT,
+            };
+            event.emit();
+        }
     }
 
     pub fn update_lock_time(&mut self, new_value: u64) -> u64 {
@@ -296,9 +320,8 @@ mod tests {
 
         // let tweet_id = "1834071245224308850".to_string();
    
-        let random_vec=     env::random_seed();
-        let tweet_id = String::from_utf8_lossy(&random_vec).into_owned();
-        let is_valid = contract.is_tweet_available(&tweet_id);
+        let random_tweet_id =     (env::random_seed().into_iter().sum::<u8>()) as u128;
+        let is_valid = contract.is_tweet_available(random_tweet_id);
         assert!(is_valid);
     }
     #[test]
@@ -319,8 +342,8 @@ mod tests {
             .build());
 
         // mint request
-        let tweet_id = "1834071245224308850".to_string();
-        let entry = contract.mint_tweet_request(tweet_id.clone());
+        let tweet_id = 1834071245224308850;
+        let entry = contract.mint_tweet_request(tweet_id);
         assert_eq!(entry.0,accounts(3));
         assert_eq!(entry.1, current_time.as_millis() as u64);
 
@@ -330,7 +353,7 @@ mod tests {
             .predecessor_account_id(accounts(5))
             .block_timestamp(current_time.as_nanos() as u64)
             .build());
-        let entry=contract.mint_tweet_request(tweet_id.clone());
+        let entry=contract.mint_tweet_request(tweet_id);
         assert_eq!(entry.0,accounts(3));
     }
 
@@ -352,8 +375,8 @@ mod tests {
             .build());
 
         // mint request
-        let tweet_id = "1834071245224308850".to_string();
-        let entry = contract.mint_tweet_request(tweet_id.clone());
+        let tweet_id = 1834071245224308850;
+        let entry = contract.mint_tweet_request(tweet_id);
         assert_eq!(entry.0, accounts(3));
         assert_eq!(entry.1, current_time.as_millis() as u64);
 
@@ -365,7 +388,7 @@ mod tests {
             .block_timestamp(current_time.as_nanos() as u64 + ((contract.get_lock_time()+offset_sec)*1_000_000))
             .build());
 
-        let entry= contract.mint_tweet_request(tweet_id.clone());
+        let entry= contract.mint_tweet_request(tweet_id);
         assert_eq!(entry.0,accounts(4));
     }
     
@@ -524,7 +547,7 @@ mod tests {
         testing_env!(context
             .storage_usage(env::storage_usage())
             .attached_deposit(150000000000000000000)
-            .predecessor_account_id(accounts(0)).s
+            .predecessor_account_id(accounts(0))
             .build());
         contract.nft_approve(token_id.clone(), accounts(1), None);
 
