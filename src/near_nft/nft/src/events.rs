@@ -11,15 +11,16 @@ use near_sdk::{AccountId, Balance};
 /// * `account`: The account requesting the mint operation.
 #[event(standard = "custom", version = "1.0.0")]
 pub struct TweetMintRequest {
-    pub tweet_id: u128,
+    pub tweet_id: u64,
     pub account: AccountId,
-    pub deposit: Balance
+    pub deposit: Balance,
+    pub notify: String,
 }
 
 
 #[event(standard = "custom", version = "1.0.0")]
 pub struct CancelMintRequest {
-    pub tweet_id: u128,
+    pub tweet_id: u64,
     pub account: AccountId,
     pub withdraw: Balance
 }

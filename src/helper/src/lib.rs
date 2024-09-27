@@ -1,7 +1,7 @@
 use std::error::Error;
+use std::marker::{Send,Sync};
 
 use serde::{Deserialize, Serialize,};
-use tokio::time::{sleep,Duration};
 use tracing::debug;
 use reqwest;
 use std::collections::HashMap;
@@ -9,7 +9,7 @@ use serde_json::json;
 use headless_chrome::Browser;
 use headless_chrome::protocol::cdp::Page;
 
-pub async fn create_twitter_post_image(url:String)->Result<Vec<u8>, Box<dyn Error>>  {
+pub async fn create_twitter_post_image(url:String)->Result<Vec<u8>, Box<dyn Error+Send+Sync>>  {
 
 
     let prefix = ["https://x.com","https://twitter.com"];
@@ -28,7 +28,7 @@ pub async fn create_twitter_post_image(url:String)->Result<Vec<u8>, Box<dyn Erro
             left: Some(0), 
             top: Some(0), 
             width: Some(720.0), 
-            height: Some(1500.0) 
+            height: Some(4500.0) 
         })?;
 
     // Navigate to wikipedia
@@ -65,7 +65,7 @@ pub async fn create_twitter_post_image(url:String)->Result<Vec<u8>, Box<dyn Erro
     Ok(jpeg_data)
 }
 
-pub async fn create_twitter_post_image_from_id(tweet_id :u64)->Result<Vec<u8>, Box<dyn Error>>  {
+pub async fn create_twitter_post_image_from_id(tweet_id :u64)->Result<Vec<u8>, Box<dyn Error+Sync+Send>>  {
     return create_twitter_post_image(format!("https://x.com/x/status/{}", tweet_id)).await;
 }
 
@@ -217,7 +217,6 @@ impl<'a> BitteImageGenerator<'a> {
             .send()
             .await?;
 
-        sleep(Duration::from_secs(1)).await;
 
         let response = response.text().await?;
         if response.contains("proceed") || response.contains("suggested-prompts"){
@@ -254,7 +253,6 @@ impl<'a> BitteImageGenerator<'a> {
             .json(&payload)
             .send()
             .await?;
-        sleep(Duration::from_secs(2)).await;
         }
         let response = client.get(format!("{}api/smart-action/create/{}",API_URL_BASE,self.session_key ))
         .send()
