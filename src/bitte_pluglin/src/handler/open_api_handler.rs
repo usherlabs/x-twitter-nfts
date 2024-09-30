@@ -199,8 +199,8 @@ pub async fn open_api_specification() -> Json<Value> {
             "servers": [
               {
                 "url": if format!("{}",Config::release_default().address).eq("127.0.0.1") {
-                  let bittle_config=std::fs::read_to_string("./bitte.dev.json").unwrap();
-                  let plugin_info:PluginInfo  = json::serde_json::from_str(bittle_config.as_str()).unwrap();
+                  let bitte_config=std::fs::read_to_string("./bitte.dev.json").unwrap();
+                  let plugin_info:PluginInfo  = json::serde_json::from_str(bitte_config.as_str()).unwrap();
                   plugin_info.url
               } else {
                 format!("https://{}",Config::release_default().address)
