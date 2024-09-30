@@ -16,9 +16,15 @@ struct IpfsData {
 
 #[get("/tweet?<tweet_id>")]
 pub async fn mint_tweet_request(
-    tweet_id: String
+    tweet_id: Option<String>
 ) -> NetworkResponse{
+    if tweet_id.is_none(){
+        return NetworkResponse::BadRequest(json!({
+            "error": "tweet_id is required"
+        }));
+    }
 
+    let tweet_id= tweet_id.unwrap();
     let x_client_id=env::var("X_CLIENT_ID").expect("MY_VAR must be set");
 
     let _tweet_id=tweet_id.parse::<u64>();
@@ -37,10 +43,12 @@ pub async fn mint_tweet_request(
         }));
     }
     let description=description.unwrap();
+
+    debug!("description: {}",&description);
     let image=helper::create_twitter_post_image_from_id(_tweet_id.unwrap()).await;
 
-
     if image.is_err(){
+        debug!("{}",format!("{:#?}",image.err()));
        return NetworkResponse::StatusOk(json!({
             "description": description,
             "imageURL": ""
@@ -91,13 +99,14 @@ pub async fn mint_tweet_request(
         response.unwrap().IpfsHash
     );
 
-    debug!("{}",&image_url);
+    debug!("image_url: {}",&image_url);
 
     NetworkResponse::StatusOk(json!({
         "description": description,
         "imageURL": image_url
     }))
 }
+
 
 async fn get_tweet_content(tweet_id: &str) -> Result<String, Box<dyn std::error::Error+Sync+Send>> {
     let client = Client::new();

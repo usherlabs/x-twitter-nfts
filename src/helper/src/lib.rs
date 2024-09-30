@@ -21,6 +21,7 @@ pub async fn create_twitter_post_image(url:String)->Result<Vec<u8>, Box<dyn Erro
 
     browser.get_process_id();
     let tab = browser.new_tab()?;
+    tab.set_default_timeout(std::time::Duration::from_secs(60));
 
     // Set screen Dimension (in this case mobile)
     let tab = tab.set_bounds(
@@ -33,6 +34,7 @@ pub async fn create_twitter_post_image(url:String)->Result<Vec<u8>, Box<dyn Erro
 
     // Navigate to wikipedia
     tab.navigate_to(&url)?;
+    
 
     tab.wait_until_navigated()?;
 

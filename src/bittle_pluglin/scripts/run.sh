@@ -4,13 +4,15 @@
 cargo run &
 PID=$!
 
-# Start make-agent in the background
-npx --yes make-agent dev -p 8007  &
+wait $PID
 
-# Wait for either cargo or make-agent to finish
-wait $PID || wait
+# Start make-agent in the background
+npx --yes make-agent dev -p 8007 &
 
 # Kill the cargo process if it's still running
 kill $PID 2>/dev/null
+
+# Wait for the Rocket server to exit gracefully
+wait $PID
 
 exit $?
