@@ -15,15 +15,20 @@ NOTES:
   - To prevent the deployed contract from being modified or deleted, it should not have any access
     keys on its account.
 */
+mod events;
+
+use crate::events::TweetMintRequest;
+use events::CancelMintRequest;
 use near_contract_standards::non_fungible_token::metadata::{
     NFTContractMetadata, NonFungibleTokenMetadataProvider, TokenMetadata, NFT_METADATA_SPEC,
 };
 use near_contract_standards::non_fungible_token::{Token, TokenId};
 use near_contract_standards::non_fungible_token::NonFungibleToken;
+use near_contract_tools::standard::nep297::Event;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::LazyOption;
+use near_sdk::collections::{LazyOption,LookupMap};
 use near_sdk::{
-    env, near_bindgen, AccountId, BorshStorageKey, PanicOnDefault, Promise, PromiseOrValue,
+    env, near_bindgen, require, AccountId, Balance, BorshStorageKey, PanicOnDefault, Promise, PromiseOrValue
 };
 
 #[near_bindgen]
@@ -31,6 +36,8 @@ use near_sdk::{
 pub struct Contract {
     tokens: NonFungibleToken,
     metadata: LazyOption<NFTContractMetadata>,
+    tweet_requests: LookupMap<u64, (AccountId, u64, String,String)>,
+    lock_time: u64,
 }
 
 const DATA_IMAGE_SVG_NEAR_ICON: &str = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 288 288'%3E%3Cg id='l' data-name='l'%3E%3Cpath d='M187.58,79.81l-30.1,44.69a3.2,3.2,0,0,0,4.75,4.2L191.86,103a1.2,1.2,0,0,1,2,.91v80.46a1.2,1.2,0,0,1-2.12.77L102.18,77.93A15.35,15.35,0,0,0,90.47,72.5H87.34A15.34,15.34,0,0,0,72,87.84V201.16A15.34,15.34,0,0,0,87.34,216.5h0a15.35,15.35,0,0,0,13.08-7.31l30.1-44.69a3.2,3.2,0,0,0-4.75-4.2L96.14,186a1.2,1.2,0,0,1-2-.91V104.61a1.2,1.2,0,0,1,2.12-.77l89.55,107.23a15.35,15.35,0,0,0,11.71,5.43h3.13A15.34,15.34,0,0,0,216,201.16V87.84A15.34,15.34,0,0,0,200.66,72.5h0A15.35,15.35,0,0,0,187.58,79.81Z'/%3E%3C/g%3E%3C/svg%3E";
@@ -42,10 +49,14 @@ enum StorageKey {
     TokenMetadata,
     Enumeration,
     Approval,
+    TweetRequests
 }
+
+const MIN_DEPOSIT: Balance = 5870000000000000000000;
 
 #[near_bindgen]
 impl Contract {
+
     /// Initializes the contract owned by `owner_id` with
     /// default metadata (for example purposes only).
     #[init]
@@ -77,6 +88,8 @@ impl Contract {
                 Some(StorageKey::Approval),
             ),
             metadata: LazyOption::new(StorageKey::Metadata, Some(&metadata)),
+            tweet_requests: LookupMap::new(StorageKey::TweetRequests),
+            lock_time: 30*60*1000,
         }
     }
 
@@ -96,8 +109,102 @@ impl Contract {
         token_metadata: TokenMetadata,
     ) -> Token {
         assert_eq!(env::predecessor_account_id(), self.tokens.owner_id , "NOT OWNER");
+        let token =self.tokens.internal_mint_with_refund(token_id, receiver_id.clone(), Some(token_metadata),Some(receiver_id));
+        self.tweet_requests.remove(&token.token_id.parse::<u64>().unwrap());
+        token
+    }
 
-        self.tokens.internal_mint(token_id, receiver_id, Some(token_metadata))
+    #[payable]
+    pub fn mint_tweet_request(&mut self, tweet_id: u64,image_url:String,notify: String)-> (AccountId,u64, String) {
+        require!(env::attached_deposit().eq(&MIN_DEPOSIT),"Minimum deposit Not met");
+        if self.tokens.owner_by_id.get(&format!("{}",tweet_id)).is_some() {
+            env::panic_str("tweet_id has been minted already");
+        }
+
+        if !self.is_tweet_available(tweet_id){
+            env::panic_str("This tweet_id has a lock on it");
+        }
+        // Get the signer's account ID
+        let signer_account_id =env::predecessor_account_id();
+        let now =  env::block_timestamp_ms();
+        let entry = (signer_account_id, now, image_url,notify);
+        self.tweet_requests.insert(&tweet_id, &entry);
+                
+        // Log an event-like message
+        let event = TweetMintRequest {
+            tweet_id: tweet_id, // You might want to generate a unique ID here
+            account: env::predecessor_account_id(),
+            deposit: env::attached_deposit(),
+            notify: entry.3,
+        };
+        event.emit();
+
+        (entry.0,entry.1,entry.2)
+    }
+
+    pub fn cancel_mint_request(&mut self, tweet_id: u64) {
+        let tweet_request= self.tweet_requests.get(&tweet_id);
+        if let Some((id,timestamp,_,_))=tweet_request{
+            if (env::block_timestamp_ms()-timestamp)<self.get_lock_time(){ 
+                if id==env::predecessor_account_id(){
+                    Promise::new(id).transfer(MIN_DEPOSIT/2);
+                    self.tweet_requests.remove(&tweet_id);
+                    let event = CancelMintRequest {
+                        tweet_id: tweet_id, // You might want to generate a unique ID here
+                        account: env::predecessor_account_id(),
+                        withdraw: MIN_DEPOSIT/2,
+                    };
+                    event.emit();
+                }
+                return;
+            }else {
+                self.claim_funds(tweet_id);
+            }
+        }
+    }
+
+    pub fn get_request(&self,tweet_id: u64) ->  Option<(AccountId, u64,String,String)> {
+        self.tweet_requests.get(&tweet_id)
+    }
+
+
+    fn is_tweet_available(&self, tweet_id: u64) -> bool {
+        let entry = self.tweet_requests.get(&tweet_id);
+
+        if self.tokens.owner_by_id.get(&format!("{}",tweet_id)).is_some() {
+            return  false;
+        }
+        //replace env::block_timestamp with 
+        match entry {
+            Some((_, timestamp,_,_)) => (env::block_timestamp_ms()-timestamp)>self.get_lock_time(),
+            None => true,
+        }
+    }
+
+    pub fn get_lock_time(&self) -> u64 {
+        self.lock_time
+    }
+
+    #[private]
+    fn claim_funds(&mut self,tweet_id:u64 ) {
+        if let Some((id,_,_,_))= self.tweet_requests.get(&tweet_id){
+            Promise::new(id).transfer(MIN_DEPOSIT/2);
+            self.tweet_requests.remove(&tweet_id);
+            let event = CancelMintRequest {
+                tweet_id: tweet_id, // You might want to generate a unique ID here
+                account: env::predecessor_account_id(),
+                withdraw: MIN_DEPOSIT,
+            };
+            event.emit();
+        }
+    }
+
+    pub fn update_lock_time(&mut self, new_value: u64) -> u64 {
+        require!(env::predecessor_account_id()== self.tokens.owner_id , "NOT OWNER");
+        self.lock_time = new_value;
+        // Log an event-like message
+        env::log_str(format!("lock_time updated: {}", new_value).as_str());
+        new_value
     }
 }
 
@@ -117,6 +224,7 @@ mod tests {
     use near_sdk::test_utils::{accounts, VMContextBuilder};
     use near_sdk::testing_env;
     use std::collections::HashMap;
+    use std::time::SystemTime;
 
     use super::*;
 
@@ -183,6 +291,137 @@ mod tests {
         assert_eq!(token.owner_id.to_string(), accounts(0).to_string());
         assert_eq!(token.metadata.unwrap(), sample_token_metadata());
         assert_eq!(token.approved_account_ids.unwrap(), HashMap::new());
+    }
+
+    #[test]
+    fn test_get_lock_time() {
+        let mut context = get_context(accounts(0));
+        testing_env!(context.build());
+        let contract = Contract::new_default_meta(accounts(0).into());
+
+        testing_env!(context
+            .storage_usage(env::storage_usage())
+            .is_view(true)
+            .build());
+
+        let time = contract.get_lock_time();
+        assert_eq!(time, 30*60*1000);
+    }
+
+    #[test]
+    fn test_is_valid_request() {
+        let mut context = get_context(accounts(0));
+        testing_env!(context.build());
+        let contract = Contract::new_default_meta(accounts(0).into());
+
+        testing_env!(context
+            .storage_usage(env::storage_usage())
+            .is_view(true)
+            .build());
+
+        // let tweet_id = "1834071245224308850".to_string();
+   
+        let random_tweet_id =     (env::random_seed().into_iter().sum::<u8>()) as u64;
+        let is_valid = contract.is_tweet_available(random_tweet_id);
+        assert!(is_valid);
+    }
+    #[test]
+    #[should_panic(expected = "This tweet_id has a lock on it")]
+    fn test_duplicate_mint_tweet_request() {
+        let current_time = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap();
+
+        let mut context = get_context(accounts(0));
+        testing_env!(context.build());
+        let mut contract = Contract::new_default_meta(accounts(0).into());
+        testing_env!(context
+            .storage_usage(env::storage_usage())
+            .attached_deposit(MINT_STORAGE_COST)
+            .predecessor_account_id(accounts(3))
+            .block_timestamp(current_time.as_nanos() as u64)
+            .build());
+
+        // mint request
+        let tweet_id = 1834071245224308850;
+        let entry = contract.mint_tweet_request(tweet_id,format!("ipfs://"),format!(""));
+        assert_eq!(entry.0,accounts(3));
+        assert_eq!(entry.1, current_time.as_millis() as u64);
+
+        testing_env!(context
+            .storage_usage(env::storage_usage())
+            .attached_deposit(MINT_STORAGE_COST)
+            .predecessor_account_id(accounts(5))
+            .block_timestamp(current_time.as_nanos() as u64)
+            .build());
+        let entry=contract.mint_tweet_request(tweet_id,format!("ipfs://"),format!(""));
+        assert_eq!(entry.0,accounts(3));
+    }
+
+
+    #[test]
+    fn test_mint_tweet_request() {
+        let current_time = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap();
+
+        let mut context = get_context(accounts(0));
+        testing_env!(context.build());
+        let mut contract = Contract::new_default_meta(accounts(0).into());
+        testing_env!(context
+            .storage_usage(env::storage_usage())
+            .attached_deposit(MINT_STORAGE_COST)
+            .predecessor_account_id(accounts(3))
+            .block_timestamp(current_time.as_nanos() as u64)
+            .build());
+
+        // mint request
+        let tweet_id = 1834071245224308850;
+        let entry = contract.mint_tweet_request(tweet_id,format!("ipfs://"),format!(""));
+        assert_eq!(entry.0, accounts(3));
+        assert_eq!(entry.1, current_time.as_millis() as u64);
+
+        let offset_sec=1;
+        testing_env!(context
+            .storage_usage(env::storage_usage())
+            .attached_deposit(MINT_STORAGE_COST)
+            .predecessor_account_id(accounts(4))
+            .block_timestamp(current_time.as_nanos() as u64 + ((contract.get_lock_time()+offset_sec)*1_000_000))
+            .build());
+
+        let entry= contract.mint_tweet_request(tweet_id,format!("ipfs://"),format!(""));
+        assert_eq!(entry.0,accounts(4));
+    }
+    
+    #[test]
+    #[should_panic(expected = "NOT OWNER")]
+    fn test_update_lock_time_other_user() {
+        let mut context = get_context(accounts(0));
+        testing_env!(context.build());
+        let mut contract = Contract::new_default_meta(accounts(0).into());
+
+        testing_env!(context
+            .storage_usage(env::storage_usage())
+            .predecessor_account_id(accounts(4))
+            .build());
+
+        contract.update_lock_time(1000000);
+    }
+
+    #[test]
+    fn test_update_lock_time() {
+        let mut context = get_context(accounts(0));
+        testing_env!(context.build());
+        let mut contract = Contract::new_default_meta(accounts(0).into());
+
+        testing_env!(context
+            .storage_usage(env::storage_usage())
+            .predecessor_account_id(accounts(0))
+            .build());
+
+
+        let time =contract.update_lock_time(1000000);
+        assert_eq!(time, contract.get_lock_time());
     }
 
     #[test]

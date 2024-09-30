@@ -1,0 +1,14 @@
+[package]
+name = "bittle_plugin"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+rocket = { version = "0.5.1", features = ["json"] }
+serde = { version = "1.0", features = ["derive"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+dotenvy = "0.15"
+helper = { path = "../helper" }
+reqwest = { version = "0.12.4", features = ["json", "multipart"] }

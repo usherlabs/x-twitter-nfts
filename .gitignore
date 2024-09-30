@@ -2,3 +2,5 @@
 .env
 target/
 src/zkaf/inputs/*.json
+*.jpeg
+*.png
