@@ -25,7 +25,7 @@ pub async fn mint_tweet_request(
     }
 
     let tweet_id= tweet_id.unwrap();
-    let x_client_id=env::var("X_CLIENT_ID").expect("MY_VAR must be set");
+    let thirdweb_client_id=env::var("THIRDWEB_CLIENT_ID").expect("MY_VAR must be set");
 
     let _tweet_id=tweet_id.parse::<u64>();
 
@@ -70,7 +70,7 @@ pub async fn mint_tweet_request(
     // Return a JSON response
     let url = "https://storage.thirdweb.com/ipfs/upload";
     let response = client.post(url)
-        .header("X-Client-Id",&x_client_id )
+        .header("X-Client-Id",&thirdweb_client_id )
         .header("Content-Type", format!("multipart/form-data; boundary={}", form.boundary()))
         .multipart(form)
         .send()
@@ -95,7 +95,7 @@ pub async fn mint_tweet_request(
 
     let image_url=format!(
         "https://{}.ipfscdn.io/ipfs/{}",
-        x_client_id,
+        thirdweb_client_id,
         response.unwrap().IpfsHash
     );
 
