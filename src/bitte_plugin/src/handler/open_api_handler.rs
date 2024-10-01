@@ -201,7 +201,7 @@ pub async fn open_api_specification() -> Json<Value> {
               "assistant": {
                 "name": "Post Cloner",
                 "description": "An assistant that provides a digital representation of a Post as an Image with its description and generates a custom transaction for the user",
-                "instructions": "Retrieve the tweet image URL and description. If images is empty, generate an image from the description. If retrieval fails, prompt the user to reserve the Reward request with a generated image",
+                "instructions": "Retrieve the X post URL from the user's request. Ask the user if they want to generate art for the NFT. If the user confirms, prompt them to provide the user profile to notify after minting. Confirm the user's profile and inform them that the NFT will be minted once verified on the Near Blockchain. Instruct the user to submit their transaction to get started and assure them that the specified profile will be notified once it's ready.",
                 "tools": [
                   {
                     "type": "generate-image"
