@@ -108,6 +108,16 @@ pub async fn open_api_specification() -> Json<Value> {
                       "type": "string"
                     },
                     "description": "The tweet Id of the post to be Rewarded (NB: Its a 19 digit long ID)"
+                  },
+                  {
+                    "in": "query",
+                    "name": "notify",
+                    "required": false,
+                    "schema": {
+                      "type": "string"
+                    },
+                    "example": "@ryan_soury"
+                    "description": "The tweet account to notify when is reward/post is complete"
                   }
                 ],
                 "responses": {
