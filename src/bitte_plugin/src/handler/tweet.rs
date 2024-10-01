@@ -2,17 +2,11 @@
 use std::env;
 
 use reqwest::{ multipart::{Form, Part}, Client};
-use rocket::{serde::json::{json, Json, Value}};
-use serde::{Deserialize, Serialize};
+use rocket::serde::json::{json, Json, Value};
 use tracing::debug;
 
-use crate::models::response::NetworkResponse;
+use crate::{handler::IpfsData, models::response::NetworkResponse};
 
-
-#[derive(Serialize, Deserialize)]
-struct IpfsData {
-    IpfsHash: String,
-}
 
 #[get("/tweet?<tweet_id>")]
 pub async fn mint_tweet_request(
@@ -143,22 +137,25 @@ fn cleanup_image_link(image_url: &str) -> String {
 }
 
 
-#[get("/tweet-contract-call?<tweet_id>&<image_url>")]
+#[get("/tweet-contract-call?<tweet_id>&<image_url>&<notify>")]
 pub async fn tweet_contract_call(
     tweet_id: String,
     image_url: String,
+    notify: Option<String>
 ) -> Json<Value> {
+    let contract_id= env::var("NEAR_CONTRACT_ADDRESS").unwrap_or(String::from("xlassixx.near"));
+    let notify= notify.unwrap_or(String::from(""));
     Json(json!(
         [
             {
-            "receiverId": "xlassixx.near",
+            "receiverId":  contract_id,
             "functionCalls": [
                 {
                 "methodName": "mint_tweet_request",
                 "args": {
                     "tweet_id": tweet_id,
                     "image_url": cleanup_image_link(&image_url),
-                    "notify": "",
+                    "notify": notify,
                 },
                 "gas": "20000000000000000",
                 "amount": "5870000000000000000000",

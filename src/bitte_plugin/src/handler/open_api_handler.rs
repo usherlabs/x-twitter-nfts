@@ -1,15 +1,8 @@
 use rocket::{serde::json::{self ,json, Json, Value}, config::Config};
-use serde::{Deserialize, Serialize};
 use tracing::debug;
 use std;
 
-#[derive(Serialize, Deserialize, Debug)]
-struct PluginInfo {
-    pluginId: String,
-    url: String,
-    receivedId: Option<String>,
-}
-
+use crate::handler::PluginInfo;
 
 #[get("/ai-plugin.json")]
 pub async fn open_api_specification() -> Json<Value> {
