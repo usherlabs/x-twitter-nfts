@@ -4,15 +4,11 @@ use std;
 
 use crate::handler::PluginInfo;
 
+/// Route handler for serving the OpenAPI specification
 #[get("/ai-plugin.json")]
 pub async fn open_api_specification() -> Json<Value> {
-  let config = Config::ADDRESS;
-
-  debug!("{}",config);
-
-  println!("Development URL: {}", Config::release_default().address);
-
-  
+    
+    // Create a JSON object representing the OpenAPI specification
     let routes=json!({
             "/api/tweet": {
               "get": {

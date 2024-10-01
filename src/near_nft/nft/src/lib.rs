@@ -145,21 +145,8 @@ impl Contract {
     pub fn cancel_mint_request(&mut self, tweet_id: u64) {
         let tweet_request= self.tweet_requests.get(&tweet_id);
         if let Some((id,timestamp,_,_))=tweet_request{
-            if (env::block_timestamp_ms()-timestamp)<self.get_lock_time(){ 
-                if id==env::predecessor_account_id(){
-                    Promise::new(id).transfer(MIN_DEPOSIT/2);
-                    self.tweet_requests.remove(&tweet_id);
-                    let event = CancelMintRequest {
-                        tweet_id: tweet_id, // You might want to generate a unique ID here
-                        account: env::predecessor_account_id(),
-                        withdraw: MIN_DEPOSIT/2,
-                    };
-                    event.emit();
-                }
-                return;
-            }else {
-                self.claim_funds(tweet_id);
-            }
+            require!((env::block_timestamp_ms()-timestamp)>=self.get_lock_time() , format!("CANT cancel until {}ms has PASSED",self.get_lock_time()));
+            self.claim_funds(tweet_id);
         }
     }
 
@@ -188,7 +175,7 @@ impl Contract {
     #[private]
     fn claim_funds(&mut self,tweet_id:u64 ) {
         if let Some((id,_,_,_))= self.tweet_requests.get(&tweet_id){
-            Promise::new(id).transfer(MIN_DEPOSIT/2);
+            Promise::new(id).transfer(MIN_DEPOSIT);
             self.tweet_requests.remove(&tweet_id);
             let event = CancelMintRequest {
                 tweet_id: tweet_id, // You might want to generate a unique ID here

@@ -7,6 +7,15 @@ use tracing::debug;
 
 use crate::{handler::IpfsData, models::response::NetworkResponse};
 
+/// Handles the request to mint a new tweet.
+///
+/// # Parameters
+///
+/// - `tweet_id`: Optional string parameter representing the ID of the tweet.
+///
+/// # Returns
+///
+/// A `NetworkResponse` indicating the result of the operation.
 
 #[get("/tweet?<tweet_id>")]
 pub async fn mint_tweet_request(
@@ -102,36 +111,68 @@ pub async fn mint_tweet_request(
 }
 
 
-async fn get_tweet_content(tweet_id: &str) -> Result<String, Box<dyn std::error::Error+Sync+Send>> {
+/// Fetches the content of a tweet given its ID.
+///
+/// # Arguments
+///
+/// * `tweet_id`: The ID of the tweet to fetch.
+///
+/// # Returns
+///
+/// A `Result` containing the tweet text as a `String`, or an error if the request fails.
+async fn get_tweet_content(tweet_id: &str) -> Result<String, Box<dyn std::error::Error + Sync + Send>> {
+    // Create a new HTTP client
     let client = Client::new();
 
+    // Construct the API URL with the tweet ID
     let url = format!(
         "https://api.x.com/2/tweets?ids={}",
         tweet_id
     );
 
+    // Send GET request to the API
     let response = client
         .get(&url)
-        .header
-            ("Authorization", format!("Bearer {}", env::var("TWEET_BEARER").unwrap()))
+        .header("Authorization", format!("Bearer {}", env::var("TWEET_BEARER").unwrap()))
         .header("Host", "api.x.com")
-        .header   ("Accept", "*/*")
-        .header ("Cache-Control", "no-cache")
+        .header("Accept", "*/*")
+        .header("Cache-Control", "no-cache")
         .send()
         .await?;
 
+    // Parse the JSON response
     let json: Value = response.json().await?;
 
+    // Extract and return the tweet text
     Ok(json["data"][0]["text"].as_str().unwrap_or("").to_string())
 }
+
+
+/// Cleans up image links by converting IPFS or Arweave URLs to their hash-only formats
+///
+/// # Parameters
+///
+/// - `image_url`: The URL of the image to clean up
+///
+/// # Returns
+///
+/// A cleaned-up version of the image URL, or the original URL if it doesn't contain IPFS or Arweave
 fn cleanup_image_link(image_url: &str) -> String {
+    // Check if the URL contains "ipfs"
     if image_url.contains("ipfs") {
+        // Extract the IPFS hash from the URL
         let ipfs_hash = image_url.split('/').filter(|elem| elem.len() >= 46).next().unwrap_or_default();
+        
+        // Format the IPFS hash as a full IPFS URL
         format!("ipfs://{}", ipfs_hash)
-    } else  if image_url.contains("arweave") {
+    } else if image_url.contains("arweave") {
+        // Check if the URL contains "arweave"
         let image_hash = image_url.split('/').filter(|elem| elem.len() >= 40).next().unwrap_or_default();
+        
+        // Format the Arweave hash as a full Arweave URL
         format!("ar://{}", image_hash)
-    }else {
+    } else {
+        // If neither IPFS nor Arweave, return the original URL unchanged
         image_url.to_string()
     }
 }
@@ -143,8 +184,13 @@ pub async fn tweet_contract_call(
     image_url: String,
     notify: Option<String>
 ) -> Json<Value> {
-    let contract_id= env::var("NEAR_CONTRACT_ADDRESS").unwrap_or(String::from("xlassixx.near"));
-    let notify= notify.unwrap_or(String::from(""));
+    // Get the NEAR contract address from environment variable
+    let contract_id = env::var("NEAR_CONTRACT_ADDRESS").unwrap_or(String::from("xlassixx.near"));
+    
+    // Default value for notify if not provided
+    let notify = notify.unwrap_or(String::from(""));
+    
+    // Construct the JSON payload for the smart contract call
     Json(json!(
         [
             {
