@@ -19,6 +19,7 @@ fn rocket() -> _ {
     //Check if required Variable are set
     env::var("THIRDWEB_CLIENT_ID").expect("THIRDWEB_CLIENT_ID must be set");
     env::var("TWEET_BEARER").expect("TWEET_BEARER must be set");
+    env::var("ACCOUNT_ID").expect("ACCOUNT_ID must be set");
 
 
 tracing_subscriber::registry()

@@ -55,7 +55,7 @@ pub async fn create_twitter_post_image(url:String)->Result<Vec<u8>, Box<dyn Erro
         }
     }
 
-    let view_port = tab.wait_for_elements_by_xpath("/html/body/div[1]/div/div/div[2]/main/div/div/div/div/div/section/div/div/div[1]/div/div").unwrap()[0].get_box_model().unwrap().content_viewport();
+    let view_port = tab.wait_for_elements_by_xpath("//*[@id=\"react-root\"]/div/div/div[2]/main/div/div/div/div[1]/div/section/div/div/div[1]").unwrap()[0].get_box_model().unwrap().content_viewport();
 
     // Take a screenshot a cropped view of the browser window
     let jpeg_data = tab.capture_screenshot(

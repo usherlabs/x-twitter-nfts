@@ -1,6 +1,5 @@
 use rocket::{serde::json::{self ,json, Json, Value}, config::Config};
-use tracing::debug;
-use std;
+use std::{fs,env};
 
 use crate::handler::PluginInfo;
 
@@ -24,7 +23,7 @@ pub async fn open_api_specification() -> Json<Value> {
                 ],
                 "summary": "Get tweet post data",
                 "description": "This endpoint returns an image of the post to be Rewarded along side an tweet description",
-                "operationId": "get-tweet",
+                "operationId": "tweet-snapshot",
                 "parameters": [
                   {
                     "name": "tweet_id",
@@ -116,7 +115,7 @@ pub async fn open_api_specification() -> Json<Value> {
                     "schema": {
                       "type": "string"
                     },
-                    "example": "@ryan_soury"
+                    "example": "@ryan_soury",
                     "description": "The tweet account to notify when is reward/post is complete"
                   }
                 ],
@@ -198,7 +197,7 @@ pub async fn open_api_specification() -> Json<Value> {
             "servers": [
               {
                 "url": if format!("{}",Config::release_default().address).eq("127.0.0.1") {
-                  let bitte_config=std::fs::read_to_string("./bitte.dev.json").unwrap();
+                  let bitte_config=fs::read_to_string("./bitte.dev.json").unwrap();
                   let plugin_info:PluginInfo  = json::serde_json::from_str(bitte_config.as_str()).unwrap();
                   plugin_info.url
               } else {
@@ -207,11 +206,11 @@ pub async fn open_api_specification() -> Json<Value> {
               }
             ],
             "x-mb": {
-              "account-id": "xlassix.near",
+              "account-id": env::var("ACCOUNT_ID").unwrap_or(String::from("<missing>.near")),
               "assistant": {
                 "name": "Post Cloner",
                 "description": "An assistant that provides a digital representation of a Post as an Image with its description and generates a custom transaction for the user",
-                "instructions": "Retrieve the X(twitter) post URL from the user's request. Ask the user if they want to generate art for the post. If the user confirms, prompt them to provide the user profile to notify after minting. Confirm the user's profile and inform them that the post will be minted once verified on the Near Blockchain. Instruct the user to submit their transaction to get started and assure them that the specified profile will be notified once it's ready.",
+                "instructions": "Retrieve the X(twitter) post URL from the user's request. Ask the user if they want to generate art for the post or use the default provided 'tweet-snapshot'. If the user confirms, prompt them to provide the user profile to notify after minting. Confirm the user's profile and inform them that the post will be minted once verified on the Near Blockchain. Instruct the user to submit their transaction to get started and assure them that the specified profile will be notified once it's ready.",
                 "tools": [
                   {
                     "type": "generate-image"
