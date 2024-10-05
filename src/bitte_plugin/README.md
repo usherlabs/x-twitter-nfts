@@ -20,7 +20,6 @@ Start server
 ```
 cargo run
 ```
-
 and
 run agent
 

@@ -1,4 +1,4 @@
-use rocket::{serde::json::{self ,json, Json, Value}, config::Config};
+use rocket::serde::json::{self ,json, Json, Value};
 use std::{fs,env};
 
 use crate::handler::PluginInfo;
@@ -16,10 +16,17 @@ pub async fn open_api_specification() -> Json<Value> {
                   "tweet",
                   "tweet Id",
                   "Reward",
-                  "Post",
-                  "Clone",
+                  "post",
+                  "clone",
+                  "collect",
                   "Snapshot",
-                  "processed"
+                  "processed",
+                  "tweet-snapshot",
+                  "snapshot",
+                  "Craft",
+                  "Reward",
+                  "Derive",
+                  "Duplicate",
                 ],
                 "summary": "Get tweet post data",
                 "description": "This endpoint returns an image of the post to be Rewarded along side an tweet description",
@@ -81,12 +88,7 @@ pub async fn open_api_specification() -> Json<Value> {
                 "tags": [
                     "tweet",
                     "tweet Id",
-                    "Reward",
-                    "Craft",
-                    "Reward",
-                    "Derive",
                     "Produce",
-                    "Duplicate",
                     "transaction"
                 ],
                 "parameters": [
@@ -196,13 +198,12 @@ pub async fn open_api_specification() -> Json<Value> {
             },
             "servers": [
               {
-                "url": if format!("{}",Config::release_default().address).eq("127.0.0.1") {
+                "url": env::var("HOST_URL").unwrap_or_else(|_|{
                   let bitte_config=fs::read_to_string("./bitte.dev.json").unwrap();
                   let plugin_info:PluginInfo  = json::serde_json::from_str(bitte_config.as_str()).unwrap();
                   plugin_info.url
-              } else {
-                format!("https://{}",Config::release_default().address)
-              }
+                  }
+                )
               }
             ],
             "x-mb": {
@@ -210,7 +211,7 @@ pub async fn open_api_specification() -> Json<Value> {
               "assistant": {
                 "name": "Post Cloner",
                 "description": "An assistant that provides a digital representation of a Post as an Image with its description and generates a custom transaction for the user",
-                "instructions": "Retrieve the X(twitter) post URL from the user's request. Ask the user if they want to generate art for the post or use the default provided 'tweet-snapshot'. If the user confirms, prompt them to provide the user profile to notify after minting. Confirm the user's profile and inform them that the post will be minted once verified on the Near Blockchain. Instruct the user to submit their transaction to get started and assure them that the specified profile will be notified once it's ready.",
+                "instructions": "Retrieve the X(twitter) post URL from the user's request. Ask the user if they want to AI generated art for the post or use the default tweet-snapshot that will be provided. If the user confirms, Show the Image and prompt them to provide the user profile to notify after minting. Confirm the user's profile and inform them that the post will be minted once verified on the Near Blockchain. Instruct the user to submit their transaction to get started and assure them that the specified profile will be notified once it's ready.",
                 "tools": [
                   {
                     "type": "generate-image"
