@@ -1,0 +1,26 @@
+[package]
+name = "near-indexer"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+async-std = { version = "1.12", features = ["attributes", "tokio1"] }
+futures = { version = "0.3" }
+async-stream = { version = "0.3" }
+futures-util = { version = "0.3" }
+sea-orm = { version = "1.0.1", features = [
+    "sqlx-all",
+    "runtime-async-std-native-tls",
+] }
+dotenv = "0.15.0"
+tracing = "0.1.40"
+tokio = { version = "1.37", features = ["macros", "rt"] }
+serde_json = "1.0.128"
+reqwest = { version = "0.12.3", features = ["json"] }
+regex = "1.11.0"
+serde = { version = "1.0.147", features = ["derive", "std"] }
+
+
+[workspace]
+members = [".", "migration"]
