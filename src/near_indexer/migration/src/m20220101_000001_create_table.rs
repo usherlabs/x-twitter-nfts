@@ -9,26 +9,26 @@ impl MigrationTrait for Migration {
         manager
             .create_table(
                 Table::create()
-                    .table(Transaction::Table)
+                    .table(NearTransaction::Table)
                     .if_not_exists()
-                    .col(integer(Transaction::Id))
-                    .col(string_uniq(Transaction::TransactionHash))
-                    .col(string(Transaction::SignerAccountId))
-                    .col(string(Transaction::ReceiverAccountId))
-                    .col(string(Transaction::BlockTimestamp))
-                    .col(integer(Transaction::BlockHeight))
-                    .col(string(Transaction::Action))
-                    .col(string(Transaction::Method))
-                    .col(boolean(Transaction::OutcomesStatus))
-                    .col(string(Transaction::TweetID))
-                    .col(string(Transaction::ImageURL))
-                    .col(string_null(Transaction::UserToNotify))
-                    .col(string_null(Transaction::NotarizedProof))
-                    .col(string_null(Transaction::ZkProof))
+                    .col(integer(NearTransaction::Id))
+                    .col(string_uniq(NearTransaction::TransactionHash))
+                    .col(string(NearTransaction::SignerAccountId))
+                    .col(string(NearTransaction::ReceiverAccountId))
+                    .col(string(NearTransaction::BlockTimestamp))
+                    .col(integer(NearTransaction::BlockHeight))
+                    .col(string(NearTransaction::Action))
+                    .col(string(NearTransaction::Method))
+                    .col(boolean(NearTransaction::OutcomesStatus))
+                    .col(string(NearTransaction::TweetID))
+                    .col(string(NearTransaction::ImageURL))
+                    .col(string_null(NearTransaction::UserToNotify))
+                    .col(string_null(NearTransaction::NotarizedProof))
+                    .col(string_null(NearTransaction::ZkProof))
                     .primary_key(
                         Index::create()
                             .name("pk-transaction")
-                            .col(Transaction::Id)
+                            .col(NearTransaction::Id)
                     )
                     .to_owned(),
             )
@@ -38,9 +38,9 @@ impl MigrationTrait for Migration {
             .create_index(
                 Index::create()
                     .if_not_exists()
-                    .name("idx-transaction-hash")
-                    .table(Transaction::Table)
-                    .col(Transaction::TransactionHash).to_owned()                 
+                    .name("idx-near-transaction-hash")
+                    .table(NearTransaction::Table)
+                    .col(NearTransaction::TransactionHash).to_owned()                 
             )
             .await?;
 
@@ -49,17 +49,17 @@ impl MigrationTrait for Migration {
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
 
-        manager.drop_index(Index::drop().name("idx-transaction-hash").to_owned()   )
+        manager.drop_index(Index::drop().name("idx-near-transaction-hash").to_owned()   )
         .await?;
 
         manager
-            .drop_table(Table::drop().table(Transaction::Table).to_owned())
+            .drop_table(Table::drop().table(NearTransaction::Table).to_owned())
             .await
     }
 }
 
 #[derive(DeriveIden)]
-enum Transaction {
+enum NearTransaction {
     Table,
     Id,
     TransactionHash,

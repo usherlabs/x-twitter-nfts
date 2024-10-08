@@ -1,9 +1,16 @@
-use std::{collections::HashMap, time::Duration};
+use crate::entity::near_transaction;
+
+use std::collections::HashMap;
+use std::time::Duration;
 use std::error::Error;
 use std::marker::{Send,Sync};
 use regex::Regex;
+use sea_orm::{DbConn, DbErr, EntityTrait};
 use serde::{Deserialize, Serialize};
+use serde_json::Error as SJError;
 use tokio::time::sleep;
+use sea_orm::ActiveValue::{Set};
+use tracing::{debug, error};
 
 
 pub struct NearExplorerIndexer<'a> {
@@ -53,14 +60,16 @@ impl<'a> NearExplorerIndexer<'a> {
     pub async fn next_page(&mut self) -> Result<Vec<Transaction>, Box<dyn Error+Send+Sync>> {
         let data = self.fetch(false).await?;
         if let Some(cursor)=data.cursor{
-            self.page_no=self.page_no+1;
             self.cursor=Some(cursor);
+        }else{
+            self.cursor=None;
         }
+        self.page_no=self.page_no+1;
 
         Ok(data.txns)
     }
 
-    pub fn is_next_page(&self) ->bool {
+    pub fn has_next_page(&self) ->bool {
         self.cursor.is_some()
     }
     async fn fetch(&mut self,reset: bool) -> Result<TransactionData, Box<dyn Error+Send+Sync>> {
@@ -98,7 +107,7 @@ impl<'a> NearExplorerIndexer<'a> {
         }
         retries += 1;
         let delay = Duration::from_millis(5000);
-        sleep(delay);
+        sleep(delay).await;
     }
     }
 }
@@ -113,7 +122,7 @@ mod test_near_explorer_indexer {
         let mut indexer = NearExplorerIndexer::new("priceoracle.near").unwrap();
         assert_eq!(indexer.get_transactions().await.unwrap().len(),25);
         assert_eq!(indexer.next_page().await.unwrap().len(),25);
-        assert_eq!(indexer.is_next_page(),true);
+        assert_eq!(indexer.has_next_page(),true);
 
     }
 
@@ -122,7 +131,7 @@ mod test_near_explorer_indexer {
         let mut indexer = NearExplorerIndexer::new("ush_test.testnet").unwrap();
         let data_size =indexer.get_transactions().await.unwrap().len();
         assert!(data_size<25);
-        assert_eq!(indexer.is_next_page(),false);
+        assert_eq!(indexer.has_next_page(),false);
     }
 }
 
@@ -309,4 +318,72 @@ struct LatestBlocks {
 #[derive(Serialize, Deserialize,Debug)]
 struct Tab {
     tab: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct MintRequestData {
+    notify: String,
+    tweet_id: u64,
+    image_url:String,
+}
+
+
+pub async fn process_near_transaction(db: &DbConn,transaction: &Transaction) -> Result<bool, DbErr> {
+let pk =transaction.id.parse::<i32>().unwrap();
+
+// Find by primary key
+let _near_transaction: Option<near_transaction::Model> = near_transaction::Entity::find_by_id(pk).one(db).await?;
+match _near_transaction {
+    Some(_)=>{
+        Ok(true)
+    },
+    None=>{
+        if !transaction.outcomes.status{
+            debug!("Failed BlockChain Transaction Ignored, {}",transaction.transaction_hash);
+            return  Ok(false);
+        }
+        if transaction.actions[0].method.is_none(){
+            debug!("Ignored Transaction: {} No method Found",transaction.transaction_hash);
+            return  Ok(false);
+        }
+        let action = match transaction.actions.get(0) {
+            Some(action) => action,
+            None => &Action { action: "".to_string(), method: None, args: None },
+        };
+        
+        if let Some(method) = &action.method {
+            // LIST OPERATIONS 
+            if method == "mint_tweet_request" {
+                let mint_data:Result<MintRequestData,SJError> = serde_json::from_str(action.args.clone().unwrap_or("".to_string()).as_str());
+                if mint_data.is_err(){
+                    error!("mint_tweet_request: Could not parse data :{}",transaction.transaction_hash);
+                    return  Ok(false);
+                }
+                let mint_data=mint_data.unwrap();
+                let new_transaction = near_transaction::ActiveModel {
+                    id: Set(pk),
+                    transaction_hash:Set(transaction.transaction_hash.clone()),
+                    signer_account_id: Set(transaction.signer_account_id.clone()),
+                    receiver_account_id: Set(transaction.receiver_account_id.clone()),
+                    block_timestamp: Set(transaction.transaction_hash.clone()),
+                    block_height: Set(transaction.block.block_height.try_into().unwrap()),
+                    action: Set(action.action.clone()),
+                    method: Set(method.clone()),
+                    outcomes_status: Set(transaction.outcomes.status),
+                    tweet_id: Set(mint_data.tweet_id.to_string()),
+                    image_url: Set(mint_data.image_url.clone()),
+                    user_to_notify:Set(Some(mint_data.notify.clone())),
+                    ..Default::default() // all other attributes are `NotSet`
+                };
+                near_transaction::Entity::insert(new_transaction).exec(db).await?;
+                println!("{:?}", transaction);
+                return  Ok(false);
+            }
+        }else{
+            debug!("Ignored Transaction: {} Method Called: {:?}",transaction.transaction_hash,action.method);
+            return  Ok(false);
+        }
+        Ok(false)
+    }
+}
 }
