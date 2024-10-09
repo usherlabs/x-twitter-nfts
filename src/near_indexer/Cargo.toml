@@ -20,7 +20,7 @@ serde_json = "1.0.128"
 reqwest = { version = "0.12.3", features = ["json"] }
 regex = "1.11.0"
 serde = { version = "1.0.147", features = ["derive", "std"] }
-
+near-client = "0.7.2"
 
 [workspace]
 members = [".", "migration"]

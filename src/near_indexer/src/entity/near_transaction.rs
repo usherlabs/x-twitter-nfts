@@ -20,6 +20,7 @@ pub struct Model {
     pub outcomes_status: bool,
     pub tweet_id: String,
     pub image_url: String,
+    pub mint_transaction_hash: Option<String>,
     pub user_to_notify: Option<String>,
     pub notarized_proof: Option<String>,
     pub zk_proof: Option<String>,

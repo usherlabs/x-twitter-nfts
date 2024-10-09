@@ -22,6 +22,7 @@ impl MigrationTrait for Migration {
                     .col(boolean(NearTransaction::OutcomesStatus))
                     .col(string(NearTransaction::TweetID))
                     .col(string(NearTransaction::ImageURL))
+                    .col(string_null(NearTransaction::MintTransactionHash))
                     .col(string_null(NearTransaction::UserToNotify))
                     .col(string_null(NearTransaction::NotarizedProof))
                     .col(string_null(NearTransaction::ZkProof))
@@ -72,6 +73,7 @@ enum NearTransaction {
     OutcomesStatus,
     TweetID,
     ImageURL,
+    MintTransactionHash,
     UserToNotify,
     NotarizedProof,
     ZkProof

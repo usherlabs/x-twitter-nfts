@@ -1,13 +1,19 @@
 use crate::entity::near_transaction;
 
 use std::collections::HashMap;
+use std::env;
+use std::str::FromStr;
 use std::time::Duration;
 use std::error::Error;
 use std::marker::{Send,Sync};
+use near_client::client::{NearClient, Signer};
+use near_client::crypto::Key;
+use near_client::prelude::{AccountId, Ed25519PublicKey, Ed25519SecretKey, Finality};
 use regex::Regex;
+use reqwest::Url;
 use sea_orm::{DbConn, DbErr, EntityTrait};
 use serde::{Deserialize, Serialize};
-use serde_json::Error as SJError;
+use serde_json::{json, Error as SJError};
 use tokio::time::sleep;
 use sea_orm::ActiveValue::{Set};
 use tracing::{debug, error};
@@ -329,61 +335,106 @@ struct MintRequestData {
 
 
 pub async fn process_near_transaction(db: &DbConn,transaction: &Transaction) -> Result<bool, DbErr> {
-let pk =transaction.id.parse::<i32>().unwrap();
+    
+    // let near_rpc = env::var("NEAR_RPC").unwrap_or("https://rpc.testnet.near.org".to_owned());
+    // let nft_contract_id=env::var("NFT_CONTRACT_ID").unwrap_or("test-usher.testnet".to_owned());
+    // let sk=env::var("SIGNER_SK").unwrap_or("testnet".to_owned());
+    // let ed25519SecretKey=Ed25519SecretKey::from_string(&sk).unwrap();
+    // let nft_contract_id=AccountId::from_str(&nft_contract_id).unwrap();
 
-// Find by primary key
-let _near_transaction: Option<near_transaction::Model> = near_transaction::Entity::find_by_id(pk).one(db).await?;
-match _near_transaction {
-    Some(_)=>{
-        Ok(true)
-    },
-    None=>{
-        if !transaction.outcomes.status{
-            debug!("Failed BlockChain Transaction Ignored, {}",transaction.transaction_hash);
-            return  Ok(false);
-        }
-        if transaction.actions[0].method.is_none(){
-            debug!("Ignored Transaction: {} No method Found",transaction.transaction_hash);
-            return  Ok(false);
-        }
-        let action = match transaction.actions.get(0) {
-            Some(action) => action,
-            None => &Action { action: "".to_string(), method: None, args: None },
-        };
-        
-        if let Some(method) = &action.method {
-            // LIST OPERATIONS 
-            if method == "mint_tweet_request" {
-                let mint_data:Result<MintRequestData,SJError> = serde_json::from_str(action.args.clone().unwrap_or("".to_string()).as_str());
-                if mint_data.is_err(){
-                    error!("mint_tweet_request: Could not parse data :{}",transaction.transaction_hash);
-                    return  Ok(false);
-                }
-                let mint_data=mint_data.unwrap();
-                let new_transaction = near_transaction::ActiveModel {
-                    id: Set(pk),
-                    transaction_hash:Set(transaction.transaction_hash.clone()),
-                    signer_account_id: Set(transaction.signer_account_id.clone()),
-                    receiver_account_id: Set(transaction.receiver_account_id.clone()),
-                    block_timestamp: Set(transaction.transaction_hash.clone()),
-                    block_height: Set(transaction.block.block_height.try_into().unwrap()),
-                    action: Set(action.action.clone()),
-                    method: Set(method.clone()),
-                    outcomes_status: Set(transaction.outcomes.status),
-                    tweet_id: Set(mint_data.tweet_id.to_string()),
-                    image_url: Set(mint_data.image_url.clone()),
-                    user_to_notify:Set(Some(mint_data.notify.clone())),
-                    ..Default::default() // all other attributes are `NotSet`
-                };
-                near_transaction::Entity::insert(new_transaction).exec(db).await?;
-                println!("{:?}", transaction);
+    
+    let pk =transaction.id.parse::<i32>().unwrap();
+
+    // Find by primary key
+    let _near_transaction: Option<near_transaction::Model> = near_transaction::Entity::find_by_id(pk).one(db).await?;
+    match _near_transaction {
+        Some(_)=>{
+            Ok(true)
+        },
+        None=>{
+            if !transaction.outcomes.status{
+                debug!("Failed BlockChain Transaction Ignored, {}",transaction.transaction_hash);
                 return  Ok(false);
             }
-        }else{
-            debug!("Ignored Transaction: {} Method Called: {:?}",transaction.transaction_hash,action.method);
-            return  Ok(false);
+            if transaction.actions[0].method.is_none(){
+                debug!("Ignored Transaction: {} No method Found",transaction.transaction_hash);
+                return  Ok(false);
+            }
+            let action = match transaction.actions.get(0) {
+                Some(action) => action,
+                None => &Action { action: "".to_string(), method: None, args: None },
+            };
+            
+            if let Some(method) = &action.method {
+                // LIST OPERATIONS 
+                if method == "mint_tweet_request" {
+                    let mint_data:Result<MintRequestData,SJError> = serde_json::from_str(action.args.clone().unwrap_or("".to_string()).as_str());
+                    if mint_data.is_err(){
+                        error!("mint_tweet_request: Could not parse data :{}",transaction.transaction_hash);
+                        return  Ok(false);
+                    }
+                    let mint_data=mint_data.unwrap();
+ 
+
+                    
+                    // // mint call
+                    // let client = NearClient::new(Url::from_str(&near_rpc).unwrap()).unwrap();
+                    // let ed25519_public_key = Ed25519PublicKey::from_string(&sk).unwrap();
+                    // let nonce = client
+                    // .view_access_key(&nft_contract_id, &ed25519_public_key, Finality::Final)
+                    //     .await;
+                    // if nonce.is_err(){
+                    //     error!("Failed to fetch nonce at :{}",transaction.transaction_hash);
+                    //     return Ok(false);
+                    // }
+                    // let nonce =nonce.unwrap().nonce;
+                    // let signer = Signer::from_secret(ed25519SecretKey,nft_contract_id.clone(), nonce);
+                    // let chain_transaction = client.function_call(&signer, &nft_contract_id, "nft_mint").args(json!(
+                    //     {
+                    //         "token_id": mint_data.tweet_id,
+                    //         "receiver_id": transaction.signer_account_id,
+                    //         "metadata": {
+                    //             "media": mint_data.image_url,
+                    //             // Add proof and more description
+                    //         }
+                    //     }
+                    // ))
+                    // .deposit(5870000000000000000000)
+                    // .retry(near_client::client::Retry::TWICE)
+                    // .commit_async(Finality::Final).await;
+
+                    // if chain_transaction.is_err(){
+                    //     error!("On Chain Transaction failed :{}\n Details:{:?}",transaction.transaction_hash,chain_transaction.err());
+                    //     return Ok(false);
+                    // }
+
+                    // debug!("ON Chain Transaction Hash {} for mint {}",chain_transaction.unwrap(), transaction.transaction_hash);
+                                
+
+                    let new_transaction = near_transaction::ActiveModel {
+                        id: Set(pk),
+                        transaction_hash:Set(transaction.transaction_hash.clone()),
+                        signer_account_id: Set(transaction.signer_account_id.clone()),
+                        receiver_account_id: Set(transaction.receiver_account_id.clone()),
+                        block_timestamp: Set(transaction.transaction_hash.clone()),
+                        block_height: Set(transaction.block.block_height.try_into().unwrap()),
+                        action: Set(action.action.clone()),
+                        method: Set(method.clone()),
+                        outcomes_status: Set(transaction.outcomes.status),
+                        tweet_id: Set(mint_data.tweet_id.to_string()),
+                        image_url: Set(mint_data.image_url.clone()),
+                        user_to_notify:Set(Some(mint_data.notify.clone())),
+                        ..Default::default() // all other attributes are `NotSet`
+                    };
+                    near_transaction::Entity::insert(new_transaction).exec(db).await?;
+                    println!("{:?}", transaction);
+                    return  Ok(false);
+                }
+            }else{
+                debug!("Ignored Transaction: {} Method Called: {:?}",transaction.transaction_hash,action.method);
+                return  Ok(false);
+            }
+            Ok(false)
         }
-        Ok(false)
     }
-}
 }

@@ -4,7 +4,7 @@ pub mod entity;
 use std::{env, time::Duration};
 use async_std::task::sleep;
 use dotenv::dotenv;
-use helper::{process_near_transaction};
+use helper::process_near_transaction;
 use sea_orm::Database;
 use tracing::{debug,error};
 #[async_std::main]
