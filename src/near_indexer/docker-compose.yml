@@ -5,7 +5,7 @@ services:
     image: postgres:16
     hostname: postgres
     restart: always
-    container_name: verity-move-postgres
+    container_name: verity-near-indexer-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}

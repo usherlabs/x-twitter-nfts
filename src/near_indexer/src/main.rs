@@ -15,6 +15,7 @@ async fn main() {
     dotenv().expect("Error occurred when loading .env");
 
     //Load Essential for env Variables
+    env::var("TWEET_BEARER").expect("TWEET_BEARER must be set");
     let nft_contract_id = env::var("NFT_CONTRACT_ID").unwrap_or("test-usher.testnet".to_owned());
     let db = Database::connect(env::var("DATABASE_URL").expect("DATABASE_URL must be set"))
         .await
@@ -26,6 +27,11 @@ async fn main() {
 
     // Init Near Client
     let client = NearClient::new(Url::from_str(&near_rpc).unwrap()).unwrap();
+
+    // Initialize tracing. In order to view logs, run `RUST_LOG=info cargo run`
+    tracing_subscriber::fmt()
+        .with_env_filter(tracing_subscriber::filter::EnvFilter::from_default_env())
+        .init();
 
     let indexer = helper::NearExplorerIndexer::new(&nft_contract_id);
     if indexer.is_err() {

@@ -4,10 +4,12 @@ use near_client::client::{NearClient, Signer};
 use near_client::crypto::Key;
 use near_client::prelude::{AccountId, Ed25519PublicKey, Ed25519SecretKey, Finality};
 use regex::Regex;
+use reqwest::multipart::{Form, Part};
+use reqwest::Client;
 use sea_orm::ActiveValue::Set;
 use sea_orm::{DbConn, DbErr, EntityTrait};
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Error as SJError};
+use serde_json::{json, Error as SJError, Value};
 use std::collections::HashMap;
 use std::env;
 use std::error::Error;
@@ -15,7 +17,7 @@ use std::marker::{Send, Sync};
 use std::str::FromStr;
 use std::time::Duration;
 use tokio::time::sleep;
-use tracing::{debug, error};
+use tracing::{debug, info};
 
 pub struct NearExplorerIndexer<'a> {
     pub page_no: u8,
@@ -352,6 +354,109 @@ struct MintRequestData {
     tweet_id: u64,
     image_url: String,
 }
+#[allow(non_snake_case)]
+#[derive(Serialize, Deserialize)]
+struct IpfsData {
+    IpfsHash: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct TokenMetadata {
+    #[allow(dead_code)]
+    title: Option<String>, // ex. "Arch Nemesis: Mail Carrier" or "Parcel #5055"
+    #[allow(dead_code)]
+    description: Option<String>, // free-form description
+    #[allow(dead_code)]
+    media: Option<String>,
+    #[allow(dead_code)]
+    // URL to associated media, preferably to decentralized, content-addressed storage
+    copies: Option<u64>,
+    #[allow(dead_code)]
+    // number of copies of this set of metadata in existence when token was minted.
+    issued_at: Option<String>,
+    #[allow(dead_code)]
+    // ISO 8601 datetime when token was issued or minted
+    expires_at: Option<String>,
+    #[allow(dead_code)]
+    // ISO 8601 datetime when token expires
+    starts_at: Option<String>,
+    #[allow(dead_code)]
+    // ISO 8601 datetime when token starts being valid
+    updated_at: Option<String>,
+    #[allow(dead_code)]
+    // ISO 8601 datetime when token was last updated
+    extra: Option<String>,
+    #[allow(dead_code)]
+    // anything extra the NFT wants to store on-chain. Can be stringified JSON.
+    reference: Option<String>, // URL to an off-chain JSON file with more info.
+}
+
+#[derive(Debug, Deserialize)]
+struct NftData {
+    #[allow(dead_code)]
+    token_id: String,
+    #[allow(dead_code)]
+    owner_id: String,
+    #[allow(dead_code)]
+    metadata: TokenMetadata,
+}
+
+pub async fn get_proof(tweet_id: u64) -> String {
+    let verify = get_verity_client();
+    let thirdweb_client_id = env::var("THIRDWEB_CLIENT_ID").expect("MY_VAR must be set");
+    let _temp=verify.get(format!(
+        "https://api.x.com/2/tweets?ids={}&tweet.fields=created_at,public_metrics&expansions=author_id&user.fields=created_at",tweet_id
+    ))
+    .header("Authorization", format!("Bearer {}",env::var("TWEET_BEARER").unwrap_or(String::from(""))))
+    .send().await;
+
+    if _temp.is_err() {
+        print!("Error: {:?} ", _temp.err());
+        return String::from("");
+    }
+    let _temp = _temp.unwrap();
+    let full_data = json!({"proof":_temp.proof,"notary_pub_key":_temp.notary_pub_key,"x":_temp.subject.json::<Value>().await.unwrap()});
+
+    let client = Client::new();
+
+    let form = Form::new()
+        .part(
+            "file",
+            Part::text(full_data.to_string()).file_name("proof.json"),
+        )
+        .part("pinataOptions", Part::text("{\"wrapWithDirectory\":false}"))
+        .part("pinataOptions", Part::text("{\"wrapWithDirectory\":false}"))
+        .part(
+            "pinataMetadata",
+            Part::text("{\"name\":\"Storage SDK\",\"keyvalues\":{}}"),
+        );
+
+    // Return a JSON response
+    let url = "https://storage.thirdweb.com/ipfs/upload";
+    let response = client
+        .post(url)
+        .header("X-Client-Id", &thirdweb_client_id)
+        .header(
+            "Content-Type",
+            format!("multipart/form-data; boundary={}", form.boundary()),
+        )
+        .multipart(form)
+        .send()
+        .await;
+
+    if response.is_err() {
+        print!("Error: {:?} ", response.err());
+        return String::from("");
+    }
+
+    let response = response.unwrap().json::<IpfsData>().await;
+
+    if response.is_err() {
+        print!("Error: {:?} ", response.err());
+        return String::from("");
+    }
+    format!("ipfs://{}", response.unwrap().IpfsHash)
+}
 
 pub async fn process_near_transaction(
     db: &DbConn,
@@ -372,7 +477,7 @@ pub async fn process_near_transaction(
         None => {
             if !transaction.outcomes.status {
                 debug!(
-                    "Failed BlockChain Transaction Ignored, {}",
+                    "Found Failed BlockChain Transaction Ignored, {}",
                     transaction.transaction_hash
                 );
                 return Ok(false);
@@ -400,7 +505,7 @@ pub async fn process_near_transaction(
                         action.args.clone().unwrap_or("".to_string()).as_str(),
                     );
                     if mint_data.is_err() {
-                        error!(
+                        debug!(
                             "mint_tweet_request: Could not parse data :{}",
                             transaction.transaction_hash
                         );
@@ -408,15 +513,47 @@ pub async fn process_near_transaction(
                     }
                     let mint_data = mint_data.unwrap();
 
-                    // // mint call
+                    // mint call
                     let ed25519_public_key = Ed25519PublicKey::from(sk);
                     let nonce = client
                         .view_access_key(&nft_contract_id, &ed25519_public_key, Finality::Final)
                         .await;
                     if nonce.is_err() {
-                        error!("Failed to fetch nonce at :{}", transaction.transaction_hash);
+                        debug!("Failed to fetch nonce at :{}", transaction.transaction_hash);
                         return Ok(false);
                     }
+
+                    // Generate Proof
+                    let proof_url = get_proof(mint_data.tweet_id).await;
+
+                    debug!("PROOF_URL: {}", &proof_url);
+
+                    let fetched_nft = client
+                        .view::<Option<NftData>>(
+                            &nft_contract_id,
+                            Finality::Final,
+                            "nft_token",
+                            Some(json!({
+                                    "token_id": mint_data.tweet_id.to_string(),
+                            })),
+                        )
+                        .await;
+                    if fetched_nft.is_err() {
+                        info!(
+                            "Failed to fetched nft data at :{}",
+                            transaction.transaction_hash
+                        );
+                        return Ok(false);
+                    }
+
+                    let fetched_nft = fetched_nft.unwrap().data();
+
+                    if fetched_nft.is_some() {
+                        debug!("NFT already minted :{}", transaction.transaction_hash);
+                        return Ok(false);
+                    }
+                    debug!("fetched_nft: {:?}\nmint_data:{:?}", fetched_nft, &mint_data);
+
                     //Type issue had to improvise: signer needs sk
                     let derived_sk = Ed25519SecretKey::try_from_bytes(sk.as_bytes());
                     if derived_sk.is_err() {
@@ -434,6 +571,8 @@ pub async fn process_near_transaction(
                                 "token_metadata": {
                                     "media": mint_data.image_url,
                                     // Add proof and more description
+                                    "extra":&proof_url,
+                                    "reference": proof_url,
                                 }
                             }
                         ))
@@ -444,7 +583,7 @@ pub async fn process_near_transaction(
                         .await;
 
                     if chain_transaction.is_err() {
-                        error!(
+                        debug!(
                             "On Chain Transaction failed :{}\n Details:{:?}",
                             transaction.transaction_hash,
                             chain_transaction.err()
@@ -452,9 +591,10 @@ pub async fn process_near_transaction(
                         return Ok(false);
                     }
 
+                    let chain_transaction = chain_transaction.unwrap();
                     debug!(
                         "ON Chain Transaction Hash {:?} for mint {}",
-                        chain_transaction.unwrap(),
+                        chain_transaction.id().to_string(),
                         transaction.transaction_hash
                     );
 
@@ -471,12 +611,12 @@ pub async fn process_near_transaction(
                         tweet_id: Set(mint_data.tweet_id.to_string()),
                         image_url: Set(mint_data.image_url.clone()),
                         user_to_notify: Set(Some(mint_data.notify.clone())),
+                        mint_transaction_hash: Set(Some(chain_transaction.id().to_string())),
                         ..Default::default() // all other attributes are `NotSet`
                     };
                     near_transaction::Entity::insert(new_transaction)
                         .exec(db)
                         .await?;
-                    println!("{:?}", transaction);
                     return Ok(false);
                 }
             } else {
@@ -489,4 +629,23 @@ pub async fn process_near_transaction(
             Ok(false)
         }
     }
+}
+
+use k256::SecretKey;
+use rand::rngs::OsRng;
+use verity_client::client::{AnalysisConfig, VerityClient, VerityClientConfig};
+
+pub fn get_verity_client() -> VerityClient {
+    let secret_key = SecretKey::random(&mut OsRng);
+
+    let verity_config = VerityClientConfig {
+        prover_url: String::from("http://127.0.0.1:8080"),
+        prover_zmq: String::from("tcp://127.0.0.1:5556"),
+        analysis: Some(AnalysisConfig {
+            analysis_url: String::from("https://analysis.verity.usher.so"),
+            secret_key,
+        }),
+    };
+
+    VerityClient::new(verity_config)
 }
