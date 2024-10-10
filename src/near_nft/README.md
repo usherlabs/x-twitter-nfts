@@ -91,6 +91,11 @@ The next command will initialize the contract using the `new` method:
 near call $CONTRACT_NAME new_default_meta '{"owner_id": "'$CONTRACT_NAME'"}' --accountId $CONTRACT_NAME
 ```
 
+submit mint request
+```bash
+near call $CONTRACT_NAME mint_tweet_request '{"image_url": "'$IMAGE_URL'","tweet_id": '$TWEET_ID', "notify":""}' --accountId $CONTRACT_NAME --depositYocto 5870000000000000000000
+```
+
 To view the NFT metadata:
 
 ```bash
