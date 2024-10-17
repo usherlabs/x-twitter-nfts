@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  postgres_db:
+    image: postgres:16
+    hostname: postgres
+    restart: always
+    container_name: verity-near-indexer-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    ports:
+      - "5432:5432"
+    networks:
+      - verify-network
+    volumes:
+      - postgres-near-indexer:/var/lib/postgresql/data
+
+volumes:
+  postgres-near-indexer:
+
+networks:
+  verify-network:
+    driver: bridge

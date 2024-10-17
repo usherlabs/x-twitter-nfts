@@ -14,7 +14,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[launch]
 fn rocket() -> _ {
-    dotenv().expect("Error occured when loading .env");
+    dotenv().expect("Error occurred when loading .env");
 
     //Check if required Variable are set
     env::var("THIRDWEB_CLIENT_ID").expect("THIRDWEB_CLIENT_ID must be set");
