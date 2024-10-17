@@ -19,13 +19,14 @@ pub async fn create_twitter_post_image(
         "Hostname must be twitter.com or x.com"
     );
 
-    let mut builder = headless_chrome::LaunchOptions::default_builder();
+    // let mut builder = headless_chrome::LaunchOptions::default_builder();
+    let builder = headless_chrome::LaunchOptions::default_builder();
     // Set headless mode based on whether it's in test mode
-    #[cfg(test)]
-    builder.headless(false); // Headful mode for tests
+    // #[cfg(test)]
+    // builder.headless(false); // Headful mode for tests
 
-    #[cfg(not(test))]
-    builder.headless(true); // Headless mode for non-test
+    // #[cfg(not(test))]
+    // builder.headless(true); // Headless mode for non-test
 
     let browser = Browser::new(builder.build()?)?;
 
@@ -41,7 +42,7 @@ pub async fn create_twitter_post_image(
     let tab = tab.set_bounds(headless_chrome::types::Bounds::Normal {
         left: Some(0),
         top: Some(0),
-        width: Some(375.0),
+        width: Some(475.0),
         height: Some(1000.0),
     })?;
 
