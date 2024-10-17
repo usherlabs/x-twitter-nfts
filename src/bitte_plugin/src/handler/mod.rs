@@ -7,7 +7,7 @@ pub mod tweet;
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug)]
 struct PluginInfo {
-    pluginId: String,
+    // pluginId: String,
     url: String,
 }
 

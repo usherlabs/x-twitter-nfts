@@ -7,6 +7,8 @@
         "./src/twitter/Cargo.toml",
         "./src/verifier/Cargo.toml",
         "./src/zkaf/Cargo.toml",
+        "./src/bitte_plugin/Cargo.toml",
+        "./src/helper/Cargo.toml",
     ],
     "rust-analyzer.check.extraEnv": {
         "RISC0_SKIP_BUILD": "1",

@@ -4,3 +4,5 @@ target/
 src/zkaf/inputs/*.json
 *.jpeg
 *.png
+node_modules
+.DS_Store

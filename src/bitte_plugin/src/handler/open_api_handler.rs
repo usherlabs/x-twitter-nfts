@@ -1,12 +1,12 @@
 use rocket::{serde::json::{self ,json, Json, Value}, config::Config};
-use std::{fs,env};
+use std::{fs, env, path::PathBuf};
 
 use crate::handler::PluginInfo;
 
 /// Route handler for serving the OpenAPI specification
 #[get("/ai-plugin.json")]
 pub async fn open_api_specification() -> Json<Value> {
-    
+
     // Create a JSON object representing the OpenAPI specification
     let routes=json!({
             "/api/tweet": {
@@ -197,7 +197,10 @@ pub async fn open_api_specification() -> Json<Value> {
             "servers": [
               {
                 "url": if format!("{}",Config::release_default().address).eq("127.0.0.1") {
-                  let bitte_config=fs::read_to_string("./bitte.dev.json").unwrap();
+                  let current_dir = env::current_dir().unwrap();
+                  let mut bitte_config_path = PathBuf::from(current_dir);
+                  bitte_config_path.push("bitte.dev.json");
+                  let bitte_config = fs::read_to_string(bitte_config_path).unwrap();
                   let plugin_info:PluginInfo  = json::serde_json::from_str(bitte_config.as_str()).unwrap();
                   plugin_info.url
               } else {

@@ -7,7 +7,7 @@ PID=$!
 wait $PID
 
 # Start make-agent in the background
-npx --yes make-agent dev -p 8007 &
+npx make-agent dev -p 8007 &
 
 # Kill the cargo process if it's still running
 kill $PID 2>/dev/null

@@ -4,6 +4,8 @@
 
 - Node >=18
 - [helper Crate Prerequisites ](../helper/README.md)
+- Install `make-agent` - `pnpm i`
+  - [Reference Docs](https://docs.bitte.ai/agents/quick-start)
 
 ## To run
 
@@ -25,5 +27,5 @@ and
 run agent
 
 ```
-npx --yes make-agent dev -p 8007
+npx make-agent dev -p 8007
 ```
