@@ -19,7 +19,7 @@ services:
     ports:
       - "5432:5432"
     networks:
-      - verify-network
+      - xnfts-network
     volumes:
       - postgres-near-indexer:/var/lib/postgresql/data
 
@@ -27,5 +27,5 @@ volumes:
   postgres-near-indexer:
 
 networks:
-  verify-network:
+  xnfts-network:
     driver: bridge

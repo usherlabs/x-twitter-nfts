@@ -2,16 +2,19 @@
 # Near Indexer Project
 
 ## Table of Contents
-- [Introduction](#introduction)
-- [Prerequisites](#prerequisites)
-- [Setup](#setup)
-- [Usage](#usage)
-- [Configuration](#configuration)
-- [Database Migrations](#database-migrations)
-- [Running the Project](#running-the-project)
-- [Environment Variables](#environment-variables)
-- [Contributing](#contributing)
-- [License](#license)
+
+- [Near Indexer Project](#near-indexer-project)
+  - [Table of Contents](#table-of-contents)
+  - [Introduction](#introduction)
+  - [Prerequisites](#prerequisites)
+  - [Setup](#setup)
+  - [Usage](#usage)
+  - [Configuration](#configuration)
+  - [Database Migrations](#database-migrations)
+  - [Running the Project](#running-the-project)
+  - [Environment Variables](#environment-variables)
+  - [Contributing](#contributing)
+  - [License](#license)
 
 ## Introduction
 
@@ -36,7 +39,7 @@ Before you begin, make sure you have the following installed:
 
 2. Install dependencies:
    ```
-   cargo install sea-cli
+   cargo install sea-orm-cli
    ```
 
 3. Copy `.env.example` to `.env` and fill in the necessary values:
@@ -102,9 +105,14 @@ This will start the indexer and begin fetching NFT data from the Near blockchain
 | Variable | Description |
 |----------|-------------|
 | DATABASE_URL | PostgreSQL connection string |
-| NEAR_RPC_URL | Near RPC endpoint URL |
-| CONTRACT_ADDRESS | Address of the NFT contract |
-| TOKEN_ID | ID of the NFT token to index |
+| POSTGRES_USER       | Username for PostgreSQL                          |
+| POSTGRES_DB         | Database name for PostgreSQL                     |
+| POSTGRES_PASSWORD   | Password for PostgreSQL                          |
+| TWEET_BEARER        | Bearer token for Twitter API access              |
+| SIGNER_SK           | Secret key for signing transactions              |
+| THIRDWEB_CLIENT_ID  | Client ID for Thirdweb integration               |
+| NFT_CONTRACT_ID     | ID of the NFT contract                           |
+| NEAR_RPC            | Near RPC endpoint URL                            |
 
 ## Contributing
 
@@ -113,4 +121,3 @@ Contributions are welcome! Please feel free to submit pull requests.
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
-```
