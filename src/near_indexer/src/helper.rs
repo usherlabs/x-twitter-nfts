@@ -1,23 +1,23 @@
 use crate::entity::near_transaction;
 
-use near_client::client::{NearClient, Signer};
+use near_client::client::{ NearClient, Signer };
 use near_client::crypto::Key;
-use near_client::prelude::{AccountId, Ed25519PublicKey, Ed25519SecretKey, Finality};
+use near_client::prelude::{ AccountId, Ed25519PublicKey, Ed25519SecretKey, Finality };
 use regex::Regex;
-use reqwest::multipart::{Form, Part};
+use reqwest::multipart::{ Form, Part };
 use reqwest::Client;
 use sea_orm::ActiveValue::Set;
-use sea_orm::{DbConn, DbErr, EntityTrait};
-use serde::{Deserialize, Serialize};
-use serde_json::{json, Error as SJError, Value};
+use sea_orm::{ DbConn, DbErr, EntityTrait };
+use serde::{ Deserialize, Serialize };
+use serde_json::{ json, Error as SJError, Value };
 use std::collections::HashMap;
 use std::env;
 use std::error::Error;
-use std::marker::{Send, Sync};
+use std::marker::{ Send, Sync };
 use std::str::FromStr;
 use std::time::Duration;
 use tokio::time::sleep;
-use tracing::{debug, info};
+use tracing::{ debug, info };
 
 pub struct NearExplorerIndexer<'a> {
     pub page_no: u8,
@@ -35,12 +35,13 @@ impl<'a> NearExplorerIndexer<'a> {
         Ok(NearExplorerIndexer {
             cursor: None,
             page_no: 0,
-            build_id: (if account_id.ends_with(".testnet") {
-                "0kmxltnOS1UsrfVrMd5fP"
-            } else {
-                "bE43kUihJPVfWqBYXxGBQ"
-            })
-            .to_owned(),
+            build_id: (
+                if account_id.ends_with(".testnet") {
+                    "0kmxltnOS1UsrfVrMd5fP"
+                } else {
+                    "bE43kUihJPVfWqBYXxGBQ"
+                }
+            ).to_owned(),
             account_id: &account_id,
         })
     }
@@ -52,7 +53,7 @@ impl<'a> NearExplorerIndexer<'a> {
     /// # Returns
     /// A vector of transactions representing the next page.
     pub async fn get_transactions(
-        &mut self,
+        &mut self
     ) -> Result<Vec<Transaction>, Box<dyn Error + Send + Sync>> {
         self.page_no = 0;
         self.cursor = None;
@@ -89,7 +90,7 @@ impl<'a> NearExplorerIndexer<'a> {
     }
     async fn fetch(
         &mut self,
-        reset: bool,
+        reset: bool
     ) -> Result<TransactionData, Box<dyn Error + Send + Sync>> {
         let client = reqwest::Client::new();
         let base = if self.account_id.ends_with(".testnet") {
@@ -104,7 +105,9 @@ impl<'a> NearExplorerIndexer<'a> {
             let url = if self.page_no == 0 || reset {
                 format!(
                     "https://{}/_next/data/{}/en/address/{}.json",
-                    base, self.build_id, self.account_id
+                    base,
+                    self.build_id,
+                    self.account_id
                 )
             } else {
                 format!(
@@ -131,7 +134,9 @@ impl<'a> NearExplorerIndexer<'a> {
                 }
             } else {
                 match response.json::<NearIndexerData>().await {
-                    Ok(output) => return Ok(output.pageProps.data),
+                    Ok(output) => {
+                        return Ok(output.pageProps.data);
+                    }
                     Err(e) => {
                         if retries >= max_retries {
                             return Err(format!("FETCH_ERROR: {}, {}", e, &url).into());
@@ -402,47 +407,42 @@ struct NftData {
 }
 
 pub async fn get_proof(tweet_id: u64) -> String {
-    let verify = get_verity_client();
+    let verity_client = get_verity_client();
     let thirdweb_client_id = env::var("THIRDWEB_CLIENT_ID").expect("MY_VAR must be set");
-    let _temp=verify.get(format!(
-        "https://api.x.com/2/tweets?ids={}&tweet.fields=created_at,public_metrics&expansions=author_id&user.fields=created_at",tweet_id
-    ))
-    .header("Authorization", format!("Bearer {}",env::var("TWEET_BEARER").unwrap_or(String::from(""))))
-    .send().await;
+    let _temp = verity_client
+        .get(
+            format!("https://api.x.com/2/tweets?ids={}&tweet.fields=created_at,public_metrics&expansions=author_id&user.fields=created_at", tweet_id)
+        )
+        .header(
+            "Authorization",
+            format!("Bearer {}", env::var("TWEET_BEARER").unwrap_or(String::from("")))
+        )
+        .send().await;
 
     if _temp.is_err() {
         print!("Error: {:?} ", _temp.err());
         return String::from("");
     }
     let _temp = _temp.unwrap();
-    let full_data = json!({"proof":_temp.proof,"notary_pub_key":_temp.notary_pub_key,"x":_temp.subject.json::<Value>().await.unwrap()});
+    let full_data =
+        json!({"proof":_temp.proof,"notary_pub_key":_temp.notary_pub_key,"x":_temp.subject.json::<Value>().await.unwrap()});
 
     let client = Client::new();
 
     let form = Form::new()
-        .part(
-            "file",
-            Part::text(full_data.to_string()).file_name("proof.json"),
-        )
+        .part("file", Part::text(full_data.to_string()).file_name("proof.json"))
         .part("pinataOptions", Part::text("{\"wrapWithDirectory\":false}"))
         .part("pinataOptions", Part::text("{\"wrapWithDirectory\":false}"))
-        .part(
-            "pinataMetadata",
-            Part::text("{\"name\":\"Storage SDK\",\"keyvalues\":{}}"),
-        );
+        .part("pinataMetadata", Part::text("{\"name\":\"Storage SDK\",\"keyvalues\":{}}"));
 
     // Return a JSON response
     let url = "https://storage.thirdweb.com/ipfs/upload";
     let response = client
         .post(url)
         .header("X-Client-Id", &thirdweb_client_id)
-        .header(
-            "Content-Type",
-            format!("multipart/form-data; boundary={}", form.boundary()),
-        )
+        .header("Content-Type", format!("multipart/form-data; boundary={}", form.boundary()))
         .multipart(form)
-        .send()
-        .await;
+        .send().await;
 
     if response.is_err() {
         print!("Error: {:?} ", response.err());
@@ -462,7 +462,7 @@ pub async fn process_near_transaction(
     db: &DbConn,
     transaction: &Transaction,
     client: &NearClient,
-    sk: &Ed25519SecretKey,
+    sk: &Ed25519SecretKey
 ) -> Result<bool, DbErr> {
     let nft_contract_id = env::var("NFT_CONTRACT_ID").unwrap_or("test-usher.testnet".to_owned());
     let nft_contract_id = AccountId::from_str(&nft_contract_id).unwrap();
@@ -470,8 +470,9 @@ pub async fn process_near_transaction(
     let pk = transaction.id.parse::<i32>().unwrap();
 
     // Find by primary key
-    let _near_transaction: Option<near_transaction::Model> =
-        near_transaction::Entity::find_by_id(pk).one(db).await?;
+    let _near_transaction: Option<near_transaction::Model> = near_transaction::Entity
+        ::find_by_id(pk)
+        .one(db).await?;
     match _near_transaction {
         Some(_) => Ok(true),
         None => {
@@ -483,26 +484,24 @@ pub async fn process_near_transaction(
                 return Ok(false);
             }
             if transaction.actions[0].method.is_none() {
-                debug!(
-                    "Ignored Transaction: {} No method Found",
-                    transaction.transaction_hash
-                );
+                debug!("Ignored Transaction: {} No method Found", transaction.transaction_hash);
                 return Ok(false);
             }
             let action = match transaction.actions.get(0) {
                 Some(action) => action,
-                None => &Action {
-                    action: "".to_string(),
-                    method: None,
-                    args: None,
-                },
+                None =>
+                    &(Action {
+                        action: "".to_string(),
+                        method: None,
+                        args: None,
+                    }),
             };
 
             if let Some(method) = &action.method {
                 // LIST OPERATIONS
                 if method == "mint_tweet_request" {
                     let mint_data: Result<MintRequestData, SJError> = serde_json::from_str(
-                        action.args.clone().unwrap_or("".to_string()).as_str(),
+                        action.args.clone().unwrap_or("".to_string()).as_str()
                     );
                     if mint_data.is_err() {
                         debug!(
@@ -515,9 +514,11 @@ pub async fn process_near_transaction(
 
                     // mint call
                     let ed25519_public_key = Ed25519PublicKey::from(sk);
-                    let nonce = client
-                        .view_access_key(&nft_contract_id, &ed25519_public_key, Finality::Final)
-                        .await;
+                    let nonce = client.view_access_key(
+                        &nft_contract_id,
+                        &ed25519_public_key,
+                        Finality::Final
+                    ).await;
                     if nonce.is_err() {
                         debug!("Failed to fetch nonce at :{}", transaction.transaction_hash);
                         return Ok(false);
@@ -528,21 +529,18 @@ pub async fn process_near_transaction(
 
                     debug!("PROOF_URL: {}", &proof_url);
 
-                    let fetched_nft = client
-                        .view::<Option<NftData>>(
-                            &nft_contract_id,
-                            Finality::Final,
-                            "nft_token",
-                            Some(json!({
+                    let fetched_nft = client.view::<Option<NftData>>(
+                        &nft_contract_id,
+                        Finality::Final,
+                        "nft_token",
+                        Some(
+                            json!({
                                     "token_id": mint_data.tweet_id.to_string(),
-                            })),
+                            })
                         )
-                        .await;
+                    ).await;
                     if fetched_nft.is_err() {
-                        info!(
-                            "Failed to fetched nft data at :{}",
-                            transaction.transaction_hash
-                        );
+                        info!("Failed to fetched nft data at :{}", transaction.transaction_hash);
                         return Ok(false);
                     }
 
@@ -560,11 +558,17 @@ pub async fn process_near_transaction(
                         return Ok(false);
                     }
                     let nonce = nonce.unwrap().nonce;
-                    let signer =
-                        Signer::from_secret(derived_sk.unwrap(), nft_contract_id.clone(), nonce);
+                    let signer = Signer::from_secret(
+                        derived_sk.unwrap(),
+                        nft_contract_id.clone(),
+                        nonce
+                    );
+
+                    // Perform the Mint Fulfillemnt Transaction based on the mint request data
                     let chain_transaction = client
                         .function_call(&signer, &nft_contract_id, "nft_mint")
-                        .args(json!(
+                        .args(
+                            json!(
                             {
                                 "token_id": mint_data.tweet_id.to_string(),
                                 "receiver_id": transaction.signer_account_id,
@@ -575,12 +579,12 @@ pub async fn process_near_transaction(
                                     "reference": proof_url,
                                 }
                             }
-                        ))
+                        )
+                        )
                         .deposit(7340000000000000000000)
                         .gas(10000000000000)
                         .retry(near_client::client::Retry::ONCE)
-                        .commit(Finality::Final)
-                        .await;
+                        .commit(Finality::Final).await;
 
                     if chain_transaction.is_err() {
                         debug!(
@@ -614,15 +618,14 @@ pub async fn process_near_transaction(
                         mint_transaction_hash: Set(Some(chain_transaction.id().to_string())),
                         ..Default::default() // all other attributes are `NotSet`
                     };
-                    near_transaction::Entity::insert(new_transaction)
-                        .exec(db)
-                        .await?;
+                    near_transaction::Entity::insert(new_transaction).exec(db).await?;
                     return Ok(false);
                 }
             } else {
                 debug!(
                     "Ignored Transaction: {} Method Called: {:?}",
-                    transaction.transaction_hash, action.method
+                    transaction.transaction_hash,
+                    action.method
                 );
                 return Ok(false);
             }
@@ -633,7 +636,7 @@ pub async fn process_near_transaction(
 
 use k256::SecretKey;
 use rand::rngs::OsRng;
-use verity_client::client::{AnalysisConfig, VerityClient, VerityClientConfig};
+use verity_client::client::{ AnalysisConfig, VerityClient, VerityClientConfig };
 
 pub fn get_verity_client() -> VerityClient {
     let secret_key = SecretKey::random(&mut OsRng);
