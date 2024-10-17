@@ -21,8 +21,8 @@ fn rocket() -> _ {
     env::var("TWEET_BEARER").expect("TWEET_BEARER must be set");
     env::var("ACCOUNT_ID").expect("ACCOUNT_ID must be set");
 
-
-tracing_subscriber::registry()
+    // Initialize tracing
+    tracing_subscriber::registry()
     // Set up an environment filter based on the RUST_LOG environment variable
     .with(
         tracing_subscriber::EnvFilter::new(
@@ -38,8 +38,8 @@ tracing_subscriber::registry()
     // Initialize the tracing subscriber
     .init();
 
-// Build a Rocket application
-rocket::build()
+    // Build a Rocket application
+    rocket::build()
     // Configure the port to 8007
     .configure(rocket::Config::figment().merge(("port", 8007)))
     // Mount the OpenAPI specification route at /.well-known
