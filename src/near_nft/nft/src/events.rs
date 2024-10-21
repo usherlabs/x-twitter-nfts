@@ -1,5 +1,5 @@
 use near_contract_tools::event;
-use near_sdk::{AccountId, Balance};
+use near_sdk::{ AccountId, Balance };
 
 /// Mint Request Events
 
@@ -17,10 +17,9 @@ pub struct TweetMintRequest {
     pub notify: String,
 }
 
-
 #[event(standard = "custom", version = "1.0.0")]
 pub struct CancelMintRequest {
     pub tweet_id: u64,
     pub account: AccountId,
-    pub withdraw: Balance
+    pub withdraw: Balance,
 }
