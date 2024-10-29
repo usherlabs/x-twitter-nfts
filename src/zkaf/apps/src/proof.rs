@@ -107,7 +107,7 @@ pub async fn generate_boundless_proof(
     // serialize the inputs to bytes to pass to the remote prover
     let input = serde_json::to_string(&zk_inputs).unwrap();
     let prefix = get_prefix_string(4, &input);
-    let input: Vec<u8> = input.as_bytes().to_vec();
+    let input: Vec<u8> =  encoded_string(input.as_bytes().to_vec()[..126].to_vec());
     let image_url = "https://dweb.link/ipfs/QmTx3vDKicYG5RxzMxrZEiCQJqhpgYNrSFABdVz9ri2m5P";
 
     let _image_id = "257569e11f856439ec3c1e0fe6486fb9af90b1da7324d577f65dd0d45ec12c7d";
