@@ -1,9 +1,20 @@
+use alloy::{
+    primitives::{aliases::U96, utils::parse_ether, Address, Bytes},
+    signers::local::PrivateKeySigner,
+};
 use alloy_sol_types::SolValue;
 use anyhow::Context;
+use boundless_market::{
+    contracts::{Input, Offer, Predicate, ProvingRequest, Requirements},
+    sdk::client::Client,
+};
+use clap::Parser;
 use methods::VERIFY_ELF;
 use risc0_ethereum_contracts::groth16;
 use risc0_zkvm::{default_prover, ExecutorEnv, ProverOpts, VerifierContext};
+use std::time::Duration;
 use tlsn_substrings_verifier::ZkInputParam;
+use url::Url;
 
 pub fn generate_groth16_proof(zk_inputs: ZkInputParam) -> (Vec<u8>, Vec<u8>) {
     // serialize the inputs to bytes to pass to the remote prover
@@ -81,7 +92,10 @@ struct Args {
     proof_market_address: Address,
 }
 
-pub async fn generate_boundless_proof(zk_inputs: ZkInputParam) -> (Vec<u8>, Vec<u8>) {
+pub async fn generate_boundless_proof(
+    zk_inputs: ZkInputParam,
+) -> Result<(Vec<u8>, Vec<u8>), anyhow::Error> {
+    let args = Args::parse();
     // Create a Boundless client from the provided parameters.
     let boundless_client = Client::from_parts(
         args.wallet_private_key,
@@ -89,18 +103,27 @@ pub async fn generate_boundless_proof(zk_inputs: ZkInputParam) -> (Vec<u8>, Vec<
         args.proof_market_address,
         args.set_verifier_address,
     )
-    .await;
+    .await?;
     // serialize the inputs to bytes to pass to the remote prover
     let input = serde_json::to_string(&zk_inputs).unwrap();
     let prefix = get_prefix_string(4, &input);
     let input: Vec<u8> = input.as_bytes().to_vec();
     let image_url = "https://dweb.link/ipfs/QmTx3vDKicYG5RxzMxrZEiCQJqhpgYNrSFABdVz9ri2m5P";
 
+    let _image_id = "257569e11f856439ec3c1e0fe6486fb9af90b1da7324d577f65dd0d45ec12c7d";
+
+    // Parse the hexadecimal string
+    let _image_id = hex::decode(_image_id).unwrap();
+
+    // Convert the byte slice to a fixed-size array of 32 bytes
+    let mut image_id: [u8; 32] = [0; 32];
+    image_id.copy_from_slice(&_image_id);
+
     // begin the proving process
     let request = ProvingRequest::default()
         .with_image_url(&image_url)
         .with_input(Input::inline(input))
-        .with_requirements(Requirements::new(result, Predicate::prefix_match(prefix)))
+        .with_requirements(Requirements::new(image_id, Predicate::prefix_match(prefix)))
         .with_offer(
             Offer::default()
                 // The market uses a reverse Dutch auction mechanism to match requests with provers.
@@ -119,15 +142,15 @@ pub async fn generate_boundless_proof(zk_inputs: ZkInputParam) -> (Vec<u8>, Vec<
         );
 
     // Send the request and wait for it to be completed.
-    let request_id = boundless_client.submit_request(&request).await;
-    tracing::info!("Request {} submitted", request_id);
+    let request_id = boundless_client.submit_request(&request).await?;
+    println!("Request {} submitted", request_id);
 
     // Wait for the request to be fulfilled by the market, returning the journal and seal.
-    tracing::info!("Waiting for request {} to be fulfilled", request_id);
+    println!("Waiting for request {} to be fulfilled", request_id);
     let (_journal, seal) = boundless_client
         .wait_for_request_fulfillment(request_id, Duration::from_secs(5), None)
-        .await;
-    tracing::info!("Request {} fulfilled", request_id);
+        .await?;
+    println!("Request {} fulfilled", request_id);
 
-    (seal, _journal)
+    Ok((seal.to_vec(), _journal.to_vec()))
 }

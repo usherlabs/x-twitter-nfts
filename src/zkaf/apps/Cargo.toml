@@ -11,8 +11,12 @@ serde_json = "1.0.107"
 tlsn-core = { git = "https://github.com/tlsnotary/tlsn", commit = "7272d9623a8cf0e04f59b1656e873476a5f17a13" }
 p256 = { version = "0.13", features = ["ecdsa"] }
 tlsn-substrings-verifier = { path = "../tlsn-substrings-verifier" }
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = "1.0"
 
 [dependencies]
+alloy = { workspace = true, features = ["signers", "full"] }
 boundless-market = { workspace = true }
 alloy-primitives = { workspace = true }
 tlsn-substrings-verifier = { workspace = true }
@@ -37,3 +41,5 @@ near-chain-configs = "0.21.1"
 near-jsonrpc-primitives = "0.21.1"
 near-contract-standards = "4.1.1"
 dotenv = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
+url = "2.5"
