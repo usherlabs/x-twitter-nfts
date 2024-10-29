@@ -13,6 +13,7 @@ p256 = { version = "0.13", features = ["ecdsa"] }
 tlsn-substrings-verifier = { path = "../tlsn-substrings-verifier" }
 
 [dependencies]
+boundless-market = { workspace = true }
 alloy-primitives = { workspace = true }
 tlsn-substrings-verifier = { workspace = true }
 alloy-sol-types = { workspace = true }
