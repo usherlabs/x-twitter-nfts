@@ -6,3 +6,5 @@ src/zkaf/inputs/*.json
 *.png
 node_modules
 .DS_Store
+src/zkaf/inputs/zk_params.json
+src/zkaf/lib/boundless-market/
