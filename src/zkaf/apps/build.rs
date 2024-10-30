@@ -1,19 +1,17 @@
-use serde::{Serialize, Deserialize};
-use std::fs::{self, File};
+use serde::{ Serialize, Deserialize };
+use std::fs::{ self, File };
 use std::io::Write;
 use std::path::Path;
 
-use tlsn_core::{proof::{SessionProof, SubstringsProof, TlsProof}, SessionHeader};
+use tlsn_core::{ proof::{ SessionProof, SubstringsProof, TlsProof }, SessionHeader };
 use p256::pkcs8::DecodePublicKey;
 use std::str;
-
 
 #[derive(Serialize, Deserialize)]
 struct ZkParam {
     header: SessionHeader,
     substrings: SubstringsProof,
 }
-
 
 fn build_proof() -> Result<(), Box<dyn std::error::Error>> {
     let proof = std::fs::read_to_string("./fixtures/twitter_proof.json").unwrap();
@@ -28,13 +26,11 @@ fn build_proof() -> Result<(), Box<dyn std::error::Error>> {
         substrings,
     } = proof;
 
-        // Verify the session proof against the Notary's public key
+    // Verify the session proof against the Notary's public key
     //
     // This verifies the identity of the server using a default certificate verifier which trusts
     // the root certificates from the `webpki-roots` crate.
-    session
-        .verify_with_default_cert_verifier(notary_pubkey())
-        .unwrap();
+    session.verify_with_default_cert_verifier(notary_pubkey()).unwrap();
 
     let SessionProof {
         // The session header that was signed by the Notary is a succinct commitment to the TLS transcript.
@@ -44,7 +40,7 @@ fn build_proof() -> Result<(), Box<dyn std::error::Error>> {
 
     // type conversion occurs here
     // we need to convert from the tlsn core definitions to the definitions from the verifier
-    let params = ZkParam{
+    let params = ZkParam {
         header,
         substrings,
     };
@@ -69,7 +65,6 @@ fn notary_pubkey() -> p256::PublicKey {
     let pem_file = str::from_utf8(include_bytes!("./fixtures/notary.pub")).unwrap();
     p256::PublicKey::from_public_key_pem(pem_file).unwrap()
 }
-
 
 fn main() {
     let _ = build_proof();

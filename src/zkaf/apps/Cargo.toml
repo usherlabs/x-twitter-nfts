@@ -8,7 +8,7 @@ build = "build.rs"
 risc0-build = { workspace = true }
 serde = "1.0"
 serde_json = "1.0.107"
-tlsn-core = { git = "https://github.com/tlsnotary/tlsn", commit = "7272d9623a8cf0e04f59b1656e873476a5f17a13" }
+tlsn-core = { git = "https://github.com/tlsnotary/tlsn", rev = "3554db83e17b2e5fc98293b397a2907b7f023496" }
 p256 = { version = "0.13", features = ["ecdsa"] }
 tlsn-substrings-verifier = { path = "../tlsn-substrings-verifier" }
 proc-macro2 = "1.0"
