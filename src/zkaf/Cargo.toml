@@ -30,7 +30,7 @@ risc0-zkp = { version = "0.20.0", default-features = false }
 serde = { version = "1.0", features = ["derive", "std"] }
 tlsn-substrings-verifier = { path = "./tlsn-substrings-verifier" }
 dotenv = "0.15.0"
-boundless-market = { git = "https://github.com/boundless-xyz/boundless", tag = "v0.2.0" }
+boundless-market = { path = "./lib/boundless-market" }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
