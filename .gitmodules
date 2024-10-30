@@ -1,6 +1,3 @@
 [submodule "src/verity"]
 	path = src/verity
 	url = git@github.com:usherlabs/verity.git
-[submodule "src/zkaf/lib/boundless-market"]
-	path = src/zkaf/lib/boundless-market
-	url = https://github.com/boundless-xyz/boundless
