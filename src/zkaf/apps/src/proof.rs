@@ -119,14 +119,14 @@ pub async fn generate_boundless_proof(
     let mut image_id: [u8; 32] = [0; 32];
     image_id.copy_from_slice(&_image_id);
 
-    let string_input = String::from(serde_json::to_string(&zk_inputs).unwrap()).abi_encode();
-    let input_url = boundless_client.upload_input(&input).await?;
-    println!("Uploaded input to {}", input_url);
+    // let string_input = String::from(serde_json::to_string(&zk_inputs).unwrap()).abi_encode();
+    // let input_url = boundless_client.upload_input(&input).await?;
+    // println!("Uploaded input to {}", input_url);
 
     // begin the proving process
     let request = ProvingRequest::default()
         .with_image_url(&image_url)
-        .with_input(Input::url(input_url))
+        .with_input(Input::inline(input))
         .with_requirements(Requirements::new(image_id, Predicate::prefix_match(prefix)))
         .with_offer(
             Offer::default()
