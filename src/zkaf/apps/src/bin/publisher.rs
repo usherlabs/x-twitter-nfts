@@ -28,7 +28,8 @@ async fn main() -> Result<(), anyhow::Error> {
 
     // generate the NFT payload
     let (_request, response) = get_http_payload(proof_params.clone());
-    let (nft_payload, stringified_nft_payload) = generate_tweet_nft_payload(response);
+    let (nft_payload, stringified_nft_payload) =
+        generate_tweet_nft_payload(response, proof_params.meta_data.clone());
 
     // generate the boundless proof and journal output
     let (seal, journal_output) = generate_boundless_proof(proof_params.clone()).await?;

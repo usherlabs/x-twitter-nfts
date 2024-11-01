@@ -1,17 +1,16 @@
-use std::io::Read;
 use sha256::digest;
+use std::io::Read;
 
 use alloy_sol_types::SolValue;
 use risc0_zkvm::guest::env;
 
-use tlsn_substrings_verifier::{nft::generate_tweet_nft_payload, proof::{SessionHeader, SubstringsProof}};
 use serde::{Deserialize, Serialize};
+use tlsn_substrings_verifier::{
+    nft::generate_tweet_nft_payload,
+    proof::{SessionHeader, SubstringsProof},
+    ZkInputParam
+};
 
-#[derive(Serialize, Deserialize, Debug)]
-struct ZkInputParam {
-    header: SessionHeader,
-    substrings: SubstringsProof,
-}
 
 fn main() {
     // Read the input data for this application.
@@ -21,14 +20,17 @@ fn main() {
     let proof_params: String = String::from_utf8(input_bytes).unwrap();
     let proof_params: ZkInputParam = serde_json::from_str(proof_params.as_str()).unwrap();
 
-    let (mut _sent, mut recv) = proof_params.substrings.verify(&proof_params.header).unwrap();
+    let (mut _sent, mut recv) = proof_params
+        .substrings
+        .verify(&proof_params.header)
+        .unwrap();
 
     // set redacted string value
     recv.set_redacted(b'X');
 
     // log the request and response
     let response = String::from_utf8(recv.data().to_vec()).unwrap();
-    let (_, string_metadata) = generate_tweet_nft_payload(response);
+    let (_, string_metadata) = generate_tweet_nft_payload(response, proof_params.meta_data);
 
     env::log(&format!("Derived metadata: {}", string_metadata));
 

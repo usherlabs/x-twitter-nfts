@@ -1,11 +1,9 @@
 //! NFT/TWEET data types.
 
-use serde::{Deserialize, Serialize};
 use near_contract_standards::non_fungible_token::metadata::TokenMetadata;
+use serde::{Deserialize, Serialize};
 
-use crate::ZkInputParam;
-
-
+use crate::{ZkInputParam,AssetMetadata};
 
 /// The tweet structure gotten from the API
 ///
@@ -56,9 +54,9 @@ pub struct PublicMetrics {
     pub impression_count: u32,
 }
 
-/// The Includes substructure of a tweet
+/// The Includes substructure of a metadata NFT
 ///
-/// Containing the details about a tweet
+/// Containing the details about a metadata NFT
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Includes {
     /// users
@@ -83,7 +81,7 @@ pub struct User {
 /// Obtain the request and response from the ZKInputParam
 pub fn get_http_payload(zk_params: ZkInputParam) -> (String, String) {
     let (mut sent, mut recv) = zk_params.substrings.verify(&zk_params.header).unwrap();
-    
+
     sent.set_redacted(b'X');
     recv.set_redacted(b'X');
 
@@ -94,8 +92,10 @@ pub fn get_http_payload(zk_params: ZkInputParam) -> (String, String) {
 }
 
 /// generate the nft payload
-pub fn generate_tweet_nft_payload(response_http_string: String) -> (TokenMetadata, String) {
-
+pub fn generate_tweet_nft_payload(
+    response_http_string: String,
+    meta_data: AssetMetadata,
+) -> (TokenMetadata, String) {
     let lines: Vec<&str> = response_http_string.split("\n").collect();
     // the json string is the last line in the http payload
     let json_tweet = lines.last().unwrap().to_owned();
@@ -106,21 +106,21 @@ pub fn generate_tweet_nft_payload(response_http_string: String) -> (TokenMetadat
     let public_metric_string = serde_json::to_string(&tweet_data.public_metrics).unwrap();
 
     // generate a token metadata
-    let token_metadata = TokenMetadata { 
+    let token_metadata = TokenMetadata {
         title: Some(tweet_data.id.clone()), // ex. "Arch Nemesis: Mail Carrier" or "Parcel #5055"
         description: Some(tweet_data.text.clone()), // free-form description
         extra: Some(public_metric_string), // anything extra the NFT wants to store on-chain. Can be stringified JSON.
-        media: None, // URL to associated media, preferably to decentralized, content-addressed storage
+        media: Some(meta_data.image_url), // URL to associated media, preferably to decentralized, content-addressed storage
         media_hash: None, // Base64-encoded sha256 hash of content referenced by the `media` field. Required if `media` is included.
-        copies: None, // number of copies of this set of metadata in existence when token was minted.
+        copies: Some(1), // number of copies of this set of metadata in existence when token was minted.
         issued_at: None, // ISO 8601 datetime when token was issued or minted
         expires_at: None, // ISO 8601 datetime when token expires
         starts_at: None, // ISO 8601 datetime when token starts being valid
         updated_at: None, // ISO 8601 datetime when token was last updated
         reference: None, // URL to an off-chain JSON file with more info.
-        reference_hash: None, 
+        reference_hash: None,
     };
-    
+
     let stringified_token_metadata = serde_json::to_string(&token_metadata).unwrap();
 
     (token_metadata, stringified_token_metadata)
