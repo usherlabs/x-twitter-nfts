@@ -136,15 +136,15 @@ pub async fn generate_boundless_proof(
         .with_offer(
             Offer::default()
             .with_min_price_per_mcycle(
-                U96::from::<u128>(parse_ether("0.001")?.try_into()?),
+                U96::from::<u128>(parse_ether("0.0001")?.try_into()?),
                 mcycles_count,
             )
             // NOTE: If your offer is not being accepted, try increasing the max price.
             .with_max_price_per_mcycle(
-                U96::from::<u128>(parse_ether("0.002")?.try_into()?),
+                U96::from::<u128>(parse_ether("0.0002")?.try_into()?),
                 mcycles_count,
             )
-                // .with_lockin_stake(U96::from::<u128>(parse_ether("0.45")?.try_into()?))
+                // .with_lockin_stake(U96::from::<u128>(parse_ether("0.15")?.try_into()?))
                 // The market uses a reverse Dutch auction mechanism to match requests with provers.
                 // Each request has a price range that a prover can bid on. One way to set the price
                 // is to choose a desired (min and max) price per million cycles and multiply it
