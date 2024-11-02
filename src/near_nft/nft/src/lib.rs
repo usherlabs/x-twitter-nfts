@@ -116,7 +116,7 @@ impl Contract {
         receiver_id: AccountId,
         token_metadata: TokenMetadata
     ) -> Token {
-        assert_eq!(env::predecessor_account_id(), self.tokens.owner_id, "NOT OWNER");
+        assert_eq!(env::signer_account_id(), self.tokens.owner_id, "NOT OWNER");
         let token = self.tokens.internal_mint_with_refund(
             token_id,
             receiver_id.clone(),

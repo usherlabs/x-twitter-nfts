@@ -1,5 +1,5 @@
 use alloy::{
-    primitives::{aliases::U96, utils::parse_ether, Address, Bytes},
+    primitives::{aliases::U96, utils::parse_ether, Address },
     signers::local::PrivateKeySigner,
 };
 use alloy_sol_types::SolValue;
@@ -47,34 +47,6 @@ pub fn generate_groth16_proof(zk_inputs: ZkInputParam) -> (Vec<u8>, Vec<u8>) {
     (seal, journal_output)
 }
 
-fn convert_to_big_endian(value: usize) -> String {
-    let len = format!("{:x}", value);
-    let x = (32 - len.len() * 4) as u8;
-    format!("{:x}", value << x)
-}
-
-fn get_prefix_string(prefix_length: usize, input_string: &str) -> Vec<u8> {
-    let prefix = &input_string[..prefix_length];
-    prefix.as_bytes().to_vec()
-}
-
-fn encoded_string(string_byte: Vec<u8>) -> Vec<u8> {
-    let temp_length = string_byte.len();
-    let hex_string = vec![
-        convert_to_big_endian(temp_length),
-        string_byte
-            .iter()
-            .map(|&b| {
-                let b32: usize = b.into();
-                format!("{}", convert_to_big_endian(b32))
-            })
-            .collect::<Vec<_>>()
-            .join(""),
-    ]
-    .join("");
-
-    return hex::decode(hex_string).unwrap();
-}
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -107,7 +79,7 @@ pub async fn generate_boundless_proof(
     )
     .await?;
     // set IMAGE_URL
-    let image_url = "https://dweb.link/ipfs/QmT6q2Y6AJo2dd89k7TjaDPAR1mixkepM1UxEmEQXdwLJD";
+    let image_url = "https://dweb.link/ipfs/Qmd94YSBa2rFamq2vjx4p8GboiW7KjdAhRM6pboJDakRTC";
 
 
     let string_input = String::from(serde_json::to_string(&zk_inputs).unwrap());

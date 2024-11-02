@@ -17,7 +17,7 @@ use tlsn_substrings_verifier::{
 use tokio;
 
 #[tokio::main]
-async fn main() -> Result<(), anyhow::Error> {
+async fn main() -> Result<(), Error> {
     env_logger::init();
     dotenv::dotenv().ok();
 

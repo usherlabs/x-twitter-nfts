@@ -2,8 +2,9 @@
 
 use near_contract_standards::non_fungible_token::metadata::TokenMetadata;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 
-use crate::{ZkInputParam,AssetMetadata};
+use crate::{AssetMetadata, ZkInputParam};
 
 /// The tweet structure gotten from the API
 ///
@@ -103,13 +104,16 @@ pub fn generate_tweet_nft_payload(
     // get the tweet and the public metric to be stringified
     let tweet: Tweet = serde_json::from_str(json_tweet).unwrap();
     let tweet_data = tweet.data.get(0).unwrap();
-    let public_metric_string = serde_json::to_string(&tweet_data.public_metrics).unwrap();
+    let public_metric = (&tweet_data.public_metrics);
 
     // generate a token metadata
     let token_metadata = TokenMetadata {
         title: Some(tweet_data.id.clone()), // ex. "Arch Nemesis: Mail Carrier" or "Parcel #5055"
         description: Some(tweet_data.text.clone()), // free-form description
-        extra: Some(public_metric_string), // anything extra the NFT wants to store on-chain. Can be stringified JSON.
+        extra: Some(
+            json!({"public_metric": public_metric, "minted_to":meta_data.owner_account_id.clone() })
+                .to_string(),
+        ), // anything extra the NFT wants to store on-chain. Can be stringified JSON.
         media: Some(meta_data.image_url), // URL to associated media, preferably to decentralized, content-addressed storage
         media_hash: None, // Base64-encoded sha256 hash of content referenced by the `media` field. Required if `media` is included.
         copies: Some(1), // number of copies of this set of metadata in existence when token was minted.
