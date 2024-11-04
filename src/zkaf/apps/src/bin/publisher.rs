@@ -16,8 +16,7 @@ use tlsn_substrings_verifier::{
 };
 use tokio;
 
-#[tokio::main]
-async fn main() -> Result<(), Error> {
+fn main() -> Result<(), Error> {
     env_logger::init();
     dotenv::dotenv().ok();
 
@@ -31,34 +30,39 @@ async fn main() -> Result<(), Error> {
     let (nft_payload, stringified_nft_payload) =
         generate_tweet_nft_payload(response, proof_params.meta_data.clone());
 
-    // generate the boundless proof and journal output
-    let (seal, journal_output) = generate_boundless_proof(proof_params.clone()).await?;
-    let hex_encoded_journal_output = hex::encode(&journal_output);
-    println!(
-        "boundless:\t{:?} was committed to the journal",
-        hex::encode(&journal_output)
-    );
+    let runtime = tokio::runtime::Runtime::new()?;
 
-    println!("boundless:\t{:?} was the provided seal", hex::encode(&seal));
-    println!("boundless:\t{:?} was the payload generated", nft_payload);
+    // // generate the boundless proof and journal output
+    // let proof_generate_future = generate_boundless_proof(proof_params.clone());
+    // let (seal, journal_output) = runtime.block_on(proof_generate_future).unwrap();
 
-    // // generate the proof and journal output
-    // let (seal, journal_output) = generate_groth16_proof(proof_params);
+    // let journal_output=journal_output;// [32..].to_vec();
+
     // let hex_encoded_journal_output = hex::encode(&journal_output);
-
     // println!(
-    //     "{:?} was committed to the journal",
+    //     "boundless:\t{:?} was committed to the journal",
     //     hex::encode(&journal_output)
     // );
-    // println!("{:?} was the provided seal", hex::encode(&seal));
-    // println!("{:?} was the payload generated", nft_payload);
+
+    // println!("boundless:\t{:?} was the provided seal", hex::encode(&seal));
+    // println!("boundless:\t{:?} was the payload generated", nft_payload);
+
+    // generate the proof and journal output
+    let (seal, journal_output) = generate_groth16_proof(proof_params);
+    let hex_encoded_journal_output = hex::encode(&journal_output);
+
+    println!(
+        "{:?} was committed to the journal",
+        hex::encode(&journal_output)
+    );
+    println!("{:?} was the provided seal", hex::encode(&seal));
+    println!("{:?} was the payload generated", nft_payload);
 
     // verify the journal output is representative of the NFT metadata
-    // let metadata_hash = digest(stringified_nft_payload);
-    // assert_eq!(metadata_hash, hex_encoded_journal_output, "invalid payload");
+    let metadata_hash = digest(stringified_nft_payload);
+    assert_eq!(metadata_hash, hex_encoded_journal_output, "invalid payload");
 
     // // perform initial verification on aurora
-    // let runtime = tokio::runtime::Runtime::new()?;
     // let aurora_client = TxSender::default();
     // let aurora_tx_future = aurora_client.verify_proof_on_aurora(journal_output.clone(), seal);
     // let aurora_tx_response = runtime.block_on(aurora_tx_future).unwrap();
@@ -68,22 +72,22 @@ async fn main() -> Result<(), Error> {
     // );
 
     // // perform verification near
-    // // mint NFT if near verification is successfull
-    // let near_tx_future = verify_near_proof(journal_output, nft_payload.clone());
-    // let near_tx_response = runtime.block_on(near_tx_future).unwrap();
-    // println!(
-    //     "Near transaction has been verified with response: {:?}\n",
-    //     near_tx_response
-    // );
+    // // mint NFT if near verification is successful
+    let near_tx_future = verify_near_proof(journal_output, nft_payload.clone());
+    let near_tx_response = runtime.block_on(near_tx_future).unwrap();
+    println!(
+        "Near transaction has been verified with response: {:?}\n",
+        near_tx_response
+    );
 
     // // get the NFT Minted
-    // let token_id = nft_payload.title.clone().unwrap();
-    // println!("Querying for token with id: {}", token_id);
-    // // Sleep for 3 seconds
-    // thread::sleep(Duration::from_secs(5));
-    // let nft_future = get_nft_by_id(token_id.clone());
-    // let nft_details = runtime.block_on(nft_future).unwrap();
-    // println!("NFT:{} Succesfully minted", token_id);
-    // println!("{:?}", nft_details);
+    let token_id = nft_payload.title.clone().unwrap();
+    println!("Querying for token with id: {}", token_id);
+    // Sleep for 3 seconds
+    thread::sleep(Duration::from_secs(5));
+    let nft_future = get_nft_by_id(token_id.clone());
+    let nft_details = runtime.block_on(nft_future).unwrap();
+    println!("NFT:{} Succesfully minted", token_id);
+    println!("{:?}", nft_details);
     Ok(())
 }

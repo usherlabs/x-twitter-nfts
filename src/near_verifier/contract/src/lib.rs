@@ -42,12 +42,8 @@ impl VerifierProxy {
         }
     }
 
-    pub fn get_nft_account_id(&self) -> AccountId {
-        self.nft_account_id.clone()
-    }
-
-    pub fn get_verifier_address(&self) -> Address {
-        self.contract_address.clone()
+    pub fn get_nft_account_id(&self) -> (AccountId, Address) {
+        return (self.nft_account_id.clone(), self.contract_address.clone());
     }
 
     //make this payable and provide the metadata
@@ -84,6 +80,11 @@ impl VerifierProxy {
     #[private]
     pub fn set_verifier_address(&mut self, new_contract_address: String) {
         self.contract_address = aurora_sdk::parse_address(&new_contract_address).unwrap();
+    }
+
+    #[private]
+    pub fn set_nft_account(&mut self, nft_contract: String) {
+        self.nft_account_id = nft_contract.parse().unwrap();
     }
 
     // Callback used to parse the output from the call to Aurora made in `exact_output_single`.

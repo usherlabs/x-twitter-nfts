@@ -11,7 +11,8 @@ aurora-sdk = { git="https://github.com/aurora-is-near/aurora-contracts-sdk.git",
 serde = { version = "1", features = ["derive"] }
 serde_json = "1.0.107"
 hex = "0.4"
-near-contract-standards = "4.1.1"
+near-contract-standards = "5.1.1"
+
 
 
 [patch.crates-io]

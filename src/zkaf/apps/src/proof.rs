@@ -1,5 +1,5 @@
 use alloy::{
-    primitives::{aliases::U96, utils::parse_ether, Address },
+    primitives::{aliases::U96, utils::parse_ether, Address},
     signers::local::PrivateKeySigner,
 };
 use alloy_sol_types::SolValue;
@@ -47,7 +47,6 @@ pub fn generate_groth16_proof(zk_inputs: ZkInputParam) -> (Vec<u8>, Vec<u8>) {
     (seal, journal_output)
 }
 
-
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
@@ -81,7 +80,6 @@ pub async fn generate_boundless_proof(
     // set IMAGE_URL
     let image_url = "https://dweb.link/ipfs/Qmd94YSBa2rFamq2vjx4p8GboiW7KjdAhRM6pboJDakRTC";
 
-
     let string_input = String::from(serde_json::to_string(&zk_inputs).unwrap());
     let string_input = string_input.as_bytes();
     let input_url = boundless_client.upload_input(string_input).await?;
@@ -107,15 +105,15 @@ pub async fn generate_boundless_proof(
         ))
         .with_offer(
             Offer::default()
-            .with_min_price_per_mcycle(
-                U96::from::<u128>(parse_ether("0.0001")?.try_into()?),
-                mcycles_count,
-            )
-            // NOTE: If your offer is not being accepted, try increasing the max price.
-            .with_max_price_per_mcycle(
-                U96::from::<u128>(parse_ether("0.00015")?.try_into()?),
-                mcycles_count,
-            )
+                .with_min_price_per_mcycle(
+                    U96::from::<u128>(parse_ether("0.0001")?.try_into()?),
+                    mcycles_count,
+                )
+                // NOTE: If your offer is not being accepted, try increasing the max price.
+                .with_max_price_per_mcycle(
+                    U96::from::<u128>(parse_ether("0.00015")?.try_into()?),
+                    mcycles_count,
+                )
                 // .with_lockin_stake(U96::from::<u128>(parse_ether("0.0366")?.try_into()?))
                 // The market uses a reverse Dutch auction mechanism to match requests with provers.
                 // Each request has a price range that a prover can bid on. One way to set the price
@@ -143,5 +141,13 @@ pub async fn generate_boundless_proof(
         .await?;
     println!("Request {} fulfilled", request_id);
 
-    Ok((seal.to_vec(), _journal.to_vec()))
+    // Encode the seal with the selector.
+    let seal = groth16::encode(seal.clone()).unwrap();
+
+    // // Extract the journal from the receipt.
+    let journal_output = <Vec<u8>>::abi_decode(&_journal, true)
+        .context("decoding journal data")
+        .unwrap();
+
+    Ok((seal.to_vec(), journal_output.to_vec()))
 }

@@ -47,7 +47,7 @@ The following environment variables need to be filled, copied and pasted into th
 # EVM parameters
 export EVM_CHAIN_ID=1313161555
 export EVM_RPC_URL="https://testnet.aurora.dev"
-export EVM_VERIFIER_CONTRACT=0xa4015D18436d266074eC43bb9D2f8DfBAb2a45D5
+export EVM_VERIFIER_CONTRACT=0x885c2a9c3596328b0ab4dffa9a1946c928b4113f
 
 # NEAR parameters
 export NEAR_RPC_URL="https://rpc.testnet.near.org"
