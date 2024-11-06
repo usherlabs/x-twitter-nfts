@@ -4,7 +4,7 @@ use near_jsonrpc_client::{methods, JsonRpcClient};
 use near_jsonrpc_primitives::types::query::QueryResponseKind;
 use near_jsonrpc_primitives::types::transactions::{RpcTransactionError, TransactionInfo};
 use near_primitives::transaction::{Action, FunctionCallAction, Transaction};
-use near_primitives::types::{ BlockReference, Finality, FunctionArgs};
+use near_primitives::types::{AccountId, BlockReference, Finality, FunctionArgs};
 use near_primitives::views::{QueryRequest, TxExecutionStatus};
 use near_contract_standards::non_fungible_token::metadata::TokenMetadata;
 

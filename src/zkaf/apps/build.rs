@@ -1,28 +1,19 @@
-use serde::{Deserialize, Serialize};
+use serde::{Serialize, Deserialize};
 use std::fs::{self, File};
 use std::io::Write;
 use std::path::Path;
 
+use tlsn_core::{proof::{SessionProof, SubstringsProof, TlsProof}, SessionHeader};
 use p256::pkcs8::DecodePublicKey;
 use std::str;
-use tlsn_core::{
-    proof::{SessionProof, SubstringsProof, TlsProof},
-    SessionHeader,
-};
+
 
 #[derive(Serialize, Deserialize)]
-struct AssetMetadata {
-    image_url: String,
-    owner_account_id: String,
-    token_id: String,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct ZkParam {
+struct ZkParam {
     header: SessionHeader,
     substrings: SubstringsProof,
-    meta_data: AssetMetadata,
 }
+
 
 fn build_proof() -> Result<(), Box<dyn std::error::Error>> {
     let proof = std::fs::read_to_string("./fixtures/twitter_proof.json").unwrap();
@@ -37,7 +28,7 @@ fn build_proof() -> Result<(), Box<dyn std::error::Error>> {
         substrings,
     } = proof;
 
-    // Verify the session proof against the Notary's public key
+        // Verify the session proof against the Notary's public key
     //
     // This verifies the identity of the server using a default certificate verifier which trusts
     // the root certificates from the `webpki-roots` crate.
@@ -51,18 +42,11 @@ fn build_proof() -> Result<(), Box<dyn std::error::Error>> {
         ..
     } = session;
 
-    let meta_data= AssetMetadata{
-        image_url: "https://386f4b0d6749763bc7ab0a648c3e650f.ipfscdn.io/ipfs/QmXPD7KqFyFWwMTQyEo9HuTJjkKLxergS1YTt1wjJNAAHV".to_string(),
-        owner_account_id:"xlassixxxxxx.testnet".to_string(),
-        token_id: "1800368936443379989".to_string(),
-    };
-
     // type conversion occurs here
     // we need to convert from the tlsn core definitions to the definitions from the verifier
-    let params = ZkParam {
+    let params = ZkParam{
         header,
         substrings,
-        meta_data,
     };
 
     let json = serde_json::to_string(&params)?;
@@ -85,6 +69,7 @@ fn notary_pubkey() -> p256::PublicKey {
     let pem_file = str::from_utf8(include_bytes!("./fixtures/notary.pub")).unwrap();
     p256::PublicKey::from_public_key_pem(pem_file).unwrap()
 }
+
 
 fn main() {
     let _ = build_proof();

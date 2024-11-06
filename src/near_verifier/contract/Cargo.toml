@@ -7,22 +7,12 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-aurora-sdk = { git = "https://github.com/aurora-is-near/aurora-contracts-sdk.git", branch = "main" }
+aurora-sdk = { git="https://github.com/aurora-is-near/aurora-contracts-sdk.git", branch = "main"}
 serde = { version = "1", features = ["derive"] }
 serde_json = "1.0.107"
 hex = "0.4"
 near-contract-standards = "4.1.1"
 
 
-[profile.release]
-codegen-units = 1
-# Tell `rustc` to optimize for small code size.
-opt-level = "z"
-debug = false
-lto = true
-overflow-checks = true
-panic = "abort"
-strip = true
-
 [patch.crates-io]
-parity-secp256k1 = { git = "https://github.com/paritytech/rust-secp256k1", branch = "master" }
+parity-secp256k1 = { git = "https://github.com/paritytech/rust-secp256k1", branch="master" }

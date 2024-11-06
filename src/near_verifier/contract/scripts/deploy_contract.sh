@@ -1,6 +1,6 @@
 export NEAR_VERIFIER_CONTRACT_ACCOUNT=local-verifier.testnet
 export NEAR_NFT_CONTRACT=local-nft.testnet
-export EVM_VERIFIER_ADDRESS="0x063205d7605292c0B43b5508dF56733E697a15dF"
+export EVM_VERIFIER_ADDRESS="0xa82219472Be3faC01D0b20F043a5B03AeA64FB25"
 
 
 cargo build --target wasm32-unknown-unknown --release

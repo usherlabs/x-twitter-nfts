@@ -8,9 +8,9 @@
 
 pub mod commitment;
 pub mod merkle;
-pub mod nft;
 pub mod proof;
 pub mod transcript;
+pub mod nft;
 
 use proof::{SessionHeader, SubstringsProof};
 use serde::{Deserialize, Serialize};
@@ -57,17 +57,4 @@ pub struct ZkInputParam {
     pub header: SessionHeader,
     /// substrings proof.
     pub substrings: SubstringsProof,
-
-    /// meta_data
-    pub meta_data: AssetMetadata,
-}
-
-/// The Includes substructure of a tweet
-///
-/// Containing the details about a tweet
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct AssetMetadata {
-    image_url: String,
-    owner_account_id: String,
-    token_id: String,
 }

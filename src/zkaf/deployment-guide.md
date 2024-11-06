@@ -22,7 +22,7 @@ forge test
 
 After building the project, the image ID must be verified to ensure that the same proof is generated across multiple systems for this repository.
 
-The file `contracts/ImageID.sol` should match the following identifier following a successful build.
+The file `contracts/ImageID.sol` should match the following identifier following a succesfull build.
 
 ```solidity
 library ImageID {

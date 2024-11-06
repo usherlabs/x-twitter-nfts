@@ -1,7 +1,8 @@
-use alloy_sol_types::{sol, SolInterface};
-use anyhow::Result;
 use ethers::prelude::*;
+use anyhow::Result;
+use alloy_sol_types::{sol, SolInterface};
 use std::env;
+
 
 // `IVerifier` interface automatically generated via the alloy `sol!` macro.
 sol! {
@@ -18,18 +19,13 @@ pub struct TxSender {
 
 impl TxSender {
     /// Creates a default `TxSender`.
-    pub fn default() -> Self {
-        let chain_id: u64 = env::var("EVM_CHAIN_ID")
-            .expect("EVM_CHAIN_ID_NOT_PRESENT")
-            .parse()
-            .unwrap();
+    pub fn default() -> Self{
+        let chain_id: u64 = env::var("EVM_CHAIN_ID").expect("EVM_CHAIN_ID_NOT_PRESENT").parse().unwrap();
         let rpc_url = env::var("EVM_RPC_URL").expect("EVM_RPC_URL_NOT_PRESENT");
-        let private_key =
-            env::var("ETH_WALLET_PRIVATE_KEY").expect("ETH_WALLET_PRIVATE_KEY_NOT_PRESENT");
-        let contract_address =
-            env::var("EVM_VERIFIER_CONTRACT").expect("EVM_VERIFIER_CONTRACT_NOT_PRESENT");
+        let private_key = env::var("ETH_WALLET_PRIVATE_KEY").expect("ETH_WALLET_PRIVATE_KEY_NOT_PRESENT");
+        let contract_address = env::var("EVM_VERIFIER_CONTRACT").expect("EVM_VERIFIER_CONTRACT_NOT_PRESENT");
         println!("contract_address:{}", contract_address);
-        return Self::new(chain_id, &rpc_url, &private_key, &contract_address).unwrap();
+        return Self::new(chain_id, &rpc_url, &private_key, &contract_address).unwrap()
     }
 
     /// Creates a new `TxSender`.
@@ -48,11 +44,7 @@ impl TxSender {
 
     /// Send a transaction with the given calldata.
     pub async fn send(&self, calldata: Vec<u8>) -> Result<Option<TransactionReceipt>> {
-        println!("Calldata: {:?}", &calldata.clone());
-        println!("client Address: {:?}", &self.client);
-
-
-        let tx: TransactionRequest = TransactionRequest::new()
+        let tx = TransactionRequest::new()
             .chain_id(self.chain_id)
             .to(self.contract)
             .from(self.client.address())
@@ -68,20 +60,12 @@ impl TxSender {
     }
 
     /// verify a snark on aurora
-    pub async fn verify_proof_on_aurora(
-        &self,
-        journal_output: Vec<u8>,
-        seal: Vec<u8>,
-    ) -> Option<TransactionReceipt> {
+    pub async fn verify_proof_on_aurora(&self, journal_output: Vec<u8>, seal: Vec<u8>)-> Option<TransactionReceipt>{
         let calldata = IVerifier::IVerifierCalls::verify_proof(IVerifier::verify_proofCall {
-            journal_output: journal_output.clone(),
-            seal: seal.clone(),
+            journal_output: journal_output,
+            seal,
         })
         .abi_encode();
-
-        // println!("journal: {:?}", journal_output);
-        // println!("seal: {:?}", seal);
-        // println!("calldata: {:?}", calldata);
 
         let tx = self.send(calldata).await.unwrap();
         return tx;
