@@ -1,11 +1,18 @@
 // ! Entry point for host executing ZK Proof Generation
 
+use anyhow::Result;
+use apps::{
+    aurora::TxSender,
+    near::{get_nft_by_id, verify_near_proof},
+    proof::generate_groth16_proof,
+};
+use sha256::digest;
 use std::thread;
 use std::time::Duration;
-use anyhow::Result;
-use apps::{aurora::TxSender, near::{get_nft_by_id, verify_near_proof}, proof::generate_groth16_proof};
-use tlsn_substrings_verifier::{nft::{generate_tweet_nft_payload, get_http_payload}, ZkInputParam};
-use sha256::digest;
+use tlsn_substrings_verifier::{
+    nft::{generate_tweet_nft_payload, get_http_payload},
+    ZkInputParam,
+};
 
 use dotenv;
 
@@ -21,19 +28,26 @@ fn main() -> Result<()> {
     // // TODO call image generation service here
     // generate the NFT payload
     let (_request, response) = get_http_payload(proof_params.clone());
-    let (nft_payload, stringified_nft_payload) = generate_tweet_nft_payload(response);
+    let (nft_payload, stringified_nft_payload) =
+        generate_tweet_nft_payload(response, proof_params.meta_data.clone());
 
     // generate the proof and journal output
     let (seal, journal_output) = generate_groth16_proof(proof_params);
     let hex_encoded_journal_output = hex::encode(&journal_output);
 
-    println!("{:?} was committed to the journal", hex::encode(&journal_output));
+    println!(
+        "{:?} was committed to the journal",
+        hex::encode(&journal_output)
+    );
     println!("{:?} was the provided seal", hex::encode(&seal));
     println!("{:?} was the payload generated", nft_payload);
 
     // verify the journal output is representative of the NFT metadata
-    let metadata_hash = digest(stringified_nft_payload);
+    let metadata_hash = digest(stringified_nft_payload.clone());
     assert_eq!(metadata_hash, hex_encoded_journal_output, "invalid payload");
+
+    println!("hash {:?} ", digest(stringified_nft_payload));
+
 
     // perform initial verification on aurora
     let runtime = tokio::runtime::Runtime::new()?;
