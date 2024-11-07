@@ -21,3 +21,5 @@ target/
 
 .env.sh
 .env
+
+inputs/zk_params.json
