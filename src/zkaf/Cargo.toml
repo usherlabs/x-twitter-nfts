@@ -27,7 +27,7 @@ risc0-ethereum-contracts = { git = "https://github.com/risc0/risc0-ethereum", ta
 risc0-zkvm = { version = "1.0", default-features = false }
 risc0-zkp = { version = "1.0", default-features = false }
 serde = { version = "1.0", features = ["derive", "std"] }
-verity-verifier = { path = "./lib/verity/verifier", default-features = false, features = [
+verity-verifier = { path = "./../verity/verifier", default-features = false, features = [
     "no-session",
 ] }
 dotenv = "0.15.0"
