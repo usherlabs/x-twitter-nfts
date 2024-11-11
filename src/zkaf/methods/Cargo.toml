@@ -19,6 +19,8 @@ alloy-primitives = { workspace = true }
 alloy-sol-types = { workspace = true }
 risc0-zkvm = { workspace = true, features = ["client"] }
 serde = { workspace = true }
+verity-verifier = { path = "../verity/verifier", default-features = false, features = [
+    "no-session",
+] }
 hex = { workspace = true }
 serde_json = "1.0.107"
-tlsn-substrings-verifier = { path = "../tlsn-substrings-verifier" }

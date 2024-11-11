@@ -5,51 +5,49 @@ use std::path::Path;
 
 use p256::pkcs8::DecodePublicKey;
 use std::str;
-use tlsn_core::{
-    proof::{SessionProof, SubstringsProof, TlsProof},
-    SessionHeader,
-};
 
 #[derive(Serialize, Deserialize)]
-struct AssetMetadata {
+pub struct AssetMetadata {
     image_url: String,
     owner_account_id: String,
     token_id: String,
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct ZkParam {
-    header: SessionHeader,
-    substrings: SubstringsProof,
-    meta_data: AssetMetadata,
+pub struct ZkInputParam {
+    /// verify Proof.
+    pub proof: String,
+
+    /// meta_data
+    pub meta_data: AssetMetadata,
 }
 
 fn build_proof() -> Result<(), Box<dyn std::error::Error>> {
     let proof = std::fs::read_to_string("./fixtures/twitter_proof.json").unwrap();
-    let proof: TlsProof = serde_json::from_str(proof.as_str()).unwrap();
+    // let proof: TlsProof = serde_json::from_str(proof.as_str()).unwrap();
 
-    let TlsProof {
-        // The session proof establishes the identity of the server and the commitments
-        // to the TLS transcript.
-        session,
-        // The substrings proof proves select portions of the transcript, while redacting
-        // anything the Prover chose not to disclose.
-        substrings,
-    } = proof;
+    // let TlsProof {
+    //     // The session proof establishes the identity of the server and the commitments
+    //     // to the TLS transcript.
+    //     session,
+    //     // The substrings proof proves select portions of the transcript, while redacting
+    //     // anything the Prover chose not to disclose.
+    //     substrings,
+    // } = proof;
 
-    // Verify the session proof against the Notary's public key
-    //
-    // This verifies the identity of the server using a default certificate verifier which trusts
-    // the root certificates from the `webpki-roots` crate.
-    session
-        .verify_with_default_cert_verifier(notary_pubkey())
-        .unwrap();
+    // // Verify the session proof against the Notary's public key
+    // //
+    // // This verifies the identity of the server using a default certificate verifier which trusts
+    // // the root certificates from the `webpki-roots` crate.
+    // session
+    //     .verify_with_default_cert_verifier(notary_pubkey())
+    //     .unwrap();
 
-    let SessionProof {
-        // The session header that was signed by the Notary is a succinct commitment to the TLS transcript.
-        header,
-        ..
-    } = session;
+    // let SessionProof {
+    //     // The session header that was signed by the Notary is a succinct commitment to the TLS transcript.
+    //     header,
+    //     ..
+    // } = session;
 
     let meta_data= AssetMetadata{
         image_url: "https://386f4b0d6749763bc7ab0a648c3e650f.ipfscdn.io/ipfs/QmXPD7KqFyFWwMTQyEo9HuTJjkKLxergS1YTt1wjJNAAHV".to_string(),
@@ -59,11 +57,7 @@ fn build_proof() -> Result<(), Box<dyn std::error::Error>> {
 
     // type conversion occurs here
     // we need to convert from the tlsn core definitions to the definitions from the verifier
-    let params = ZkParam {
-        header,
-        substrings,
-        meta_data,
-    };
+    let params = ZkInputParam { proof, meta_data };
 
     let json = serde_json::to_string(&params)?;
 
@@ -81,7 +75,7 @@ fn build_proof() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 /// Returns a Notary pubkey trusted by this Verifier
-fn notary_pubkey() -> p256::PublicKey {
+pub fn notary_pubkey() -> p256::PublicKey {
     let pem_file = str::from_utf8(include_bytes!("./fixtures/notary.pub")).unwrap();
     p256::PublicKey::from_public_key_pem(pem_file).unwrap()
 }

@@ -10,11 +10,11 @@ serde = "1.0"
 serde_json = "1.0.107"
 tlsn-core = { git = "https://github.com/tlsnotary/tlsn", commit = "7272d9623a8cf0e04f59b1656e873476a5f17a13" }
 p256 = { version = "0.13", features = ["ecdsa"] }
-tlsn-substrings-verifier = { path = "../tlsn-substrings-verifier" }
+verity-verifier = { workspace = true }
 
 [dependencies]
+verity-verifier = { workspace = true }
 alloy-primitives = { workspace = true }
-tlsn-substrings-verifier = { workspace = true }
 alloy-sol-types = { workspace = true }
 anyhow = { workspace = true }
 clap = { version = "4.0", features = ["derive", "env"] }

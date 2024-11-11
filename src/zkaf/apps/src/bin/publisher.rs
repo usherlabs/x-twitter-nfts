@@ -3,18 +3,14 @@
 use anyhow::Result;
 use apps::{
     aurora::TxSender,
-    near::{get_nft_by_id, verify_near_proof},
-    proof::generate_groth16_proof,
+    near::{generate_tweet_nft_payload, get_nft_by_id, verify_near_proof},
+    proof::{generate_groth16_proof,ZkInputParam},
 };
+use dotenv;
 use sha256::digest;
 use std::thread;
 use std::time::Duration;
-use tlsn_substrings_verifier::{
-    nft::{generate_tweet_nft_payload, get_http_payload},
-    ZkInputParam,
-};
-
-use dotenv;
+use verity_verifier::verify_proof;
 
 fn main() -> Result<()> {
     env_logger::init();
@@ -27,7 +23,8 @@ fn main() -> Result<()> {
 
     // // TODO call image generation service here
     // generate the NFT payload
-    let (_request, response) = get_http_payload(proof_params.clone());
+    let (response, _request) = verify_proof(&proof_params.proof.clone()).unwrap();
+    println!("response: {}\n\n _request,{}", response, _request);
     let (nft_payload, stringified_nft_payload) =
         generate_tweet_nft_payload(response, proof_params.meta_data.clone());
 
@@ -48,22 +45,24 @@ fn main() -> Result<()> {
 
     println!("hash {:?} ", digest(stringified_nft_payload));
 
-
     // perform initial verification on aurora
     let runtime = tokio::runtime::Runtime::new()?;
     let aurora_client = TxSender::default();
-    let aurora_tx_future = aurora_client.verify_proof_on_aurora(
-        journal_output.clone(),
-        seal
-    );
+    let aurora_tx_future = aurora_client.verify_proof_on_aurora(journal_output.clone(), seal);
     let aurora_tx_response = runtime.block_on(aurora_tx_future).unwrap();
-    println!("Aurora transation has been verified with response: {:?}\n", aurora_tx_response);
+    println!(
+        "Aurora transation has been verified with response: {:?}\n",
+        aurora_tx_response
+    );
 
     // perform verification near
     // mint NFT if near verification is successfull
     let near_tx_future = verify_near_proof(journal_output, nft_payload.clone());
     let near_tx_response = runtime.block_on(near_tx_future).unwrap();
-    println!("Near transaction has been verified with response: {:?}\n", near_tx_response);
+    println!(
+        "Near transaction has been verified with response: {:?}\n",
+        near_tx_response
+    );
 
     // get the NFT Minted
     let token_id = nft_payload.title.clone().unwrap();

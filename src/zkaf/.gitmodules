@@ -8,3 +8,6 @@
 	path = lib/risc0-ethereum
 	url = https://github.com/risc0/risc0-ethereum
 	branch = v1.0.0-rc.6
+[submodule "lib/verity"]
+	path = lib/verity
+	url = https://github.com/usherlabs/verity.git
