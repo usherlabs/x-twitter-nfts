@@ -22,9 +22,10 @@ verity-verifier = { path = "./../verify/verifier", default-features = false, fea
 ] }
 sha256 = "1.5.0"
 hex = "0.4.3"
-ahash = "0.7.6"
+ahash = "0.8.6"
 serde_json = "1.0.107"
 serde = { version = "1.0", features = ["derive", "std"] }
+near-contract-standards = "5.5.0"
 
 [profile.release]
 debug = 1

@@ -7,6 +7,7 @@ use risc0_zkvm::guest::env;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use verity_verifier::verify_proof;
+use near_contract_standards::non_fungible_token::metadata::TokenMetadata;
 
 /// Containing the details needed for verification of a proof
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -109,7 +110,7 @@ pub struct User {
 pub fn generate_tweet_nft_payload(
     response_http_string: String,
     meta_data: AssetMetadata,
-) -> (Value, String) {
+) -> (TokenMetadata, String) {
     let lines: Vec<&str> = response_http_string.split("\n").collect();
 
     // the json string is the last line in the http payload
@@ -123,15 +124,23 @@ pub fn generate_tweet_nft_payload(
     let public_metric = &tweet_data.public_metrics;
 
     // generate a token metadata
-    let token_metadata = json!( {
-        "title": tweet_data.id.clone(), // ex. "Arch Nemesis: Mail Carrier" or "Parcel #5055"
-        "description": tweet_data.text.clone(), // free-form description
-        "extra":
+    let token_metadata = TokenMetadata {
+        title: Some(tweet_data.id.clone()), // ex. "Arch Nemesis: Mail Carrier" or "Parcel #5055"
+        description: Some(tweet_data.text.clone()), // free-form description
+        extra: Some(
             json!({"public_metric": public_metric, "minted_to":meta_data.owner_account_id.clone() })
-                .to_string()
-        , // anything extra the NFT wants to store on-chain. Can be stringified JSON.
-        "media":meta_data.image_url, // URL to associated media, preferably to decentralized, content-addressed storage
-    });
+                .to_string(),
+        ), // anything extra the NFT wants to store on-chain. Can be stringified JSON.
+        media: Some(meta_data.image_url), // URL to associated media, preferably to decentralized, content-addressed storage
+        media_hash: None, // Base64-encoded sha256 hash of content referenced by the `media` field. Required if `media` is included.
+        copies: Some(1), // number of copies of this set of metadata in existence when token was minted.
+        issued_at: None, // ISO 8601 datetime when token was issued or minted
+        expires_at: None, // ISO 8601 datetime when token expires
+        starts_at: None, // ISO 8601 datetime when token starts being valid
+        updated_at: None, // ISO 8601 datetime when token was last updated
+        reference: None, // URL to an off-chain JSON file with more info.
+        reference_hash: None,
+    };
 
     let stringified_token_metadata = serde_json::to_string(&token_metadata).unwrap();
 
