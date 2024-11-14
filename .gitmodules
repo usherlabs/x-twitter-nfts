@@ -4,6 +4,6 @@
 [submodule "src/zkaf/lib/verity"]
 	path = src/zkaf/lib/verity
 	url = https://github.com/usherlabs/verity.git
-[submodule "src/zkaf/methods/verify"]
-	path = src/zkaf/methods/verify
+[submodule "src/zkaf/methods/verity"]
+	path = src/zkaf/methods/verity
 	url = https://github.com/usherlabs/verity.git

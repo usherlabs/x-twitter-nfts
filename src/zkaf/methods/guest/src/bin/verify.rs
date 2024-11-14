@@ -5,7 +5,7 @@ use alloy_sol_types::SolValue;
 use risc0_zkvm::guest::env;
 
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::json;
 use verity_verifier::verify_proof;
 use near_contract_standards::non_fungible_token::metadata::TokenMetadata;
 
