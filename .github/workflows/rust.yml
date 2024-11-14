@@ -38,7 +38,7 @@ jobs:
       - name: run near_nft test
         run: |
           ls
-          cd ./src/near_nft/
+          cd ./src/contract/nft/
           cargo install  cargo-make cargo-near
           cargo make  test
 
