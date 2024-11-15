@@ -136,12 +136,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "allocator-api2"
-version = "0.2.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c6cb57a04249c6480766f7f7cef5467412af1490f8d1e243141daddada3264f"
-
-[[package]]
 name = "alloy-primitives"
 version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -382,8 +376,8 @@ dependencies = [
  "serde_json",
  "sha256",
  "tlsn-core",
- "tlsn-substrings-verifier",
  "tokio",
+ "verity-verifier",
 ]
 
 [[package]]
@@ -1238,16 +1232,6 @@ name = "clap_lex"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "98cc8fbded0c607b7ba9dd60cd98df59af97e84d24e49c8557331cfc26d301ce"
-
-[[package]]
-name = "clmul"
-version = "0.1.0"
-source = "git+https://github.com/privacy-scaling-explorations/mpz?rev=9f7403b#9f7403be410839767701b1a6817274715d90ae55"
-dependencies = [
- "bytemuck",
- "cfg-if 1.0.0",
- "cpufeatures",
-]
 
 [[package]]
 name = "clmul"
@@ -2901,7 +2885,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e5274423e17b7c9fc20b6e7e208532f9b19825d82dfd615708b70edd83df41f1"
 dependencies = [
  "ahash 0.8.11",
- "allocator-api2",
 ]
 
 [[package]]
@@ -3661,7 +3644,7 @@ dependencies = [
  "risc0-zkvm",
  "serde",
  "serde_json",
- "tlsn-substrings-verifier",
+ "verity-verifier",
 ]
 
 [[package]]
@@ -3699,28 +3682,11 @@ checksum = "7843ec2de400bcbc6a6328c958dc38e5359da6e93e72e37bc5246bf1ae776389"
 [[package]]
 name = "mpz-circuits"
 version = "0.1.0"
-source = "git+https://github.com/privacy-scaling-explorations/mpz?rev=9f7403b#9f7403be410839767701b1a6817274715d90ae55"
-dependencies = [
- "bincode",
- "itybity",
- "mpz-circuits-macros 0.1.0 (git+https://github.com/privacy-scaling-explorations/mpz?rev=9f7403b)",
- "once_cell",
- "rand 0.8.5",
- "regex",
- "serde",
- "serde_arrays",
- "sha2",
- "thiserror",
-]
-
-[[package]]
-name = "mpz-circuits"
-version = "0.1.0"
 source = "git+https://github.com/privacy-scaling-explorations/mpz?rev=b8ae7ac#b8ae7acd4e0f306f0c23a9108dd5b802419e48fd"
 dependencies = [
  "bincode",
  "itybity",
- "mpz-circuits-macros 0.1.0 (git+https://github.com/privacy-scaling-explorations/mpz?rev=b8ae7ac)",
+ "mpz-circuits-macros",
  "once_cell",
  "rand 0.8.5",
  "regex",
@@ -3728,16 +3694,6 @@ dependencies = [
  "serde_arrays",
  "sha2",
  "thiserror",
-]
-
-[[package]]
-name = "mpz-circuits-macros"
-version = "0.1.0"
-source = "git+https://github.com/privacy-scaling-explorations/mpz?rev=9f7403b#9f7403be410839767701b1a6817274715d90ae55"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 1.0.109",
 ]
 
 [[package]]
@@ -3753,30 +3709,6 @@ dependencies = [
 [[package]]
 name = "mpz-core"
 version = "0.1.0"
-source = "git+https://github.com/privacy-scaling-explorations/mpz?rev=9f7403b#9f7403be410839767701b1a6817274715d90ae55"
-dependencies = [
- "aes",
- "bcs",
- "blake3 1.5.1",
- "bytemuck",
- "cfg-if 1.0.0",
- "cipher 0.4.4",
- "clmul 0.1.0 (git+https://github.com/privacy-scaling-explorations/mpz?rev=9f7403b)",
- "generic-array 0.14.7",
- "itybity",
- "once_cell",
- "opaque-debug",
- "rand 0.8.5",
- "rand_chacha 0.3.1",
- "rand_core 0.6.4",
- "rayon",
- "serde",
- "thiserror",
-]
-
-[[package]]
-name = "mpz-core"
-version = "0.1.0"
 source = "git+https://github.com/privacy-scaling-explorations/mpz?rev=b8ae7ac#b8ae7acd4e0f306f0c23a9108dd5b802419e48fd"
 dependencies = [
  "aes",
@@ -3785,7 +3717,7 @@ dependencies = [
  "bytemuck",
  "cfg-if 1.0.0",
  "cipher 0.4.4",
- "clmul 0.1.0 (git+https://github.com/privacy-scaling-explorations/mpz?rev=b8ae7ac)",
+ "clmul",
  "generic-array 0.14.7",
  "itybity",
  "once_cell",
@@ -3801,27 +3733,6 @@ dependencies = [
 [[package]]
 name = "mpz-garble-core"
 version = "0.1.0"
-source = "git+https://github.com/privacy-scaling-explorations/mpz?rev=9f7403b#9f7403be410839767701b1a6817274715d90ae55"
-dependencies = [
- "aes",
- "blake3 1.5.1",
- "cipher 0.4.4",
- "derive_builder",
- "itybity",
- "mpz-circuits 0.1.0 (git+https://github.com/privacy-scaling-explorations/mpz?rev=9f7403b)",
- "mpz-core 0.1.0 (git+https://github.com/privacy-scaling-explorations/mpz?rev=9f7403b)",
- "once_cell",
- "rand 0.8.5",
- "rand_chacha 0.3.1",
- "rand_core 0.6.4",
- "serde",
- "serde_arrays",
- "thiserror",
-]
-
-[[package]]
-name = "mpz-garble-core"
-version = "0.1.0"
 source = "git+https://github.com/privacy-scaling-explorations/mpz?rev=b8ae7ac#b8ae7acd4e0f306f0c23a9108dd5b802419e48fd"
 dependencies = [
  "aes",
@@ -3829,8 +3740,8 @@ dependencies = [
  "cipher 0.4.4",
  "derive_builder",
  "itybity",
- "mpz-circuits 0.1.0 (git+https://github.com/privacy-scaling-explorations/mpz?rev=b8ae7ac)",
- "mpz-core 0.1.0 (git+https://github.com/privacy-scaling-explorations/mpz?rev=b8ae7ac)",
+ "mpz-circuits",
+ "mpz-core",
  "once_cell",
  "opaque-debug",
  "rand 0.8.5",
@@ -5821,19 +5732,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rstest"
-version = "0.5.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11badbd6119f6956c1776bad8d71fc162a99f3d52a117fff2eec7349cad4d96b"
-dependencies = [
- "cfg-if 0.1.10",
- "proc-macro2",
- "quote",
- "rustc_version 0.2.3",
- "syn 1.0.109",
-]
-
-[[package]]
 name = "ruint"
 version = "1.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6918,9 +6816,9 @@ dependencies = [
  "bimap",
  "bytes",
  "getrandom 0.2.15",
- "mpz-circuits 0.1.0 (git+https://github.com/privacy-scaling-explorations/mpz?rev=b8ae7ac)",
- "mpz-core 0.1.0 (git+https://github.com/privacy-scaling-explorations/mpz?rev=b8ae7ac)",
- "mpz-garble-core 0.1.0 (git+https://github.com/privacy-scaling-explorations/mpz?rev=b8ae7ac)",
+ "mpz-circuits",
+ "mpz-core",
+ "mpz-garble-core",
  "opaque-debug",
  "p256",
  "ring 0.17.8",
@@ -6928,33 +6826,26 @@ dependencies = [
  "serde",
  "thiserror",
  "tlsn-tls-core",
- "tlsn-utils 0.1.0 (git+https://github.com/tlsnotary/tlsn-utils?rev=45370cc)",
+ "tlsn-utils",
  "web-time",
  "webpki-roots 0.26.1",
 ]
 
 [[package]]
-name = "tlsn-substrings-verifier"
-version = "0.1.0-alpha.5"
+name = "tlsn-core-no-session"
+version = "0.0.1-alpha.5"
 dependencies = [
  "bimap",
  "bincode",
  "bytes",
- "hashbrown 0.14.5",
- "hex",
- "mpz-circuits 0.1.0 (git+https://github.com/privacy-scaling-explorations/mpz?rev=9f7403b)",
- "mpz-core 0.1.0 (git+https://github.com/privacy-scaling-explorations/mpz?rev=9f7403b)",
- "mpz-garble-core 0.1.0 (git+https://github.com/privacy-scaling-explorations/mpz?rev=9f7403b)",
- "near-contract-standards",
+ "mpz-circuits",
+ "mpz-core",
+ "mpz-garble-core",
  "opaque-debug",
- "rand_chacha 0.3.1",
- "rand_core 0.6.4",
  "rs_merkle",
- "rstest",
  "serde",
- "serde_json",
  "thiserror",
- "tlsn-utils 0.1.0 (git+https://github.com/tlsnotary/tlsn-utils?rev=51f313d)",
+ "tlsn-utils",
 ]
 
 [[package]]
@@ -6980,14 +6871,6 @@ dependencies = [
 name = "tlsn-utils"
 version = "0.1.0"
 source = "git+https://github.com/tlsnotary/tlsn-utils?rev=45370cc#45370ccc6112328615721daad4f4084ff080f157"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "tlsn-utils"
-version = "0.1.0"
-source = "git+https://github.com/tlsnotary/tlsn-utils?rev=51f313d#51f313d153f1b878e583e709d66a4661b40c2b6c"
 dependencies = [
  "serde",
 ]
@@ -7520,6 +7403,15 @@ name = "vcpkg"
 version = "0.2.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
+
+[[package]]
+name = "verity-verifier"
+version = "0.0.1-alpha.5"
+dependencies = [
+ "cfg-if 1.0.0",
+ "serde_json",
+ "tlsn-core-no-session",
+]
 
 [[package]]
 name = "version_check"

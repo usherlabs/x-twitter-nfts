@@ -10,15 +10,24 @@ path = "src/bin/verify.rs"
 [workspace]
 
 [dependencies]
-alloy-primitives = { version = "0.6", default-features = false, features = ["rlp", "serde", "std"] }
+alloy-primitives = { version = "0.6", default-features = false, features = [
+    "rlp",
+    "serde",
+    "std",
+] }
 alloy-sol-types = { version = "0.6" }
 risc0-zkvm = { version = "1.0", default-features = false, features = ['std'] }
-tlsn-substrings-verifier = { path = "../../tlsn-substrings-verifier" }
+verity-verifier = { path = "./../verity/verifier", default-features = false, features = [
+    "no-session",
+] }
 sha256 = "1.5.0"
 hex = "0.4.3"
-ahash = "=0.8.6"
+ahash = "0.8.6"
 serde_json = "1.0.107"
 serde = { version = "1.0", features = ["derive", "std"] }
+near-contract-standards = "5.5.0"
 
 [profile.release]
+debug = 1
 lto = "thin"
+opt-level = 'z'
