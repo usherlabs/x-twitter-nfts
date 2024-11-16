@@ -25,7 +25,7 @@ fn main() -> Result<()> {
     // // TODO call image generation service here
     // generate the NFT payload
     let (response, _request) = verify_proof(&proof_params.proof.clone()).unwrap();
-    println!("response: {}\n\n _request,{}", response, _request);
+    println!("response:\t{}\n\n _request:\t{}\n\n", response, _request);
     let (nft_payload, stringified_nft_payload) =
         generate_tweet_nft_payload(response, proof_params.meta_data.clone());
 
