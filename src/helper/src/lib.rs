@@ -1,16 +1,16 @@
 use std::error::Error;
-use std::marker::{ Send, Sync };
+use std::marker::{Send, Sync};
 
-use serde::{ Deserialize, Serialize };
-use tracing::debug;
-use reqwest;
-use std::collections::HashMap;
-use serde_json::json;
-use headless_chrome::Browser;
 use headless_chrome::protocol::cdp::Page;
+use headless_chrome::Browser;
+use reqwest;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
+use std::collections::HashMap;
+use tracing::debug;
 
 pub async fn create_twitter_post_image(
-    url: String
+    url: String,
 ) -> Result<Vec<u8>, Box<dyn Error + Send + Sync>> {
     let prefix = ["https://x.com", "https://twitter.com"];
 
@@ -52,7 +52,7 @@ pub async fn create_twitter_post_image(
     tab.wait_until_navigated()?;
 
     let page_error = tab.find_element_by_xpath(
-        "/html/body/div/div/div/div[2]/main/div/div/div/div/div/div[3]/div/span"
+        "/html/body/div/div/div/div[2]/main/div/div/div/div/div/div[3]/div/span",
     );
     match page_error {
         Ok(element) => {
@@ -73,7 +73,10 @@ pub async fn create_twitter_post_image(
     let view_port_selector =
         "#react-root > div > div > div.css-175oi2r.r-1f2l425.r-13qz1uu.r-417010 > main > div > div > div > div > div > section > div > div > div:nth-child(1) > div > div > article > div.css-175oi2r.r-eqz5dr.r-16y2uox.r-1wbh5a2 > div";
     let view_port_element = tab.wait_for_element(view_port_selector).unwrap();
-    let view_port = view_port_element.get_box_model().unwrap().content_viewport();
+    let view_port = view_port_element
+        .get_box_model()
+        .unwrap()
+        .content_viewport();
 
     // println!("View Port: {:?}", view_port);
 
@@ -88,14 +91,14 @@ pub async fn create_twitter_post_image(
             height: view_port.height - 146.0 + 20.0,
             scale: 2.0,
         }),
-        true
+        true,
     )?;
 
     Ok(image_data)
 }
 
 pub async fn create_twitter_post_image_from_id(
-    tweet_id: u64
+    tweet_id: u64,
 ) -> Result<Vec<u8>, Box<dyn Error + Sync + Send>> {
     return create_twitter_post_image(format!("https://x.com/x/status/{}", tweet_id)).await;
 }
@@ -103,8 +106,8 @@ pub async fn create_twitter_post_image_from_id(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tokio;
     use headless_chrome;
+    use tokio;
 
     #[tokio::test]
     async fn test_create_image() {
@@ -149,4 +152,20 @@ mod tests {
         });
         assert!(result.is_err(), "The URL was expected to be invalid");
     }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct AssetMetadata {
+    image_url: String,
+    owner_account_id: String,
+    token_id: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ZkInputParam {
+    /// verify Proof.
+    pub proof: String,
+
+    /// meta_data
+    pub meta_data: AssetMetadata,
 }

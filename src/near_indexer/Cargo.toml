@@ -6,6 +6,7 @@ publish = false
 
 [dependencies]
 async-std = { version = "1.12", features = ["attributes", "tokio1"] }
+alloy-sol-types = { version = "0.6" }
 futures = { version = "0.3" }
 async-stream = { version = "0.3" }
 futures-util = { version = "0.3" }
@@ -23,8 +24,23 @@ serde = { version = "1.0.147", features = ["derive", "std"] }
 near-client = "0.7.2"
 verity-client = { git = "https://github.com/usherlabs/ccamp", rev = "be304188f69019fdb11ca305cb080749a468f9db" }
 k256 = { version = "0.13", features = ["pem"] }
-rand = "0.8"
+rand = "0.8.5"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+verity-verifier = { path = "./../verity/verifier", default-features = false, features = [
+    "no-session",
+] }
+risc0-zkvm = { version = "1.0", features = ["prove","client"] }
+risc0-ethereum-contracts = { version = "1.0", default-features = false }
+near-contract-standards = "5.5.0"
+near-jsonrpc-client = "0.9.0"
+near-crypto = "0.21.1"
+near-primitives = "0.21.1"
+near-chain-configs = "0.21.1"
+near-jsonrpc-primitives = "0.21.1"
+ethers = { version = "2.0" }
+risc0-build = { version = "1.0", features = ["docker"] }
+risc0-zkp = { version = "1.0", default-features = false }
+risc0-build-ethereum = "1.1.4"
 
 
 [workspace]

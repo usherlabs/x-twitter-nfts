@@ -28,7 +28,7 @@ fn build_proof() -> Result<(), Box<dyn std::error::Error>> {
     let meta_data= AssetMetadata{
         image_url: "https://386f4b0d6749763bc7ab0a648c3e650f.ipfscdn.io/ipfs/QmXPD7KqFyFWwMTQyEo9HuTJjkKLxergS1YTt1wjJNAAHV".to_string(),
         owner_account_id:"xlassixx.testnet".to_string(),
-        token_id: "1800368936443379990".to_string(),
+        token_id: "1800368936443381111".to_string(),
     };
 
     // type conversion occurs here

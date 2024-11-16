@@ -1,9 +1,11 @@
 pub mod entity;
-mod helper;
 
+pub mod helper;
+pub mod methods;
+
+use crate::helper::near::{process_near_transaction, NearExplorerIndexer};
 use async_std::task::sleep;
 use dotenv::dotenv;
-use helper::process_near_transaction;
 use near_client::{client::NearClient, prelude::Ed25519SecretKey};
 use reqwest::Url;
 use sea_orm::Database;
@@ -16,6 +18,7 @@ async fn main() {
 
     //Load Essential for env Variables
     env::var("TWEET_BEARER").expect("TWEET_BEARER must be set");
+
     let nft_contract_id = env::var("NFT_CONTRACT_ID").unwrap_or("test-usher.testnet".to_owned());
     let db = Database::connect(env::var("DATABASE_URL").expect("DATABASE_URL must be set"))
         .await
@@ -33,7 +36,7 @@ async fn main() {
         .with_env_filter(tracing_subscriber::filter::EnvFilter::from_default_env())
         .init();
 
-    let indexer = helper::NearExplorerIndexer::new(&nft_contract_id);
+    let indexer = NearExplorerIndexer::new(&nft_contract_id);
     if indexer.is_err() {
         error!("indexer-init-error: {:?}", indexer.err());
         return;

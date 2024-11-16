@@ -2,7 +2,7 @@
 name = "apps"
 version = { workspace = true }
 edition = { workspace = true }
-build = "build.rs"
+# build = "build.rs"
 
 [build-dependencies]
 risc0-build = { workspace = true }
