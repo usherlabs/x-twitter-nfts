@@ -20,7 +20,6 @@ tokio = { version = "1.37", features = ["macros", "rt"] }
 serde_json = "1.0.128"
 reqwest = { version = "0.12.4", features = ["json", "multipart"] }
 regex = "1.11.0"
-serde = { version = "1.0.147", features = ["derive", "std"] }
 near-client = "0.7.2"
 verity-client = { git = "https://github.com/usherlabs/ccamp", rev = "be304188f69019fdb11ca305cb080749a468f9db" }
 k256 = { version = "0.13", features = ["pem"] }
@@ -29,18 +28,32 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 verity-verifier = { path = "./../verity/verifier", default-features = false, features = [
     "no-session",
 ] }
-risc0-zkvm = { version = "1.0", features = ["prove","client"] }
-risc0-ethereum-contracts = { version = "1.0", default-features = false }
 near-contract-standards = "5.5.0"
 near-jsonrpc-client = "0.9.0"
 near-crypto = "0.21.1"
 near-primitives = "0.21.1"
+sha256 = "1.5.0"
 near-chain-configs = "0.21.1"
 near-jsonrpc-primitives = "0.21.1"
 ethers = { version = "2.0" }
-risc0-build = { version = "1.0", features = ["docker"] }
-risc0-zkp = { version = "1.0", default-features = false }
-risc0-build-ethereum = "1.1.4"
+risc0-build = { version = "1.0.1", features = ["docker"] }
+risc0-build-ethereum = { git = "https://github.com/risc0/risc0-ethereum", tag = "v1.0.0" }
+risc0-ethereum-contracts = { git = "https://github.com/risc0/risc0-ethereum", tag = "v1.0.0" }
+risc0-zkvm = { version = "1.0.1", default-features = false, features = [
+    "client",
+] }
+risc0-zkp = { version = "1.0.1", default-features = false }
+serde = { version = "1.0.1", features = ["derive", "std"] }
+
+[build-dependencies]
+risc0-build = { version = "1.0.1", features = ["docker"] }
+serde = "1.0"
+serde_json = "1.0.107"
+tlsn-core = { git = "https://github.com/tlsnotary/tlsn", commit = "7272d9623a8cf0e04f59b1656e873476a5f17a13" }
+p256 = { version = "0.13", features = ["ecdsa"] }
+verity-verifier = { path = "./../verity/verifier", default-features = false, features = [
+    "no-session",
+] }
 
 
 [workspace]

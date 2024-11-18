@@ -4,6 +4,7 @@ use methods::VERIFY_ELF;
 use risc0_ethereum_contracts::groth16;
 use risc0_zkvm::{default_prover, ExecutorEnv, ProverOpts, VerifierContext};
 use serde::{Deserialize, Serialize};
+use sha256::digest;
 use verity_verifier::verify_proof;
 
 /// Containing the details needed for verification of a proof
@@ -126,18 +127,24 @@ pub fn generate_groth16_proof(zk_inputs: ZkInputParam) -> (Vec<u8>, Vec<u8>) {
 
     // // Extract the journal from the receipt.
     let journal = receipt.journal.bytes.clone();
+
+    println!(
+        "\n\nSEAL SHA\t\t:{}\n\n {}\n\n",
+        digest(format!("{}", hex::encode(&seal.clone()))),
+        hex::encode(&seal.clone())
+    );
+
     let journal_output = <Vec<u8>>::abi_decode(&journal, true)
-        .context("decoding journal data")
+        // .context("decoding SEAL data")
         .unwrap();
 
     (seal, journal_output)
 }
 
-
 impl ZkInputParam {
     /// Returns the proof string associated with this ZkInputParam.
     #[must_use]
-    pub fn get_proof(&self) -> (String,String) {
+    pub fn get_proof(&self) -> (String, String) {
         verify_proof(&self.proof).unwrap()
     }
 }

@@ -6,11 +6,13 @@ pub mod methods;
 use crate::helper::near::{process_near_transaction, NearExplorerIndexer};
 use async_std::task::sleep;
 use dotenv::dotenv;
+use methods::VERIFY_ELF;
 use near_client::{client::NearClient, prelude::Ed25519SecretKey};
 use reqwest::Url;
 use sea_orm::Database;
 use std::{env, str::FromStr, time::Duration};
 use tracing::{debug, error};
+use tracing::{debug, info};
 #[async_std::main]
 async fn main() {
     // Load .env
@@ -25,7 +27,7 @@ async fn main() {
         .unwrap();
 
     let near_rpc = env::var("NEAR_RPC").unwrap_or("https://rpc.testnet.near.org/".to_owned());
-    let sk = env::var("SIGNER_SK").expect("SIGNER_SK Must be set");
+    let sk = env::var("NEAR_ACCOUNT_SECRET_KEY").expect("NEAR_ACCOUNT_SECRET_KEY Must be set");
     let ed25519_secret_key = Ed25519SecretKey::from_expanded(&sk).unwrap();
 
     // Init Near Client
@@ -35,6 +37,11 @@ async fn main() {
     tracing_subscriber::fmt()
         .with_env_filter(tracing_subscriber::filter::EnvFilter::from_default_env())
         .init();
+
+    info!(
+        "\n\nELF SHA\t\t:{}\n\n,",
+        digest(format!("{}", hex::encode(VERIFY_ELF)))
+    );
 
     let indexer = NearExplorerIndexer::new(&nft_contract_id);
     if indexer.is_err() {

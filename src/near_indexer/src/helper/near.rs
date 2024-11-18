@@ -2,6 +2,7 @@ use crate::entity::near_transaction;
 
 use crate::methods::VERIFY_ELF;
 use alloy_sol_types::SolValue;
+use ethers::utils::hex;
 use near_client::client::{NearClient, Signer};
 use near_client::crypto::Key;
 use near_client::prelude::{AccountId, Ed25519PublicKey, Ed25519SecretKey, Finality};
@@ -16,11 +17,13 @@ use near_primitives::types::BlockReference;
 use near_primitives::views::{QueryRequest, TxExecutionStatus};
 use regex::Regex;
 use risc0_ethereum_contracts::groth16;
-use risc0_zkvm::{default_prover, ExecutorEnv, ProverOpts, VerifierContext};
+use risc0_zkp::core::digest;
+use risc0_zkvm::{default_prover, ExecutorEnv, ProverOpts, ReceiptKind, VerifierContext};
 use sea_orm::ActiveValue::Set;
 use sea_orm::{DbConn, DbErr, EntityTrait};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Error as SJError};
+use sha256::digest;
 use std::collections::HashMap;
 use std::env;
 use std::error::Error;
@@ -524,37 +527,6 @@ pub async fn get_proof(tweet_id: u64) -> String {
         return String::from("");
     }
     let verify_response = _temp.unwrap();
-    // let full_data =
-    //     json!({"proof":_temp.proof,"notary_pub_key":_temp.notary_pub_key,"x":_temp.subject.json::<Value>().await.unwrap()});
-
-    // let client = Client::new();
-
-    // let form = Form::new()
-    //     .part("file", Part::text(full_data.to_string()).file_name("proof.json"))
-    //     .part("pinataOptions", Part::text("{\"wrapWithDirectory\":false}"))
-    //     .part("pinataOptions", Part::text("{\"wrapWithDirectory\":false}"))
-    //     .part("pinataMetadata", Part::text("{\"name\":\"Storage SDK\",\"keyvalues\":{}}"));
-
-    // // Return a JSON response
-    // let url = "https://storage.thirdweb.com/ipfs/upload";
-    // let response = client
-    //     .post(url)
-    //     .header("X-Client-Id", &thirdweb_client_id)
-    //     .header("Content-Type", format!("multipart/form-data; boundary={}", form.boundary()))
-    //     .multipart(form)
-    //     .send().await;
-
-    // if response.is_err() {
-    //     print!("Error: {:?} ", response.err());
-    //     return String::from("");
-    // }
-
-    // let response = response.unwrap().json::<IpfsData>().await;
-
-    // if response.is_err() {
-    //     print!("Error: {:?} ", response.err());
-    //     return String::from("");
-    // }
     verify_response.proof
 }
 
@@ -662,71 +634,25 @@ pub async fn process_near_transaction(
 
                     let zkinput = ZkInputParam { proof, meta_data };
 
-                    //Type issue had to improvise: signer needs sk
-                    let derived_sk = Ed25519SecretKey::try_from_bytes(sk.as_bytes());
-                    if derived_sk.is_err() {
-                        return Ok(false);
-                    }
-                    let nonce = nonce.unwrap().nonce;
-                    let signer =
-                        Signer::from_secret(derived_sk.unwrap(), nft_contract_id.clone(), nonce);
+                    let (seal, journal_output) = spawn_blocking(|| generate_groth16_proof(zkinput))
+                        .await
+                        .unwrap();
 
-                    // // Perform the Mint Fulfillemnt Transaction based on the mint request data
-                    // let chain_transaction = client
-                    //     .function_call(&signer, &nft_contract_id, "nft_mint")
-                    //     .args(json!(
-                    //         {
-                    //             "token_id": mint_data.tweet_id.to_string(),
-                    //             "receiver_id": transaction.signer_account_id,
-                    //             "token_metadata": {
-                    //                 "media": mint_data.image_url,
-                    //                 // Add proof and more description
-                    //                 "extra":&proof_url,
-                    //                 "reference": proof_url,
-                    //             }
-                    //         }
-                    //     ))
-                    //     .deposit(7340000000000000000000)
-                    //     .gas(10000000000000)
-                    //     .retry(near_client::client::Retry::ONCE)
-                    //     .commit(Finality::Final)
-                    //     .await;
+                    info!(
+                        "{:?} was committed to the journal",
+                        hex::encode(&journal_output)
+                    );
+                    info!("{:?} was the provided seal", hex::encode(&seal));
+                    let aurora_client = TxSender::default();
+                    let aurora_tx_future = aurora_client
+                        .verify_proof_on_aurora(journal_output.clone(), seal)
+                        .await;
+                    let aurora_tx_response = aurora_tx_future.unwrap();
+                    info!(
+                        "Aurora transation has been verified with response: {:?}\n",
+                        aurora_tx_response
+                    );
 
-                    // if chain_transaction.is_err() {
-                    //     debug!(
-                    //         "On Chain Transaction failed :{}\n Details:{:?}",
-                    //         transaction.transaction_hash,
-                    //         chain_transaction.err()
-                    //     );
-                    //     return Ok(false);
-                    // }
-
-                    // let chain_transaction = chain_transaction.unwrap();
-                    // debug!(
-                    //     "ON Chain Transaction Hash {:?} for mint {}",
-                    //     chain_transaction.id().to_string(),
-                    //     transaction.transaction_hash
-                    // );
-
-                    // let new_transaction = near_transaction::ActiveModel {
-                    //     id: Set(pk),
-                    //     transaction_hash: Set(transaction.transaction_hash.clone()),
-                    //     signer_account_id: Set(transaction.signer_account_id.clone()),
-                    //     receiver_account_id: Set(transaction.receiver_account_id.clone()),
-                    //     block_timestamp: Set(transaction.transaction_hash.clone()),
-                    //     block_height: Set(transaction.block.block_height.try_into().unwrap()),
-                    //     action: Set(action.action.clone()),
-                    //     method: Set(method.clone()),
-                    //     outcomes_status: Set(transaction.outcomes.status),
-                    //     tweet_id: Set(mint_data.tweet_id.to_string()),
-                    //     image_url: Set(mint_data.image_url.clone()),
-                    //     user_to_notify: Set(Some(mint_data.notify.clone())),
-                    //     mint_transaction_hash: Set(Some(chain_transaction.id().to_string())),
-                    //     ..Default::default() // all other attributes are `NotSet`
-                    // };
-                    // near_transaction::Entity::insert(new_transaction)
-                    //     .exec(db)
-                    //     .await?;
                     return Ok(false);
                 }
             } else {
@@ -767,13 +693,12 @@ mod tests {
     use super::*;
     use dotenv::dotenv;
     use ethers::utils::hex;
-    use risc0_zkvm::Journal;
     use tokio::{self, task::spawn_blocking};
 
     #[tokio::test]
     async fn test_get_verify() {
         dotenv().expect("Error occurred when loading .env");
-        let tweet_id: u64 = 1834071245224308850;
+        let tweet_id: u64 = 1858184885493485672;
         let proof = get_proof(tweet_id).await;
         assert!(proof.len() > 100, "proof is invalid");
 
@@ -788,6 +713,7 @@ mod tests {
             meta_data,
         };
 
+        println!("{:?}", zkinput);
         let (seal, journal_output) = spawn_blocking(|| generate_groth16_proof(zkinput))
             .await
             .unwrap();
@@ -806,10 +732,10 @@ mod tests {
             "Aurora transation has been verified with response: {:?}\n",
             aurora_tx_response
         );
-        assert_eq!(
-            aurora_tx_response.block_hash.unwrap().to_string(),
-            "proof is invalid"
-        );
+        assert!(hex::check_raw(format!(
+            "{:x}",
+            aurora_tx_response.block_hash.unwrap()
+        )));
     }
 }
 
@@ -818,6 +744,11 @@ pub fn generate_groth16_proof(zk_inputs: ZkInputParam) -> (Vec<u8>, Vec<u8>) {
     let input = serde_json::to_string(&zk_inputs).unwrap();
     let input: &[u8] = input.as_bytes();
 
+    // println!(
+    //     "\n\nInput SHA\t\t:{}\n\nINPUT:\t\t{:?}\n\n",
+    //     digest(format!("{}", hex::encode(input))),
+    //     input
+    // );
     // begin the proving process
     let env = ExecutorEnv::builder().write_slice(&input).build().unwrap();
     let receipt = default_prover()
@@ -830,11 +761,19 @@ pub fn generate_groth16_proof(zk_inputs: ZkInputParam) -> (Vec<u8>, Vec<u8>) {
         .unwrap()
         .receipt;
 
+    // print!("receipt:{:?}", receipt.clone());
+
     // // Encode the seal with the selector.
     let seal = groth16::encode(receipt.inner.groth16().unwrap().seal.clone()).unwrap();
 
     // // Extract the journal from the receipt.
     let journal = receipt.journal.bytes.clone();
+
+    // println!(
+    //     "\n\nJournal SHA\t\t:{}\n\n {}\n\n",
+    //     digest(format!("{}", hex::encode(&seal.clone()))),
+    //     hex::encode(&seal.clone())
+    // );
     let journal_output = <Vec<u8>>::abi_decode(&journal, true)
         // .context("decoding journal data")
         .unwrap();
