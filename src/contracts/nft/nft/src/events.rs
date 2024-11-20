@@ -1,5 +1,5 @@
 use near_contract_tools::event;
-use near_sdk::{ AccountId, Balance };
+use near_sdk::{AccountId, Balance};
 
 /// Mint Request Events
 
@@ -11,7 +11,7 @@ use near_sdk::{ AccountId, Balance };
 /// * `account`: The account requesting the mint operation.
 #[event(standard = "custom", version = "1.0.0")]
 pub struct TweetMintRequest {
-    pub tweet_id: u64,
+    pub tweet_id: String,
     pub account: AccountId,
     pub deposit: Balance,
     pub notify: String,
@@ -19,7 +19,7 @@ pub struct TweetMintRequest {
 
 #[event(standard = "custom", version = "1.0.0")]
 pub struct CancelMintRequest {
-    pub tweet_id: u64,
+    pub tweet_id: String,
     pub account: AccountId,
     pub withdraw: Balance,
 }

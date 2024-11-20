@@ -37,7 +37,7 @@ use near_sdk::{
 pub struct Contract {
     tokens: NonFungibleToken,
     metadata: LazyOption<NFTContractMetadata>,
-    tweet_requests: LookupMap<u64, (AccountId, u64, String, String)>,
+    tweet_requests: LookupMap<String, (AccountId, u64, String, String)>,
     lock_time: u64,
 }
 
@@ -120,15 +120,14 @@ impl Contract {
             Some(token_metadata),
             Some(receiver_id),
         );
-        self.tweet_requests
-            .remove(&token.token_id.parse::<u64>().unwrap());
+        self.tweet_requests.remove(&token.token_id);
         token
     }
 
     #[payable]
     pub fn mint_tweet_request(
         &mut self,
-        tweet_id: u64,
+        tweet_id: String,
         image_url: String,
         notify: String,
     ) -> (AccountId, u64, String) {
@@ -140,16 +139,14 @@ impl Contract {
                 env::attached_deposit()
             )
         );
-        if self
-            .tokens
-            .owner_by_id
-            .get(&format!("{}", tweet_id))
-            .is_some()
-        {
+        if tweet_id.clone().parse::<u64>().is_err() {
+            env::panic_str("tweet_id must be a positive number");
+        }
+        if self.tokens.owner_by_id.get(&tweet_id).is_some() {
             env::panic_str("tweet_id has been minted already");
         }
 
-        if !self.is_tweet_available(tweet_id) {
+        if !self.is_tweet_available(tweet_id.clone()) {
             env::panic_str("This tweet_id has a lock on it");
         }
         // Get the signer's account ID
@@ -170,7 +167,7 @@ impl Contract {
         (entry.0, entry.1, entry.2)
     }
 
-    pub fn cancel_mint_request(&mut self, tweet_id: u64) {
+    pub fn cancel_mint_request(&mut self, tweet_id: String) {
         let tweet_request = self.tweet_requests.get(&tweet_id);
         if let Some((_id, timestamp, _, _)) = tweet_request {
             require!(
@@ -181,11 +178,11 @@ impl Contract {
         }
     }
 
-    pub fn get_request(&self, tweet_id: u64) -> Option<(AccountId, u64, String, String)> {
+    pub fn get_request(&self, tweet_id: String) -> Option<(AccountId, u64, String, String)> {
         self.tweet_requests.get(&tweet_id)
     }
 
-    fn is_tweet_available(&self, tweet_id: u64) -> bool {
+    fn is_tweet_available(&self, tweet_id: String) -> bool {
         let entry = self.tweet_requests.get(&tweet_id);
 
         if self
@@ -210,7 +207,7 @@ impl Contract {
     }
 
     #[private]
-    fn claim_funds(&mut self, tweet_id: u64) {
+    fn claim_funds(&mut self, tweet_id: String) {
         if let Some((id, _, _, _)) = self.tweet_requests.get(&tweet_id) {
             Promise::new(id).transfer(MIN_DEPOSIT);
             self.tweet_requests.remove(&tweet_id);
@@ -348,9 +345,34 @@ mod tests {
 
         // let tweet_id = "1834071245224308850".to_string();
 
-        let random_tweet_id = env::random_seed().into_iter().sum::<u8>() as u64;
+        let random_tweet_id = format!("{}", env::random_seed().into_iter().sum::<u8>());
         let is_valid = contract.is_tweet_available(random_tweet_id);
         assert!(is_valid);
+    }
+
+    #[test]
+    #[should_panic(expected = "tweet_id must be a positive number")]
+    fn test_is_invalid_request() {
+        let mut context = get_context(accounts(0));
+        testing_env!(context.build());
+        let mut contract = Contract::new_default_meta(accounts(0).into());
+
+        let current_time = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap();
+
+        testing_env!(context
+            .storage_usage(env::storage_usage())
+            .attached_deposit(MINT_STORAGE_COST)
+            .predecessor_account_id(accounts(3))
+            .block_timestamp(current_time.as_nanos() as u64)
+            .build());
+
+        // mint request
+        let tweet_id = "XXX4071245224308850";
+        let entry =
+            contract.mint_tweet_request(tweet_id.to_string(), format!("ipfs://"), format!(""));
+        assert_eq!(entry.0, accounts(3));
     }
     #[test]
     #[should_panic(expected = "This tweet_id has a lock on it")]
@@ -370,8 +392,9 @@ mod tests {
             .build());
 
         // mint request
-        let tweet_id = 1834071245224308850;
-        let entry = contract.mint_tweet_request(tweet_id, format!("ipfs://"), format!(""));
+        let tweet_id = "1834071245224308850";
+        let entry =
+            contract.mint_tweet_request(tweet_id.to_string(), format!("ipfs://"), format!(""));
         assert_eq!(entry.0, accounts(3));
         assert_eq!(entry.1, current_time.as_millis() as u64);
 
@@ -381,7 +404,8 @@ mod tests {
             .predecessor_account_id(accounts(5))
             .block_timestamp(current_time.as_nanos() as u64)
             .build());
-        let entry = contract.mint_tweet_request(tweet_id, format!("ipfs://"), format!(""));
+        let entry =
+            contract.mint_tweet_request(tweet_id.to_string(), format!("ipfs://"), format!(""));
         assert_eq!(entry.0, accounts(3));
     }
 
@@ -402,8 +426,9 @@ mod tests {
             .build());
 
         // mint request
-        let tweet_id = 1834071245224308850;
-        let entry = contract.mint_tweet_request(tweet_id, format!("ipfs://"), format!(""));
+        let tweet_id = "1834071245224308850";
+        let entry =
+            contract.mint_tweet_request(tweet_id.to_string(), format!("ipfs://"), format!(""));
         assert_eq!(entry.0, accounts(3));
         assert_eq!(entry.1, current_time.as_millis() as u64);
 
@@ -418,7 +443,8 @@ mod tests {
             )
             .build());
 
-        let entry = contract.mint_tweet_request(tweet_id, format!("ipfs://"), format!(""));
+        let entry =
+            contract.mint_tweet_request(tweet_id.to_string(), format!("ipfs://"), format!(""));
         assert_eq!(entry.0, accounts(4));
     }
 

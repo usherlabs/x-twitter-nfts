@@ -25,9 +25,6 @@ verity-client = { git = "https://github.com/usherlabs/ccamp", rev = "be304188f69
 k256 = { version = "0.13", features = ["pem"] }
 rand = "0.8.5"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-verity-verifier = { path = "./../verity/verifier", default-features = false, features = [
-    "no-session",
-] }
 near-contract-standards = "5.5.0"
 near-jsonrpc-client = "0.9.0"
 near-crypto = "0.21.1"
@@ -46,15 +43,6 @@ risc0-zkp = { version = "1.0.1", default-features = false }
 serde = { version = "1.0.1", features = ["derive", "std"] }
 reqwest-oauth1 = "0.3.0"
 
-[build-dependencies]
-risc0-build = { version = "1.0.1", features = ["docker"] }
-serde = "1.0"
-serde_json = "1.0.107"
-tlsn-core = { git = "https://github.com/tlsnotary/tlsn", commit = "7272d9623a8cf0e04f59b1656e873476a5f17a13" }
-p256 = { version = "0.13", features = ["ecdsa"] }
-verity-verifier = { path = "./../verity/verifier", default-features = false, features = [
-    "no-session",
-] }
 
 
 [workspace]

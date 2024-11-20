@@ -5,6 +5,7 @@ use std::env;
 use std::error::Error;
 use std::marker::{Send, Sync};
 
+
 // `IVerifier` interface automatically generated via the alloy `sol!` macro.
 sol! {
     interface IVerifier {

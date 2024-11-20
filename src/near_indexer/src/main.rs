@@ -55,6 +55,7 @@ async fn main() {
     let mut indexer = indexer.unwrap();
     loop {
         let mut data = indexer.get_transactions().await;
+
         if data.is_err() {
             error!("init-fetch-error: {:?}", data.err());
             return;
@@ -64,14 +65,15 @@ async fn main() {
             let transactions = data.unwrap();
             debug!("Found {} Transactions", transactions.len());
             for transaction in transactions {
+                println!("{transaction:?}");
                 let exists = process_near_transaction(&db, &transaction, &client, &twitter_client)
                     .await
                     .unwrap();
-                if exists {
-                    break;
-                }
+                // if exists {
+                //     break;
+                // }
             }
-
+            break;
             println!("Page Number: {}", indexer.page_no);
             // Walk pages
             if !indexer.has_next_page() {

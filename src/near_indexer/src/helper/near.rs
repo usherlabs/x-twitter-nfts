@@ -1,6 +1,7 @@
 use crate::entity::near_transaction;
 
 use crate::helper::aurora::TxSender;
+use crate::helper::nft::extract_metadata_from_request;
 use crate::methods::VERIFY_ELF;
 use alloy_sol_types::SolValue;
 use ethers::utils::hex;
@@ -119,7 +120,7 @@ pub async fn verify_near_proof(
                 _ => Err(err)?,
             },
             Ok(response) => {
-                println!("response gotten after: {}s", delta);
+                debug!("response gotten after: {}s", delta);
                 res = Some(response);
                 break;
             }
@@ -509,7 +510,9 @@ pub struct AssetMetadata {
     pub token_id: String,
 }
 
-pub async fn get_proof(tweet_id: String) -> Result<String, Box<dyn std::error::Error>> {
+pub async fn get_proof(
+    tweet_id: String,
+) -> Result<(String, TweetResponse), Box<dyn std::error::Error>> {
     let verity_client = get_verity_client();
     let _temp = verity_client
         .get(
@@ -518,71 +521,23 @@ pub async fn get_proof(tweet_id: String) -> Result<String, Box<dyn std::error::E
         .header(
             "Authorization",
             format!("Bearer {}", env::var("TWEET_BEARER").unwrap_or(String::from("")))
-        )
+        ).redact("authorization".to_string())
         .send().await;
 
     if _temp.is_err() {
-        print!("Error: {:?} ", _temp.err());
-        return Ok(String::from(""));
-    }
-    #[derive(Serialize, Deserialize, Debug)]
-    struct ErrorObject {
-        value: String,
-        detail: String,
-        title: String,
-        resource_type: String,
-        parameter: String,
-    }
-
-    #[derive(Serialize, Deserialize, Debug)]
-    struct PublicMetrics {
-        retweet_count: u64,
-        reply_count: u64,
-        like_count: u64,
-        quote_count: u64,
-        bookmark_count: u64,
-        impression_count: u64,
-    }
-
-    #[derive(Serialize, Deserialize, Debug)]
-    struct TweetData {
-        public_metrics: PublicMetrics,
-        id: String,
-        text: String,
-        created_at: String,
-        author_id: String,
-        edit_history_tweet_ids: Option<Vec<String>>,
-    }
-
-    #[derive(Serialize, Deserialize, Debug)]
-    struct User {
-        created_at: String,
-        id: String,
-        username: String,
-        name: String,
-    }
-
-    #[derive(Serialize, Deserialize, Debug)]
-    struct Includes {
-        users: Vec<User>,
-    }
-
-    #[derive(Serialize, Deserialize, Debug)]
-    struct Response {
-        data: Option<Vec<TweetData>>,
-        includes: Option<Includes>,
-        errors: Option<Vec<ErrorObject>>,
+        info!("Error: {:?} ", _temp.err());
+        return Err(format!("Error found ID").into());
     }
 
     let verify_response = _temp.unwrap();
-    let res = verify_response.subject.json::<Response>().await;
+    let res = verify_response.subject.json::<TweetResponse>().await;
     if res.is_err() {
         info!("invalid Tweet at {},{:?}", tweet_id, res.err());
         return Err(format!("invalid Tweet ID").into());
     }
     let res = res.expect("response must exist");
     if res.data.is_some() {
-        Ok(verify_response.proof)
+        Ok((verify_response.proof, res))
     } else {
         info!("Error found at {},{:?}", tweet_id, res);
         Err(format!("Error found ID").into())
@@ -652,7 +607,7 @@ pub async fn process_near_transaction(
                             Finality::Final,
                             "nft_token",
                             Some(json!({
-                                    "token_id": mint_data.tweet_id.to_string(),
+                                    "token_id": mint_data.tweet_id.clone(),
                             })),
                         )
                         .await;
@@ -676,20 +631,21 @@ pub async fn process_near_transaction(
                     let proof = get_proof(mint_data.tweet_id.clone()).await;
 
                     if proof.is_err() {
-                        info!("Invalid Tweet ID{}\n", mint_data.tweet_id.clone());
+                        info!("Invalid Tweet ID{}\n", &mint_data.tweet_id);
                         return Ok(false);
                     }
-                    let proof = proof.unwrap();
+                    let (proof, tweet_res_data) = proof.unwrap();
 
                     let meta_data = AssetMetadata {
                         image_url: mint_data.image_url.to_string(),
                         owner_account_id: transaction.signer_account_id.clone(),
-                        token_id: mint_data.tweet_id.to_string(),
+                        token_id: mint_data.tweet_id.clone(),
                     };
 
-                    let zk_input = ZkInputParam { proof, meta_data };
-
-                    println!("{:?}", zk_input);
+                    let zk_input = ZkInputParam {
+                        proof,
+                        meta_data: meta_data.clone(),
+                    };
 
                     let (seal, journal_output) =
                         spawn_blocking(|| generate_groth16_proof(zk_input))
@@ -713,8 +669,30 @@ pub async fn process_near_transaction(
 
                     let chain_transaction = aurora_tx_response.block_hash.unwrap();
                     debug!(
-                        "ON Chain Transaction Hash {:x} for mint {}",
-                        chain_transaction, transaction.transaction_hash
+                        "ON Chain Transaction Hash {} for mint {}",
+                        chain_transaction.to_string(),
+                        transaction.transaction_hash
+                    );
+
+                    // perform verification near
+                    // mint NFT if near verification is successfull
+                    let near_tx_response = verify_near_proof(
+                        journal_output,
+                        extract_metadata_from_request(tweet_res_data, meta_data),
+                    )
+                    .await;
+                    if near_tx_response.is_err() {
+                        info!(
+                            "Failed to mint {}\n {:?}\n",
+                            &mint_data.tweet_id,
+                            near_tx_response.err()
+                        );
+                        return Ok(false);
+                    }
+                    let near_tx_response = near_tx_response.expect("successful mint response");
+                    debug!(
+                        "Near transaction has been verified with response: {:?}\n",
+                        near_tx_response
                     );
 
                     let new_transaction = near_transaction::ActiveModel {
@@ -739,7 +717,7 @@ pub async fn process_near_transaction(
 
                     if !mint_data.notify.is_empty() {
                         let _ = notifier
-                            .notifier(&mint_data.tweet_id.to_string(), &mint_data.notify)
+                            .notifier(&mint_data.tweet_id.clone(), &mint_data.notify)
                             .await;
                     }
                     return Ok(false);
@@ -760,6 +738,7 @@ use k256::SecretKey;
 use rand::rngs::OsRng;
 use verity_client::client::{AnalysisConfig, VerityClient, VerityClientConfig};
 
+use super::nft::{TweetData, TweetResponse};
 use super::twitter::OathTweeterHandler;
 
 pub fn get_verity_client() -> VerityClient {
@@ -790,11 +769,11 @@ mod tests {
     async fn test_get_verify() {
         dotenv().expect("Error occurred when loading .env");
         let tweet_id: u64 = 1858184885493485672;
-        let proof = get_proof(tweet_id).await;
+        let proof = get_proof(tweet_id.to_string()).await;
         if proof.is_err() {
-            println!("{:?}", proof.err());
+            debug!("{:?}", proof.err());
         } else {
-            let proof = proof.unwrap();
+            let (proof, _) = proof.unwrap();
 
             assert!(proof.len() > 100, "proof is invalid");
 
@@ -809,23 +788,22 @@ mod tests {
                 meta_data,
             };
 
-            println!("{:?}", zk_input);
             let (seal, journal_output) = spawn_blocking(|| generate_groth16_proof(zk_input))
                 .await
                 .unwrap();
 
-            println!(
+            debug!(
                 "{:?} was committed to the journal",
                 hex::encode(&journal_output)
             );
-            println!("{:?} was the provided seal", hex::encode(&seal));
+            debug!("{:?} was the provided seal", hex::encode(&seal));
             let aurora_client = TxSender::default();
             let aurora_tx_future = aurora_client
                 .verify_proof_on_aurora(journal_output.clone(), seal)
                 .await;
             let aurora_tx_response = aurora_tx_future.unwrap();
-            println!(
-                "Aurora transation has been verified with response: {:?}\n",
+            debug!(
+                "Aurora transation has been verified with resriscponse: {:?}\n",
                 aurora_tx_response
             );
             assert!(hex::check_raw(format!(
@@ -841,11 +819,7 @@ pub fn generate_groth16_proof(zk_inputs: ZkInputParam) -> (Vec<u8>, Vec<u8>) {
     let input = serde_json::to_string(&zk_inputs).unwrap();
     let input: &[u8] = input.as_bytes();
 
-    // println!(
-    //     "\n\nInput SHA\t\t:{}\n\nINPUT:\t\t{:?}\n\n",
-    //     digest(format!("{}", hex::encode(input))),
-    //     input
-    // );
+
     // begin the proving process
     let env = ExecutorEnv::builder().write_slice(&input).build().unwrap();
     let receipt = default_prover()
@@ -858,7 +832,6 @@ pub fn generate_groth16_proof(zk_inputs: ZkInputParam) -> (Vec<u8>, Vec<u8>) {
         .unwrap()
         .receipt;
 
-    // print!("receipt:{:?}", receipt.clone());
 
     // // Encode the seal with the selector.
     let seal = groth16::encode(receipt.inner.groth16().unwrap().seal.clone()).unwrap();
@@ -866,11 +839,6 @@ pub fn generate_groth16_proof(zk_inputs: ZkInputParam) -> (Vec<u8>, Vec<u8>) {
     // // Extract the journal from the receipt.
     let journal = receipt.journal.bytes.clone();
 
-    // println!(
-    //     "\n\nJournal SHA\t\t:{}\n\n {}\n\n",
-    //     digest(format!("{}", hex::encode(&seal.clone()))),
-    //     hex::encode(&seal.clone())
-    // );
     let journal_output = <Vec<u8>>::abi_decode(&journal, true)
         // .context("decoding journal data")
         .unwrap();
