@@ -4,15 +4,20 @@ pub mod helper;
 pub mod methods;
 
 use crate::helper::near::{process_near_transaction, NearExplorerIndexer};
+use crate::helper::twitter::OathTweeterHandler;
 use async_std::task::sleep;
 use dotenv::dotenv;
+use ethers::utils::hex;
 use methods::VERIFY_ELF;
-use near_client::{client::NearClient, prelude::Ed25519SecretKey};
+use near_client::client::NearClient;
 use reqwest::Url;
 use sea_orm::Database;
+use sha256::digest;
+
+
 use std::{env, str::FromStr, time::Duration};
-use tracing::{debug, error};
-use tracing::{debug, info};
+use tracing::{debug, error, info};
+
 #[async_std::main]
 async fn main() {
     // Load .env
@@ -28,7 +33,6 @@ async fn main() {
 
     let near_rpc = env::var("NEAR_RPC").unwrap_or("https://rpc.testnet.near.org/".to_owned());
     let sk = env::var("NEAR_ACCOUNT_SECRET_KEY").expect("NEAR_ACCOUNT_SECRET_KEY Must be set");
-    let ed25519_secret_key = Ed25519SecretKey::from_expanded(&sk).unwrap();
 
     // Init Near Client
     let client = NearClient::new(Url::from_str(&near_rpc).unwrap()).unwrap();
@@ -48,6 +52,7 @@ async fn main() {
         error!("indexer-init-error: {:?}", indexer.err());
         return;
     }
+    let twitter_client = OathTweeterHandler::default();
 
     let mut indexer = indexer.unwrap();
     loop {
@@ -62,7 +67,7 @@ async fn main() {
             debug!("Found {} Transactions", transactions.len());
             for transaction in transactions {
                 let exists =
-                    process_near_transaction(&db, &transaction, &client, &ed25519_secret_key)
+                    process_near_transaction(&db, &transaction, &client, &twitter_client)
                         .await
                         .unwrap();
                 if exists {

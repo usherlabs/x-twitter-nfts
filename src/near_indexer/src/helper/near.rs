@@ -1,11 +1,12 @@
 use crate::entity::near_transaction;
 
+use crate::helper::aurora::TxSender;
 use crate::methods::VERIFY_ELF;
 use alloy_sol_types::SolValue;
 use ethers::utils::hex;
-use near_client::client::{NearClient, Signer};
+use near_client::client::NearClient;
 use near_client::crypto::Key;
-use near_client::prelude::{AccountId, Ed25519PublicKey, Ed25519SecretKey, Finality};
+use near_client::prelude::{AccountId, Finality};
 use near_contract_standards::non_fungible_token::metadata::TokenMetadata;
 use near_jsonrpc_client::methods::query::RpcQueryRequest;
 use near_jsonrpc_client::methods::tx::RpcTransactionResponse;
@@ -17,19 +18,18 @@ use near_primitives::types::BlockReference;
 use near_primitives::views::{QueryRequest, TxExecutionStatus};
 use regex::Regex;
 use risc0_ethereum_contracts::groth16;
-use risc0_zkp::core::digest;
 use risc0_zkvm::{default_prover, ExecutorEnv, ProverOpts, ReceiptKind, VerifierContext};
 use sea_orm::ActiveValue::Set;
 use sea_orm::{DbConn, DbErr, EntityTrait};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Error as SJError};
-use sha256::digest;
 use std::collections::HashMap;
 use std::env;
 use std::error::Error;
 use std::marker::{Send, Sync};
 use std::str::FromStr;
 use std::time::Duration;
+use tokio::task::spawn_blocking;
 use tokio::time;
 use tokio::time::sleep;
 use tracing::{debug, info};
@@ -534,7 +534,7 @@ pub async fn process_near_transaction(
     db: &DbConn,
     transaction: &JSONTransaction,
     client: &NearClient,
-    sk: &Ed25519SecretKey,
+    notifier: &OathTweeterHandler,
 ) -> Result<bool, DbErr> {
     let nft_contract_id = env::var("NFT_CONTRACT_ID").unwrap_or("test-usher.testnet".to_owned());
     let nft_contract_id = AccountId::from_str(&nft_contract_id).unwrap();
@@ -586,16 +586,6 @@ pub async fn process_near_transaction(
                         return Ok(false);
                     }
                     let mint_data = mint_data.unwrap();
-
-                    // mint call
-                    let ed25519_public_key = Ed25519PublicKey::from(sk);
-                    let nonce = client
-                        .view_access_key(&nft_contract_id, &ed25519_public_key, Finality::Final)
-                        .await;
-                    if nonce.is_err() {
-                        debug!("Failed to fetch nonce at :{}", transaction.transaction_hash);
-                        return Ok(false);
-                    }
 
                     let fetched_nft = client
                         .view::<Option<NftData>>(
@@ -653,6 +643,37 @@ pub async fn process_near_transaction(
                         aurora_tx_response
                     );
 
+                    let chain_transaction = aurora_tx_response.block_hash.unwrap();
+                    debug!(
+                        "ON Chain Transaction Hash {:x} for mint {}",
+                        chain_transaction, transaction.transaction_hash
+                    );
+
+                    let new_transaction = near_transaction::ActiveModel {
+                        id: Set(pk),
+                        transaction_hash: Set(transaction.transaction_hash.clone()),
+                        signer_account_id: Set(transaction.signer_account_id.clone()),
+                        receiver_account_id: Set(transaction.receiver_account_id.clone()),
+                        block_timestamp: Set(transaction.transaction_hash.clone()),
+                        block_height: Set(transaction.block.block_height.try_into().unwrap()),
+                        action: Set(action.action.clone()),
+                        method: Set(method.clone()),
+                        outcomes_status: Set(transaction.outcomes.status),
+                        tweet_id: Set(mint_data.tweet_id.clone().to_string()),
+                        image_url: Set(mint_data.image_url.clone()),
+                        user_to_notify: Set(Some(mint_data.notify.clone())),
+                        mint_transaction_hash: Set(Some(chain_transaction.to_string())),
+                        ..Default::default() // all other attributes are `NotSet`
+                    };
+                    near_transaction::Entity::insert(new_transaction)
+                        .exec(db)
+                        .await?;
+
+                    if !mint_data.notify.is_empty() {
+                        let _ = notifier
+                            .notifier(&mint_data.tweet_id.to_string(), &mint_data.notify)
+                            .await;
+                    }
                     return Ok(false);
                 }
             } else {
@@ -670,6 +691,8 @@ pub async fn process_near_transaction(
 use k256::SecretKey;
 use rand::rngs::OsRng;
 use verity_client::client::{AnalysisConfig, VerityClient, VerityClientConfig};
+
+use super::twitter::OathTweeterHandler;
 
 pub fn get_verity_client() -> VerityClient {
     let secret_key = SecretKey::random(&mut OsRng);
