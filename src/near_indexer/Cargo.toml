@@ -10,7 +10,7 @@ alloy-sol-types = { version = "0.6" }
 futures = { version = "0.3" }
 async-stream = { version = "0.3" }
 futures-util = { version = "0.3" }
-sea-orm = { version = "1.0.2", features = [
+sea-orm = { version = "1.0.1", features = [
     "sqlx-all",
     "runtime-async-std-native-tls",
 ] }
@@ -36,18 +36,18 @@ sha256 = "1.5.0"
 near-chain-configs = "0.21.1"
 near-jsonrpc-primitives = "0.21.1"
 ethers = { version = "2.0" }
-risc0-build = { version = "1.0.2", features = ["docker"] }
+risc0-build = { version = "1.0.1", features = ["docker"] }
 risc0-build-ethereum = { git = "https://github.com/risc0/risc0-ethereum", tag = "v1.0.0" }
 risc0-ethereum-contracts = { git = "https://github.com/risc0/risc0-ethereum", tag = "v1.0.0" }
-risc0-zkvm = { version = "1.0.2", default-features = false, features = [
+risc0-zkvm = { version = "1.0.1", default-features = false, features = [
     "client",
 ] }
-risc0-zkp = { version = "1.0.2", default-features = false }
-serde = { version = "1.0.2", features = ["derive", "std"] }
+risc0-zkp = { version = "1.0.1", default-features = false }
+serde = { version = "1.0.1", features = ["derive", "std"] }
 reqwest-oauth1 = "0.3.0"
 
 [build-dependencies]
-risc0-build = { version = "1.0.2", features = ["docker"] }
+risc0-build = { version = "1.0.1", features = ["docker"] }
 serde = "1.0"
 serde_json = "1.0.107"
 tlsn-core = { git = "https://github.com/tlsnotary/tlsn", commit = "7272d9623a8cf0e04f59b1656e873476a5f17a13" }

@@ -14,7 +14,6 @@ use reqwest::Url;
 use sea_orm::Database;
 use sha256::digest;
 
-
 use std::{env, str::FromStr, time::Duration};
 use tracing::{debug, error, info};
 
@@ -26,13 +25,12 @@ async fn main() {
     //Load Essential for env Variables
     env::var("TWEET_BEARER").expect("TWEET_BEARER must be set");
 
-    let nft_contract_id = env::var("NFT_CONTRACT_ID").unwrap_or("test-usher.testnet".to_owned());
+    let nft_contract_id = env::var("NFT_CONTRACT_ID").unwrap_or("local-nft.testnet".to_owned());
     let db = Database::connect(env::var("DATABASE_URL").expect("DATABASE_URL must be set"))
         .await
         .unwrap();
 
     let near_rpc = env::var("NEAR_RPC").unwrap_or("https://rpc.testnet.near.org/".to_owned());
-    let sk = env::var("NEAR_ACCOUNT_SECRET_KEY").expect("NEAR_ACCOUNT_SECRET_KEY Must be set");
 
     // Init Near Client
     let client = NearClient::new(Url::from_str(&near_rpc).unwrap()).unwrap();
@@ -66,10 +64,9 @@ async fn main() {
             let transactions = data.unwrap();
             debug!("Found {} Transactions", transactions.len());
             for transaction in transactions {
-                let exists =
-                    process_near_transaction(&db, &transaction, &client, &twitter_client)
-                        .await
-                        .unwrap();
+                let exists = process_near_transaction(&db, &transaction, &client, &twitter_client)
+                    .await
+                    .unwrap();
                 if exists {
                     break;
                 }

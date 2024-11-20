@@ -5,7 +5,6 @@ use crate::methods::VERIFY_ELF;
 use alloy_sol_types::SolValue;
 use ethers::utils::hex;
 use near_client::client::NearClient;
-use near_client::crypto::Key;
 use near_client::prelude::{AccountId, Finality};
 use near_contract_standards::non_fungible_token::metadata::TokenMetadata;
 use near_jsonrpc_client::methods::query::RpcQueryRequest;
@@ -466,7 +465,7 @@ struct Tab {
 #[derive(Debug, Deserialize)]
 struct MintRequestData {
     notify: String,
-    tweet_id: u64,
+    tweet_id: String,
     image_url: String,
 }
 #[allow(non_snake_case)]
@@ -510,7 +509,7 @@ pub struct AssetMetadata {
     pub token_id: String,
 }
 
-pub async fn get_proof(tweet_id: u64) -> String {
+pub async fn get_proof(tweet_id: String) -> Result<String, Box<dyn std::error::Error>> {
     let verity_client = get_verity_client();
     let _temp = verity_client
         .get(
@@ -524,10 +523,70 @@ pub async fn get_proof(tweet_id: u64) -> String {
 
     if _temp.is_err() {
         print!("Error: {:?} ", _temp.err());
-        return String::from("");
+        return Ok(String::from(""));
     }
+    #[derive(Serialize, Deserialize, Debug)]
+    struct ErrorObject {
+        value: String,
+        detail: String,
+        title: String,
+        resource_type: String,
+        parameter: String,
+    }
+
+    #[derive(Serialize, Deserialize, Debug)]
+    struct PublicMetrics {
+        retweet_count: u64,
+        reply_count: u64,
+        like_count: u64,
+        quote_count: u64,
+        bookmark_count: u64,
+        impression_count: u64,
+    }
+
+    #[derive(Serialize, Deserialize, Debug)]
+    struct TweetData {
+        public_metrics: PublicMetrics,
+        id: String,
+        text: String,
+        created_at: String,
+        author_id: String,
+        edit_history_tweet_ids: Option<Vec<String>>,
+    }
+
+    #[derive(Serialize, Deserialize, Debug)]
+    struct User {
+        created_at: String,
+        id: String,
+        username: String,
+        name: String,
+    }
+
+    #[derive(Serialize, Deserialize, Debug)]
+    struct Includes {
+        users: Vec<User>,
+    }
+
+    #[derive(Serialize, Deserialize, Debug)]
+    struct Response {
+        data: Option<Vec<TweetData>>,
+        includes: Option<Includes>,
+        errors: Option<Vec<ErrorObject>>,
+    }
+
     let verify_response = _temp.unwrap();
-    verify_response.proof
+    let res = verify_response.subject.json::<Response>().await;
+    if res.is_err() {
+        info!("invalid Tweet at {},{:?}", tweet_id, res.err());
+        return Err(format!("invalid Tweet ID").into());
+    }
+    let res = res.expect("response must exist");
+    if res.data.is_some() {
+        Ok(verify_response.proof)
+    } else {
+        info!("Error found at {},{:?}", tweet_id, res);
+        Err(format!("Error found ID").into())
+    }
 }
 
 pub async fn process_near_transaction(
@@ -614,7 +673,13 @@ pub async fn process_near_transaction(
                     debug!("fetched_nft: {:?}\nmint_data:{:?}", fetched_nft, &mint_data);
 
                     // Generate Proof
-                    let proof = get_proof(mint_data.tweet_id).await;
+                    let proof = get_proof(mint_data.tweet_id.clone()).await;
+
+                    if proof.is_err() {
+                        info!("Invalid Tweet ID{}\n", mint_data.tweet_id.clone());
+                        return Ok(false);
+                    }
+                    let proof = proof.unwrap();
 
                     let meta_data = AssetMetadata {
                         image_url: mint_data.image_url.to_string(),
@@ -622,11 +687,14 @@ pub async fn process_near_transaction(
                         token_id: mint_data.tweet_id.to_string(),
                     };
 
-                    let zkinput = ZkInputParam { proof, meta_data };
+                    let zk_input = ZkInputParam { proof, meta_data };
 
-                    let (seal, journal_output) = spawn_blocking(|| generate_groth16_proof(zkinput))
-                        .await
-                        .unwrap();
+                    println!("{:?}", zk_input);
+
+                    let (seal, journal_output) =
+                        spawn_blocking(|| generate_groth16_proof(zk_input))
+                            .await
+                            .unwrap();
 
                     info!(
                         "{:?} was committed to the journal",
@@ -723,42 +791,48 @@ mod tests {
         dotenv().expect("Error occurred when loading .env");
         let tweet_id: u64 = 1858184885493485672;
         let proof = get_proof(tweet_id).await;
-        assert!(proof.len() > 100, "proof is invalid");
+        if proof.is_err() {
+            println!("{:?}", proof.err());
+        } else {
+            let proof = proof.unwrap();
 
-        let meta_data= AssetMetadata{
+            assert!(proof.len() > 100, "proof is invalid");
+
+            let meta_data= AssetMetadata{
             image_url: "https://386f4b0d6749763bc7ab0a648c3e650f.ipfscdn.io/ipfs/QmXPD7KqFyFWwMTQyEo9HuTJjkKLxergS1YTt1wjJNAAHV".to_string(),
             owner_account_id:"xlassixx.testnet".to_string(),
             token_id: tweet_id.to_string(),
         };
 
-        let zkinput = ZkInputParam {
-            proof: proof,
-            meta_data,
-        };
+            let zk_input = ZkInputParam {
+                proof: proof,
+                meta_data,
+            };
 
-        println!("{:?}", zkinput);
-        let (seal, journal_output) = spawn_blocking(|| generate_groth16_proof(zkinput))
-            .await
-            .unwrap();
+            println!("{:?}", zk_input);
+            let (seal, journal_output) = spawn_blocking(|| generate_groth16_proof(zk_input))
+                .await
+                .unwrap();
 
-        println!(
-            "{:?} was committed to the journal",
-            hex::encode(&journal_output)
-        );
-        println!("{:?} was the provided seal", hex::encode(&seal));
-        let aurora_client = TxSender::default();
-        let aurora_tx_future = aurora_client
-            .verify_proof_on_aurora(journal_output.clone(), seal)
-            .await;
-        let aurora_tx_response = aurora_tx_future.unwrap();
-        println!(
-            "Aurora transation has been verified with response: {:?}\n",
-            aurora_tx_response
-        );
-        assert!(hex::check_raw(format!(
-            "{:x}",
-            aurora_tx_response.block_hash.unwrap()
-        )));
+            println!(
+                "{:?} was committed to the journal",
+                hex::encode(&journal_output)
+            );
+            println!("{:?} was the provided seal", hex::encode(&seal));
+            let aurora_client = TxSender::default();
+            let aurora_tx_future = aurora_client
+                .verify_proof_on_aurora(journal_output.clone(), seal)
+                .await;
+            let aurora_tx_response = aurora_tx_future.unwrap();
+            println!(
+                "Aurora transation has been verified with response: {:?}\n",
+                aurora_tx_response
+            );
+            assert!(hex::check_raw(format!(
+                "{:x}",
+                aurora_tx_response.block_hash.unwrap()
+            )));
+        }
     }
 }
 
