@@ -73,7 +73,6 @@ async fn main() {
                 //     break;
                 // }
             }
-            break;
             println!("Page Number: {}", indexer.page_no);
             // Walk pages
             if !indexer.has_next_page() {
