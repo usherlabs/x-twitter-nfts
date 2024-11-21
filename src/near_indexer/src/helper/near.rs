@@ -738,15 +738,15 @@ use k256::SecretKey;
 use rand::rngs::OsRng;
 use verity_client::client::{AnalysisConfig, VerityClient, VerityClientConfig};
 
-use super::nft::{TweetData, TweetResponse};
+use super::nft::TweetResponse;
 use super::twitter::OathTweeterHandler;
 
 pub fn get_verity_client() -> VerityClient {
     let secret_key = SecretKey::random(&mut OsRng);
 
     let verity_config = VerityClientConfig {
-        prover_url: String::from("http://127.0.0.1:8080"),
-        prover_zmq: String::from("tcp://127.0.0.1:5556"),
+        prover_url: env::var("VERITY_PROVER_URL").unwrap_or(String::from("http://127.0.0.1:8080")),
+        prover_zmq: env::var("PROVER_ZMQ").unwrap_or(String::from("tcp://127.0.0.1:5556")),
         analysis: Some(AnalysisConfig {
             analysis_url: String::from("https://analysis.verity.usher.so"),
             secret_key,
@@ -819,7 +819,6 @@ pub fn generate_groth16_proof(zk_inputs: ZkInputParam) -> (Vec<u8>, Vec<u8>) {
     let input = serde_json::to_string(&zk_inputs).unwrap();
     let input: &[u8] = input.as_bytes();
 
-
     // begin the proving process
     let env = ExecutorEnv::builder().write_slice(&input).build().unwrap();
     let receipt = default_prover()
@@ -831,7 +830,6 @@ pub fn generate_groth16_proof(zk_inputs: ZkInputParam) -> (Vec<u8>, Vec<u8>) {
         )
         .unwrap()
         .receipt;
-
 
     // // Encode the seal with the selector.
     let seal = groth16::encode(receipt.inner.groth16().unwrap().seal.clone()).unwrap();
