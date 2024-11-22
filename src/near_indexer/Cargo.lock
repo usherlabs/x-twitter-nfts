@@ -3605,6 +3605,44 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ce23b50ad8242c51a442f3ff322d56b02f08852c77e4c0b4d3fd684abc89c683"
 
 [[package]]
+name = "indexer"
+version = "0.1.0"
+dependencies = [
+ "alloy-sol-types 0.6.4",
+ "async-std",
+ "async-stream",
+ "dotenv",
+ "ethers",
+ "futures",
+ "futures-util",
+ "k256",
+ "near-chain-configs",
+ "near-client",
+ "near-contract-standards",
+ "near-crypto",
+ "near-jsonrpc-client",
+ "near-jsonrpc-primitives",
+ "near-primitives",
+ "rand 0.8.5",
+ "regex",
+ "reqwest 0.12.8",
+ "reqwest-oauth1",
+ "risc0-build",
+ "risc0-build-ethereum",
+ "risc0-ethereum-contracts",
+ "risc0-zkp",
+ "risc0-zkvm",
+ "sea-orm",
+ "serde",
+ "serde_json",
+ "sha256",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "verity-client",
+]
+
+[[package]]
 name = "indexmap"
 version = "1.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4268,44 +4306,6 @@ checksum = "180edcc7dc2fac41f93570d0c7b759c1b6d492f6ad093d749d644a40b4310a97"
 dependencies = [
  "borsh 1.5.1",
  "serde",
-]
-
-[[package]]
-name = "near-indexer"
-version = "0.1.0"
-dependencies = [
- "alloy-sol-types 0.6.4",
- "async-std",
- "async-stream",
- "dotenv",
- "ethers",
- "futures",
- "futures-util",
- "k256",
- "near-chain-configs",
- "near-client",
- "near-contract-standards",
- "near-crypto",
- "near-jsonrpc-client",
- "near-jsonrpc-primitives",
- "near-primitives",
- "rand 0.8.5",
- "regex",
- "reqwest 0.12.8",
- "reqwest-oauth1",
- "risc0-build",
- "risc0-build-ethereum",
- "risc0-ethereum-contracts",
- "risc0-zkp",
- "risc0-zkvm",
- "sea-orm",
- "serde",
- "serde_json",
- "sha256",
- "tokio",
- "tracing",
- "tracing-subscriber 0.3.18",
- "verity-client",
 ]
 
 [[package]]

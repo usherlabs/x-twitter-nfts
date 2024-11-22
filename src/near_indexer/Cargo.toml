@@ -1,5 +1,5 @@
 [package]
-name = "near-indexer"
+name = "indexer"
 version = "0.1.0"
 edition = "2021"
 publish = false
@@ -42,7 +42,6 @@ risc0-zkvm = { version = "1.0.1", default-features = false, features = [
 risc0-zkp = { version = "1.0.1", default-features = false }
 serde = { version = "1.0.1", features = ["derive", "std"] }
 reqwest-oauth1 = "0.3.0"
-
 
 
 [workspace]

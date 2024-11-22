@@ -2,15 +2,6 @@
 name = "apps"
 version = { workspace = true }
 edition = { workspace = true }
-# build = "build.rs"
-
-[build-dependencies]
-risc0-build = { workspace = true }
-serde = "1.0"
-serde_json = "1.0.107"
-tlsn-core = { git = "https://github.com/tlsnotary/tlsn", commit = "7272d9623a8cf0e04f59b1656e873476a5f17a13" }
-p256 = { version = "0.13", features = ["ecdsa"] }
-verity-verifier = { workspace = true }
 
 
 [dependencies]
@@ -35,5 +26,6 @@ near-crypto = "0.21.1"
 near-primitives = "0.21.1"
 near-chain-configs = "0.21.1"
 near-jsonrpc-primitives = "0.21.1"
-near-contract-standards = "4.1.1"
+indexer = { path = "../../near_indexer" }
 dotenv = { workspace = true }
+near-contract-standards = "5.5.0"

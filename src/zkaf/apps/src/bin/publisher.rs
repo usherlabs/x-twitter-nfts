@@ -1,17 +1,15 @@
 // ! Entry point for host executing ZK Proof Generation
 
 use anyhow::Result;
-use apps::{
-    aurora::TxSender,
-    near::{generate_tweet_nft_payload, get_nft_by_id, verify_near_proof},
-    proof::{generate_groth16_proof, ZkInputParam},
-};
+use apps::{generate_tweet_nft_payload, get_nft_by_id};
 use dotenv;
+use indexer::helper::{
+    aurora::TxSender, near::verify_near_proof, proof::generate_groth16_proof, ZkInputParam,
+};
 use sha256::digest;
 use std::thread;
 use std::time::Duration;
 use verity_verifier::verify_proof;
-
 
 fn main() -> Result<()> {
     env_logger::init();

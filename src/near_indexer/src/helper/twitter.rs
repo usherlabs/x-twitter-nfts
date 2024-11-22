@@ -77,7 +77,6 @@ impl OathTweeterHandler {
 mod tests {
     use super::*;
     use dotenv::dotenv;
-    use tracing::debug;
 
     #[tokio::test]
     async fn test_notifier() {
