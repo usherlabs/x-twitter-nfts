@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  postgres_db:
+    image: postgres:16
+    hostname: postgres
+    restart: always
+    container_name: verity-near-indexer-pg
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    ports:
+      - "5432:5432"
+    networks:
+      - xnfts-network
+    volumes:
+      - postgres-near-indexer:/var/lib/postgresql/data
+
+  app:
+    build:
+      dockerfile: ./.indexer.dockerfile
+      context: . 
+    container_name: verity-near-indexer-app
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      RUST_LOG: debug
+      RUST_BACKTRACE: 1
+    networks:
+      - xnfts-network
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    command: >
+      sh -c "
+        sea-orm-cli migrate up --migration-dir ./src/near_indexer/migration &&
+        indexer
+      "
+
+volumes:
+  postgres-near-indexer:
+
+networks:
+  xnfts-network:
+    driver: bridge
