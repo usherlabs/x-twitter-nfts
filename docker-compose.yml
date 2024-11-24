@@ -23,28 +23,43 @@ services:
     volumes:
       - postgres-near-indexer:/var/lib/postgresql/data
 
-  app:
+  # app:
+  #   build:
+  #     dockerfile: ./src/near_indexer/.indexer.dockerfile
+  #     context: . 
+  #   container_name: verity-near-indexer-app
+  #   environment:
+  #     DATABASE_URL: ${DATABASE_URL}
+  #     RUST_LOG: debug
+  #     RUST_BACKTRACE: 1
+  #   networks:
+  #     - xnfts-network
+  #   depends_on:
+  #     postgres_db:
+  #       condition: service_healthy
+  #   volumes:
+  #     - .:/app
+  #   command: >
+  #     sh -c "
+  #       sea-orm-cli migrate up --migration-dir ./src/near_indexer/migration &&
+  #       indexer
+  #     "
+
+  bitte_plugin:
     build:
-      dockerfile: ./.indexer.dockerfile
+      dockerfile: ./src/bitte_plugin/.bitte.dockerfile
       context: . 
-    container_name: verity-near-indexer-app
-    environment:
-      DATABASE_URL: ${DATABASE_URL}
-      RUST_LOG: debug
-      RUST_BACKTRACE: 1
+    container_name: verity-near-bitte-app
+    env_file:
+      - ./src/bitte_plugin/.env
+    ports:
+      - "8007:8007"
     networks:
       - xnfts-network
-    depends_on:
-      postgres_db:
-        condition: service_healthy
     volumes:
-      - .:/app
+      - .:/bitte_plugin
     command: >
-      sh -c "
-        sea-orm-cli migrate up --migration-dir ./src/near_indexer/migration &&
-        indexer
-      "
-
+          sh -c "bitte_plugin"
 volumes:
   postgres-near-indexer:
 
