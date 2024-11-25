@@ -19,10 +19,11 @@ WORKDIR /usr/x-twitter-nft/bitte_plugin
 RUN git config --global http.postBuffer 524288000
 RUN git config --global core.compression 0
 
-    
+
 # Set environment variable during runtime
 ENV CARGO_TARGET_DIR=./src/bitte_plugin
 ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
 COPY . .
 RUN cargo install --path=./src/bitte_plugin
+EXPOSE 8007
 CMD ["bitte_plugin"]
