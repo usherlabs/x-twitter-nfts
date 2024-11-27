@@ -1,5 +1,5 @@
-use rocket::serde::json::{ self, json, Json, Value };
-use std::{ fs, env, path::PathBuf };
+use rocket::serde::json::{self, json, Json, Value};
+use std::{env, fs, path::PathBuf};
 
 use crate::handler::PluginInfo;
 
@@ -7,8 +7,7 @@ use crate::handler::PluginInfo;
 #[get("/ai-plugin.json")]
 pub async fn open_api_specification() -> Json<Value> {
     // Create a JSON object representing the OpenAPI specification
-    let routes =
-        json!({
+    let routes = json!({
             "/api/tweet": {
               "get": {
                 "tags": [
@@ -127,8 +126,6 @@ pub async fn open_api_specification() -> Json<Value> {
                     "content": {
                       "application/json": {
                         "schema": {
-                          "type": "array",
-                          "items": {
                             "type": "object",
                             "properties": {
                               "receiverId": {
@@ -181,7 +178,6 @@ pub async fn open_api_specification() -> Json<Value> {
                             ]
                           }
                         }
-                      }
                     }
                   }
                 }
@@ -189,8 +185,7 @@ pub async fn open_api_specification() -> Json<Value> {
             }
           }
     );
-    Json(
-        json!({
+    Json(json!({
             "openapi": "3.0.0",
             "info": {
               "title": "Tweet post rewarder",
@@ -202,9 +197,21 @@ pub async fn open_api_specification() -> Json<Value> {
                 "url": env::var("HOST_URL").unwrap_or_else(|_| {
                     let current_dir = env::current_dir().unwrap();
                     let mut bitte_config_path = PathBuf::from(current_dir);
-                    bitte_config_path.push("bitte.dev.json");
+                    bitte_config_path.push(".env");
                     let bitte_config = fs::read_to_string(bitte_config_path).unwrap();
-                    let plugin_info:PluginInfo  = json::serde_json::from_str(bitte_config.as_str()).unwrap();
+                // Split the contents into lines
+                let lines: Vec<&str> = bitte_config.split('\n').collect();
+
+                // Collect lines starting with "BITTE_CONFIG"
+                let config_lines: Vec<String> = lines.iter()
+                    .filter(|line| line.starts_with("BITTE_CONFIG"))
+                    .map(|line| line.to_string())
+                    .collect();
+                  if config_lines.len()==0
+                    {
+                    return "".to_string()
+                    }
+                    let plugin_info:PluginInfo  = json::serde_json::from_str(config_lines.first().unwrap().replace("BITTE_CONFIG=", "").as_str()).unwrap();
                     plugin_info.url
                   }
                 )
@@ -213,7 +220,7 @@ pub async fn open_api_specification() -> Json<Value> {
             "x-mb": {
               "account-id": env::var("ACCOUNT_ID").unwrap_or(String::from("<missing>.near")),
               "assistant": {
-                "name": "Post Cloner",
+                "name": "Tweet Minter",
                 "description": "An assistant that provides a digital representation of a Post as an Image with its description and generates a custom transaction for the user",
                 "instructions": "Retrieve the X(twitter) post URL from the user's request. Ask the user if they want to AI generated art for the post or use the default tweet-snapshot that will be provided. If the user confirms, Show the Image and prompt them to provide the user profile to notify after minting. Confirm the user's profile and inform them that the post will be minted once verified on the Near Blockchain. Instruct the user to submit their transaction to get started and assure them that the specified profile will be notified once it's ready.",
                 "tools": [
@@ -228,6 +235,5 @@ pub async fn open_api_specification() -> Json<Value> {
             },
             "paths": routes
           }
-    )
-    )
+    ))
 }
