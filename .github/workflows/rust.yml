@@ -42,10 +42,10 @@ jobs:
           cargo install  cargo-make cargo-near
           cargo make  test
 
-      - name: run helper test
+      - name: run plugin test
         run: |
           ls
-          cd ./src/helper/
+          cd ./src/bitte-plugin/
           cargo test --lib
 
 
