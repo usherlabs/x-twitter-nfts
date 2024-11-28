@@ -45,7 +45,7 @@ jobs:
 
       - name: run near_nft test
         run: |
-          rustup
+          rustup update
           cd ./src/contracts/nft/
           cargo install  cargo-make cargo-near
           cargo make  test
