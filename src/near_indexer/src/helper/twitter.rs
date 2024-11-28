@@ -13,6 +13,14 @@ pub struct OathTweeterHandler {
     token_secret: String,
 }
 
+fn add_prefix_if_needed(s: &str) -> String {
+    if s.starts_with('@') {
+        s.to_string()
+    } else {
+        format!("@{}", s)
+    }
+}
+
 impl OathTweeterHandler {
     /// Creates a default `OathTweeterHandler`.
     pub fn default() -> Self {
@@ -56,7 +64,7 @@ impl OathTweeterHandler {
         let endpoint = "https://api.x.com/2/tweets";
 
         let payload = json!({
-            "text": format!("Hey {},  Your X-NFT with ID:{} has been successfully minted! 🎉\nCheck your wallet to confirm receipt of your new digital collectible. Enjoy owning a unique piece of blockchain art! #NFT #Web3",notify,tweet_id)
+            "text": format!("Hey {},  Your X-NFT with ID:{} has been successfully minted! 🎉\nCheck your wallet to confirm receipt of your new digital collectible. Enjoy owning a unique piece of blockchain art! #NFT #Web3",add_prefix_if_needed(notify),tweet_id)
         }).to_string();
 
         let client = reqwest::Client::new();
@@ -89,6 +97,19 @@ mod tests {
 
         let mut res: Value = twitter_client.notifier(tweet_id, &user).await.unwrap();
         println!("{:?}", res);
-        assert!(res["data"].take()["id"].take().to_string().len()> 3);
+        assert!(res["data"].take()["id"].take().to_string().len() > 3);
+    }
+
+    #[test]
+    fn test_add_prefix_if_needed() {
+        let test_strings = vec![
+            ("@example", "@example"),
+            ("example", "@example"),
+            ("no_prefix", "@no_prefix"),
+        ];
+
+        for test_variables in test_strings {
+            assert_eq!(test_variables.1, add_prefix_if_needed(test_variables.0))
+        }
     }
 }
