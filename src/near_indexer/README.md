@@ -114,10 +114,3 @@ This will start the indexer and begin fetching NFT data from the Near blockchain
 | NFT_CONTRACT_ID     | ID of the NFT contract                           |
 | NEAR_RPC            | Near RPC endpoint URL                            |
 
-## Contributing
-
-Contributions are welcome! Please feel free to submit pull requests.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
