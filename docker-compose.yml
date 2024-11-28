@@ -47,7 +47,7 @@ services:
 
   bitte_plugin:
     build:
-      dockerfile: ./src/bitte_plugin/.bitte.dockerfile
+      dockerfile: ./src/bitte_plugin/Dockerfile
       context: . 
     container_name: verity-near-bitte-app
     env_file:
