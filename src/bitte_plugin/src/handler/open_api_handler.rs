@@ -82,13 +82,14 @@ pub fn open_api_specification() -> Json<Value> {
             "/api/tweet-contract-call": {
               "get": {
                 "summary": "Reward Transaction Request data/ create transaction",
-                "description": "An array of transaction objects to be signed by user to Reward Request/Reward reserve",
-                "operationId": "transaction",
+                "description": "A transaction objects to be signed by user to Reward Request/Reward reserve",
+                "operationId": "reserve-mint-transaction",
                 "tags": [
                     "tweet",
                     "tweet Id",
                     "Produce",
-                    "transaction"
+                    "reserve-mint-transaction",
+                    "generate-transaction"
                 ],
                 "parameters": [
                   {
