@@ -47,6 +47,6 @@ jobs:
         run: |
           rustup update
           cd ./src/contracts/nft/
-          cargo install  cargo-make cargo-near@0.10.2
+          cargo install  cargo-make@0.35.1 cargo-near@0.10.2
           cargo make  test
       
