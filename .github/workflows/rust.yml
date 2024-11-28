@@ -46,7 +46,7 @@ jobs:
         run: |
           ls
           cd ./src/bitte_plugin/
-          cargo test --lib
+          cargo test 
 
 
       
