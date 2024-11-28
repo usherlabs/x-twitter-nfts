@@ -1,11 +1,11 @@
 use rocket::serde::json::{self, json, Json, Value};
 use std::{env, fs, path::PathBuf};
 
-use crate::handler::PluginInfo;
+use super::PluginInfo;
 
 /// Route handler for serving the OpenAPI specification
 #[get("/ai-plugin.json")]
-pub async fn open_api_specification() -> Json<Value> {
+pub fn open_api_specification() -> Json<Value> {
     // Create a JSON object representing the OpenAPI specification
     let routes = json!({
             "/api/tweet": {
@@ -207,9 +207,8 @@ pub async fn open_api_specification() -> Json<Value> {
                     .filter(|line| line.starts_with("BITTE_CONFIG"))
                     .map(|line| line.to_string())
                     .collect();
-                  if config_lines.len()==0
-                    {
-                    return "".to_string()
+                  if config_lines.len()==0{
+                        return "".to_string()
                     }
                     let plugin_info:PluginInfo  = json::serde_json::from_str(config_lines.first().unwrap().replace("BITTE_CONFIG=", "").as_str()).unwrap();
                     plugin_info.url
