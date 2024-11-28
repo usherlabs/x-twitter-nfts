@@ -105,12 +105,28 @@ This will start the indexer and begin fetching NFT data from the Near blockchain
 | Variable | Description |
 |----------|-------------|
 | DATABASE_URL | PostgreSQL connection string |
-| POSTGRES_USER       | Username for PostgreSQL                          |
-| POSTGRES_DB         | Database name for PostgreSQL                     |
-| POSTGRES_PASSWORD   | Password for PostgreSQL                          |
-| TWEET_BEARER        | Bearer token for Twitter API access              |
-| SIGNER_SK           | Secret key for signing transactions              |
-| THIRDWEB_CLIENT_ID  | Client ID for Thirdweb integration               |
-| NFT_CONTRACT_ID     | ID of the NFT contract                           |
-| NEAR_RPC            | Near RPC endpoint URL                            |
-
+| POSTGRES_USER | Username for PostgreSQL |
+| POSTGRES_DB | Database name for PostgreSQL |
+| POSTGRES_PASSWORD | Password for PostgreSQL |
+| TWEET_BEARER | Bearer token for Twitter API access |
+| SIGNER_SK | Secret key for signing transactions |
+| THIRDWEB_CLIENT_ID | Client ID for Thirdweb integration |
+| NFT_CONTRACT_ID | ID of the NFT contract |
+| NEAR_RPC | Near RPC endpoint URL |
+| BONSAI_API_KEY | API key for Bonsai |
+| BONSAI_API_URL | Bonsai API URL |
+| RISC0_USE_DOCKER | Flag to use Docker (true/false) |
+| EVM_VERIFIER_CONTRACT | EVM verifier smart contract address |
+| NEAR_RPC_URL | Near testnet RPC URL |
+| NEAR_SIGNER_ACCOUNT_ID | Signer account ID on testnet |
+| NEAR_ACCOUNT_SECRET_KEY | Account secret key |
+| NEAR_VERIFIER_CONTRACT_ACCOUNT_ID | Verifier contract account ID |
+| NEAR_NFT_CONTRACT_ACCOUNT_ID | NFT contract account ID |
+| EVM_CHAIN_ID | Ethereum chain ID |
+| EVM_RPC_URL | Ethereum RPC URL |
+| ETH_WALLET_PRIVATE_KEY | Ethereum wallet private key |
+| RUST_LOG | Rust logging level |
+| TWEET_CONSUMER_KEY | Twitter consumer key |
+| TWEET_CONSUMER_SECRET | Twitter consumer secret |
+| TWEET_ACCESS_TOKEN | Twitter access token |
+| TWEET_TOKEN_SECRET | Twitter token secret |

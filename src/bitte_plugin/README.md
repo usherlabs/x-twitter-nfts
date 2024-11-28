@@ -66,6 +66,15 @@
     echo "BITTE_CONFIG=''" > .env
     ```
 
+### Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| THIRDWEB_CLIENT_ID | Client ID for Thirdweb integration |
+| TWEET_BEARER | Bearer token for Twitter API access |
+| ACCOUNT_ID | Account ID for agent registration purposes |
+| NEAR_CONTRACT_ADDRESS | NFT Contract address for Near blockchain |
+
 
 ### Option 1
 
