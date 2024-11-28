@@ -22,7 +22,7 @@ jobs:
         with:
             toolchain: stable
             override: true
-            components: rustfmt, clippy, cargo
+            components: rustfmt, clippy, cargo, rustup
 
       - name: Install Prerequisites
         run: |
@@ -35,12 +35,6 @@ jobs:
           packages: libudev-dev # dependency for cargo-near
           version: 1.0
 
-      - name: run near_nft test
-        run: |
-          ls
-          cd ./src/contracts/nft/
-          cargo install  cargo-make cargo-near
-          cargo make  test
 
       - name: run plugin test
         run: |
@@ -49,4 +43,10 @@ jobs:
           cargo test 
 
 
+      - name: run near_nft test
+        run: |
+          rustup
+          cd ./src/contracts/nft/
+          cargo install  cargo-make cargo-near
+          cargo make  test
       
