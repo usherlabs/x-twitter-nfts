@@ -1,17 +1,21 @@
 {
     "rust-analyzer.linkedProjects": [
-        "./src/near_nft/Cargo.toml",
-        "./src/near_verifier/contract/Cargo.toml",
-        "./src/near_verifier/integration-tests/Cargo.toml",
-        "./src/notary/Cargo.toml",
-        "./src/twitter/Cargo.toml",
-        "./src/verifier/Cargo.toml",
+        "./src/contract/nft/Cargo.toml",
+        "./src/contract/verifier/contract/Cargo.toml",
+        "./src/contract/nft/nft/Cargo.toml",
+        "./src/contract/verifier/integration-tests/Cargo.toml",
         "./src/zkaf/Cargo.toml",
         "./src/bitte_plugin/Cargo.toml",
-        "./src/helper/Cargo.toml",
         "./src/near_indexer/Cargo.toml",
     ],
     "rust-analyzer.check.extraEnv": {
         "RISC0_SKIP_BUILD": "1",
-    }
+    },
+    "rust-analyzer.procMacro.enable": true,
+    "rust-analyzer.server.path": null,
+    "rust-analyzer.cargo.unsetTest": [
+        "clap",
+        "clap_derive",
+        "clap-derive"
+    ]
 }

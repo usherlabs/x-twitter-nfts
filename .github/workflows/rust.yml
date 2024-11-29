@@ -35,18 +35,18 @@ jobs:
           packages: libudev-dev # dependency for cargo-near
           version: 1.0
 
+
+      - name: run plugin test
+        run: |
+          ls
+          cd ./src/bitte_plugin/
+          cargo test 
+
+
       - name: run near_nft test
         run: |
-          ls
+          rustup update
           cd ./src/contracts/nft/
-          cargo install  cargo-make cargo-near
+          cargo install  cargo-make@0.35.1 
           cargo make  test
-
-      - name: run helper test
-        run: |
-          ls
-          cd ./src/helper/
-          cargo test --lib
-
-
       

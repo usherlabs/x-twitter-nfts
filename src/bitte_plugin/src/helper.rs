@@ -3,11 +3,7 @@ use std::marker::{Send, Sync};
 
 use headless_chrome::protocol::cdp::Page;
 use headless_chrome::Browser;
-use reqwest;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
-use std::collections::HashMap;
-use tracing::debug;
 
 pub async fn create_twitter_post_image(
     url: String,
@@ -43,7 +39,7 @@ pub async fn create_twitter_post_image(
         left: Some(0),
         top: Some(0),
         width: Some(475.0),
-        height: Some(1000.0),
+        height: Some(2000.0),
     })?;
 
     // Navigate to wikipedia
@@ -107,7 +103,6 @@ pub async fn create_twitter_post_image_from_id(
 mod tests {
     use super::*;
     use headless_chrome;
-    use tokio;
 
     #[tokio::test]
     async fn test_create_image() {
@@ -124,32 +119,29 @@ mod tests {
     }
 
     #[tokio::test]
+    #[should_panic(expected = "Hostname must be twitter.com or x.com")]
     async fn test_url_starts_with_other_prefix() {
         let url = "https://example.com/some/path".to_string();
         // This should fail as the URL does not start with "https://x.com" or "https://twitter.com".
-        let result = std::panic::catch_unwind(|| {
-            let _ = futures::executor::block_on(create_twitter_post_image(url));
-        });
+        let result = create_twitter_post_image(url).await;
         assert!(result.is_err(), "The URL was expected to be invalid");
     }
 
     #[tokio::test]
+    #[should_panic(expected = "Hostname must be twitter.com or x.com")]
     async fn test_url_starts_with_other_prefix_case_insensitive() {
         let url = "https://EXAMPLE.COM/some/path".to_string();
         // This should fail as the URL does not start with "https://x.com" or "https://twitter.com".
-        let result = std::panic::catch_unwind(|| {
-            let _ = futures::executor::block_on(create_twitter_post_image(url));
-        });
+        let result = create_twitter_post_image(url).await;
         assert!(result.is_err(), "The URL was expected to be invalid");
     }
 
     #[tokio::test]
+    #[should_panic(expected = "Hostname must be twitter.com or x.com")]
     async fn test_empty_url() {
         let url = "".to_string();
         // This should fail as the URL is empty and does not start with either prefix.
-        let result = std::panic::catch_unwind(|| {
-            let _ = futures::executor::block_on(create_twitter_post_image(url));
-        });
+        let result = create_twitter_post_image(url).await;
         assert!(result.is_err(), "The URL was expected to be invalid");
     }
 }
