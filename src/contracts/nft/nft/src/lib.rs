@@ -76,7 +76,7 @@ enum StorageKey {
     TweetRequests,
 }
 
-const MIN_DEPOSIT: Balance = 5870000000000000000000;
+const MIN_DEPOSIT: Balance = 20000000000000000000000;
 
 #[near_bindgen]
 impl Contract {
