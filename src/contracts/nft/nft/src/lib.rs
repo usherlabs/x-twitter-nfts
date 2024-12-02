@@ -175,14 +175,7 @@ impl Contract {
         input_data: String,
         signature: Vec<u8>,
     ) -> (AccountId, u64, String) {
-        require!(
-            env::attached_deposit().ge(&MIN_DEPOSIT),
-            format!(
-                "Minimum deposit Not met of {}, you attached {}",
-                &MIN_DEPOSIT,
-                env::attached_deposit()
-            )
-        );
+        
         let input: InputMintRequest = serde_json::from_str(&input_data).unwrap();
         let signature = Signature::from_slice(&signature.as_slice());
         require!(signature.is_ok(), "Invalid signature");
@@ -190,6 +183,15 @@ impl Contract {
         let verifying_key = VerifyingKey::from_sec1_bytes(self.agent_verification_key.as_slice())
             .ok()
             .expect("verifying_key must be correct");
+
+        require!(
+            env::attached_deposit().ge(&(MIN_DEPOSIT + self.compute_cost(input.public_metric))),
+            format!(
+                "Minimum deposit Not met of {}, you attached {}",
+                &MIN_DEPOSIT,
+                env::attached_deposit()
+            )
+        );
 
         assert!(verifying_key
             .verify(input_data.as_bytes(), &signature)
