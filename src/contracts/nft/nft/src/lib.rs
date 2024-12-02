@@ -184,11 +184,10 @@ impl Contract {
             .expect("verifying_key must be correct");
 
         require!(
-            env::attached_deposit()
-                .ge(&(MIN_DEPOSIT + self.compute_cost(input.public_metric.clone()))),
+            env::attached_deposit().ge(&self.compute_cost(input.public_metric.clone())),
             format!(
                 "Minimum deposit Not met of {}, you attached {}",
-                &(MIN_DEPOSIT + self.compute_cost(input.public_metric.clone())),
+                &self.compute_cost(input.public_metric.clone()),
                 env::attached_deposit()
             )
         );
@@ -308,7 +307,8 @@ impl Contract {
 
     pub fn compute_cost(&mut self, public_metrics: PublicMetric) -> u128 {
         let cost_per_metric = self.cost_per_metric.clone();
-        cost_per_metric.bookmark_count * public_metrics.bookmark_count
+        MIN_DEPOSIT
+            + cost_per_metric.bookmark_count * public_metrics.bookmark_count
             + cost_per_metric.impression_count * public_metrics.impression_count
             + cost_per_metric.like_count * public_metrics.like_count
             + cost_per_metric.quote_count * public_metrics.quote_count
@@ -543,7 +543,7 @@ mod tests {
 
         testing_env!(context
             .storage_usage(env::storage_usage())
-            .attached_deposit(MINT_STORAGE_COST + contract.compute_cost(getTestPublicData()))
+            .attached_deposit(contract.compute_cost(getTestPublicData()))
             .predecessor_account_id(accounts(3))
             .block_timestamp(current_time.as_nanos() as u64)
             .build());
@@ -577,7 +577,7 @@ mod tests {
         );
         testing_env!(context
             .storage_usage(env::storage_usage())
-            .attached_deposit(MINT_STORAGE_COST + contract.compute_cost(getTestPublicData()))
+            .attached_deposit(contract.compute_cost(getTestPublicData()))
             .predecessor_account_id(accounts(3))
             .block_timestamp(current_time.as_nanos() as u64)
             .build());
@@ -591,7 +591,7 @@ mod tests {
 
         testing_env!(context
             .storage_usage(env::storage_usage())
-            .attached_deposit(MINT_STORAGE_COST + contract.compute_cost(getTestPublicData()))
+            .attached_deposit(contract.compute_cost(getTestPublicData()))
             .predecessor_account_id(accounts(5))
             .block_timestamp(current_time.as_nanos() as u64)
             .build());
@@ -622,7 +622,7 @@ mod tests {
         );
         testing_env!(context
             .storage_usage(env::storage_usage())
-            .attached_deposit(MINT_STORAGE_COST + contract.compute_cost(getTestPublicData()))
+            .attached_deposit(contract.compute_cost(getTestPublicData()))
             .predecessor_account_id(accounts(3))
             .block_timestamp(current_time.as_nanos() as u64)
             .build());
@@ -638,7 +638,7 @@ mod tests {
         let offset_sec = 1;
         testing_env!(context
             .storage_usage(env::storage_usage())
-            .attached_deposit(MINT_STORAGE_COST + contract.compute_cost(getTestPublicData()))
+            .attached_deposit(contract.compute_cost(getTestPublicData()))
             .predecessor_account_id(accounts(4))
             .block_timestamp(
                 (current_time.as_nanos() as u64)
@@ -811,7 +811,7 @@ mod tests {
         );
         testing_env!(context
             .storage_usage(env::storage_usage())
-            .attached_deposit(MINT_STORAGE_COST + contract.compute_cost(getTestPublicData()))
+            .attached_deposit(contract.compute_cost(getTestPublicData()))
             .predecessor_account_id(accounts(0))
             .build());
         let token_id = "0".to_string();
@@ -860,7 +860,7 @@ mod tests {
 
         testing_env!(context
             .storage_usage(env::storage_usage())
-            .attached_deposit(MINT_STORAGE_COST + contract.compute_cost(getTestPublicData()))
+            .attached_deposit(contract.compute_cost(getTestPublicData()))
             .predecessor_account_id(accounts(0))
             .build());
         let token_id = "0".to_string();
