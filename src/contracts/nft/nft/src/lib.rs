@@ -35,7 +35,7 @@ use p256::ecdsa::{signature::Verifier, Signature, VerifyingKey};
 use serde::{Deserialize, Serialize};
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct CostPerMetric {
+pub struct PublicMetric {
     retweet_count: u128,
     reply_count: u128,
     like_count: u128,
@@ -49,7 +49,7 @@ pub struct InputMintRequest {
     tweet_id: String,
     image_url: String,
     notify: String,
-    public_metric: CostPerMetric,
+    public_metric: PublicMetric,
 }
 
 #[near_bindgen]
@@ -60,7 +60,7 @@ pub struct Contract {
     tweet_requests: LookupMap<String, (AccountId, u64, String, String)>,
     lock_time: u64,
     agent_verification_key: Vec<u8>,
-    cost_per_metric: CostPerMetric,
+    cost_per_metric: PublicMetric,
 }
 
 const DATA_IMAGE_SVG_NEAR_ICON: &str =
@@ -103,7 +103,7 @@ impl Contract {
                 reference_hash: None,
             },
             verification_key.to_vec(),
-            CostPerMetric {
+            PublicMetric {
                 retweet_count: 50000000,
                 reply_count: 10000000000,
                 like_count: 200000000000000000,
@@ -119,7 +119,7 @@ impl Contract {
         owner_id: AccountId,
         metadata: NFTContractMetadata,
         agent_verification_key: Vec<u8>,
-        cost_per_metric: CostPerMetric,
+        cost_per_metric: PublicMetric,
     ) -> Self {
         assert!(!env::state_exists(), "Already initialized");
         metadata.assert_valid();
@@ -175,7 +175,6 @@ impl Contract {
         input_data: String,
         signature: Vec<u8>,
     ) -> (AccountId, u64, String) {
-        
         let input: InputMintRequest = serde_json::from_str(&input_data).unwrap();
         let signature = Signature::from_slice(&signature.as_slice());
         require!(signature.is_ok(), "Invalid signature");
@@ -185,10 +184,11 @@ impl Contract {
             .expect("verifying_key must be correct");
 
         require!(
-            env::attached_deposit().ge(&(MIN_DEPOSIT + self.compute_cost(input.public_metric))),
+            env::attached_deposit()
+                .ge(&(MIN_DEPOSIT + self.compute_cost(input.public_metric.clone()))),
             format!(
                 "Minimum deposit Not met of {}, you attached {}",
-                &MIN_DEPOSIT,
+                &(MIN_DEPOSIT + self.compute_cost(input.public_metric.clone())),
                 env::attached_deposit()
             )
         );
@@ -291,7 +291,7 @@ impl Contract {
     }
 
     #[private]
-    pub fn set_cost_per_metric(&mut self, cost_per_metric: CostPerMetric) {
+    pub fn set_cost_per_metric(&mut self, cost_per_metric: PublicMetric) {
         self.cost_per_metric = cost_per_metric;
     }
 
@@ -306,7 +306,7 @@ impl Contract {
         new_value
     }
 
-    pub fn compute_cost(&mut self, public_metrics: CostPerMetric) -> u128 {
+    pub fn compute_cost(&mut self, public_metrics: PublicMetric) -> u128 {
         let cost_per_metric = self.cost_per_metric.clone();
         cost_per_metric.bookmark_count * public_metrics.bookmark_count
             + cost_per_metric.impression_count * public_metrics.impression_count
@@ -342,7 +342,7 @@ mod tests {
 
     use super::*;
 
-    const MINT_STORAGE_COST: u128 = 5870000000000000000000;
+    const MINT_STORAGE_COST: u128 = 20000000000000000000000;
 
     fn get_context(predecessor_account_id: AccountId) -> VMContextBuilder {
         let mut builder = VMContextBuilder::new();
@@ -370,19 +370,22 @@ mod tests {
         }
     }
 
+    fn getTestPublicData() -> PublicMetric {
+        PublicMetric {
+            retweet_count: 64,
+            reply_count: 64,
+            like_count: 64,
+            quote_count: 64,
+            bookmark_count: 64,
+            impression_count: 64,
+        }
+    }
     fn build_with_signature(tweet_id: &str, secret_key: SigningKey) -> (String, Vec<u8>) {
         let input = InputMintRequest {
             tweet_id: tweet_id.to_string(),
             image_url: format!("ipfs://"),
             notify: "".to_string(),
-            public_metric: CostPerMetric {
-                retweet_count: 64,
-                reply_count: 64,
-                like_count: 64,
-                quote_count: 64,
-                bookmark_count: 64,
-                impression_count: 64,
-            },
+            public_metric: getTestPublicData(),
         };
         let input_data = serde_json::to_string(&input).unwrap();
 
@@ -540,7 +543,7 @@ mod tests {
 
         testing_env!(context
             .storage_usage(env::storage_usage())
-            .attached_deposit(MINT_STORAGE_COST)
+            .attached_deposit(MINT_STORAGE_COST + contract.compute_cost(getTestPublicData()))
             .predecessor_account_id(accounts(3))
             .block_timestamp(current_time.as_nanos() as u64)
             .build());
@@ -574,7 +577,7 @@ mod tests {
         );
         testing_env!(context
             .storage_usage(env::storage_usage())
-            .attached_deposit(MINT_STORAGE_COST)
+            .attached_deposit(MINT_STORAGE_COST + contract.compute_cost(getTestPublicData()))
             .predecessor_account_id(accounts(3))
             .block_timestamp(current_time.as_nanos() as u64)
             .build());
@@ -588,7 +591,7 @@ mod tests {
 
         testing_env!(context
             .storage_usage(env::storage_usage())
-            .attached_deposit(MINT_STORAGE_COST)
+            .attached_deposit(MINT_STORAGE_COST + contract.compute_cost(getTestPublicData()))
             .predecessor_account_id(accounts(5))
             .block_timestamp(current_time.as_nanos() as u64)
             .build());
@@ -619,7 +622,7 @@ mod tests {
         );
         testing_env!(context
             .storage_usage(env::storage_usage())
-            .attached_deposit(MINT_STORAGE_COST)
+            .attached_deposit(MINT_STORAGE_COST + contract.compute_cost(getTestPublicData()))
             .predecessor_account_id(accounts(3))
             .block_timestamp(current_time.as_nanos() as u64)
             .build());
@@ -635,7 +638,7 @@ mod tests {
         let offset_sec = 1;
         testing_env!(context
             .storage_usage(env::storage_usage())
-            .attached_deposit(MINT_STORAGE_COST)
+            .attached_deposit(MINT_STORAGE_COST + contract.compute_cost(getTestPublicData()))
             .predecessor_account_id(accounts(4))
             .block_timestamp(
                 (current_time.as_nanos() as u64)
@@ -808,7 +811,7 @@ mod tests {
         );
         testing_env!(context
             .storage_usage(env::storage_usage())
-            .attached_deposit(MINT_STORAGE_COST)
+            .attached_deposit(MINT_STORAGE_COST + contract.compute_cost(getTestPublicData()))
             .predecessor_account_id(accounts(0))
             .build());
         let token_id = "0".to_string();
@@ -857,7 +860,7 @@ mod tests {
 
         testing_env!(context
             .storage_usage(env::storage_usage())
-            .attached_deposit(MINT_STORAGE_COST)
+            .attached_deposit(MINT_STORAGE_COST + contract.compute_cost(getTestPublicData()))
             .predecessor_account_id(accounts(0))
             .build());
         let token_id = "0".to_string();
