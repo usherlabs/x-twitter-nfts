@@ -31,6 +31,26 @@ use near_sdk::{
     env, near_bindgen, require, AccountId, Balance, BorshStorageKey, PanicOnDefault, Promise,
     PromiseOrValue,
 };
+use p256::ecdsa::{signature::Verifier, Signature, VerifyingKey};
+use serde::{Deserialize, Serialize};
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct CostPerMetric {
+    retweet_count: u128,
+    reply_count: u128,
+    like_count: u128,
+    quote_count: u128,
+    bookmark_count: u128,
+    impression_count: u128,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct InputMintRequest {
+    tweet_id: String,
+    image_url: String,
+    notify: String,
+    public_metric: CostPerMetric,
+}
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
@@ -39,6 +59,8 @@ pub struct Contract {
     metadata: LazyOption<NFTContractMetadata>,
     tweet_requests: LookupMap<String, (AccountId, u64, String, String)>,
     lock_time: u64,
+    agent_verification_key: Vec<u8>,
+    cost_per_metric: CostPerMetric,
 }
 
 const DATA_IMAGE_SVG_NEAR_ICON: &str =
@@ -61,7 +83,14 @@ impl Contract {
     /// Initializes the contract owned by `owner_id` with
     /// default metadata (for example purposes only).
     #[init]
-    pub fn new_default_meta(owner_id: AccountId) -> Self {
+    pub fn new_default_meta(owner_id: AccountId, agent_verification_key: String) -> Self {
+        let key_hex = hex::decode(agent_verification_key);
+        require!(key_hex.is_ok(), "Failed to parse hex String");
+        let verification_key = key_hex.unwrap();
+        require!(
+            VerifyingKey::from_sec1_bytes(verification_key.as_slice()).is_ok(),
+            "Invalid Verification Key"
+        );
         Self::new(
             owner_id,
             NFTContractMetadata {
@@ -73,11 +102,25 @@ impl Contract {
                 reference: None,
                 reference_hash: None,
             },
+            verification_key.to_vec(),
+            CostPerMetric {
+                retweet_count: 50000000,
+                reply_count: 10000000000,
+                like_count: 200000000000000000,
+                quote_count: 0,
+                bookmark_count: 0,
+                impression_count: 0,
+            },
         )
     }
 
     #[init]
-    pub fn new(owner_id: AccountId, metadata: NFTContractMetadata) -> Self {
+    pub fn new(
+        owner_id: AccountId,
+        metadata: NFTContractMetadata,
+        agent_verification_key: Vec<u8>,
+        cost_per_metric: CostPerMetric,
+    ) -> Self {
         assert!(!env::state_exists(), "Already initialized");
         metadata.assert_valid();
         Self {
@@ -91,6 +134,8 @@ impl Contract {
             metadata: LazyOption::new(StorageKey::Metadata, Some(&metadata)),
             tweet_requests: LookupMap::new(StorageKey::TweetRequests),
             lock_time: 30 * 60 * 1000,
+            agent_verification_key,
+            cost_per_metric,
         }
     }
 
@@ -127,37 +172,48 @@ impl Contract {
     #[payable]
     pub fn mint_tweet_request(
         &mut self,
-        tweet_id: String,
-        image_url: String,
-        notify: String,
+        input_data: String,
+        signature: Vec<u8>,
     ) -> (AccountId, u64, String) {
         require!(
-            env::attached_deposit().eq(&MIN_DEPOSIT),
+            env::attached_deposit().ge(&MIN_DEPOSIT),
             format!(
                 "Minimum deposit Not met of {}, you attached {}",
                 &MIN_DEPOSIT,
                 env::attached_deposit()
             )
         );
-        if tweet_id.clone().parse::<u64>().is_err() {
+        let input: InputMintRequest = serde_json::from_str(&input_data).unwrap();
+        let signature = Signature::from_slice(&signature.as_slice());
+        require!(signature.is_ok(), "Invalid signature");
+        let signature = signature.unwrap();
+        let verifying_key = VerifyingKey::from_sec1_bytes(self.agent_verification_key.as_slice())
+            .ok()
+            .expect("verifying_key must be correct");
+
+        assert!(verifying_key
+            .verify(input_data.as_bytes(), &signature)
+            .is_ok());
+
+        if input.tweet_id.clone().parse::<u64>().is_err() {
             env::panic_str("tweet_id must be a positive number");
         }
-        if self.tokens.owner_by_id.get(&tweet_id).is_some() {
+        if self.tokens.owner_by_id.get(&input.tweet_id).is_some() {
             env::panic_str("tweet_id has been minted already");
         }
 
-        if !self.is_tweet_available(tweet_id.clone()) {
+        if !self.is_tweet_available(input.tweet_id.clone()) {
             env::panic_str("This tweet_id has a lock on it");
         }
         // Get the signer's account ID
         let signer_account_id = env::predecessor_account_id();
         let now = env::block_timestamp_ms();
-        let entry = (signer_account_id, now, image_url, notify);
-        self.tweet_requests.insert(&tweet_id, &entry);
+        let entry = (signer_account_id, now, input.image_url, input.notify);
+        self.tweet_requests.insert(&input.tweet_id, &entry);
 
         // Log an event-like message
         let event = TweetMintRequest {
-            tweet_id: tweet_id, // You might want to generate a unique ID here
+            tweet_id: input.tweet_id, // You might want to generate a unique ID here
             account: env::predecessor_account_id(),
             deposit: env::attached_deposit(),
             notify: entry.3,
@@ -207,7 +263,7 @@ impl Contract {
     }
 
     #[private]
-    fn claim_funds(&mut self, tweet_id: String) {
+    pub fn claim_funds(&mut self, tweet_id: String) {
         if let Some((id, _, _, _)) = self.tweet_requests.get(&tweet_id) {
             Promise::new(id).transfer(MIN_DEPOSIT);
             self.tweet_requests.remove(&tweet_id);
@@ -220,6 +276,23 @@ impl Contract {
         }
     }
 
+    #[private]
+    pub fn set_agent_verification_key(&mut self, agent_verification_key: String) {
+        let key_hex = hex::decode(agent_verification_key);
+        require!(key_hex.is_ok(), "Failed to parse hex String");
+        let verification_key = key_hex.unwrap();
+        require!(
+            VerifyingKey::from_sec1_bytes(verification_key.as_slice()).is_err(),
+            "Invalid Verification Key"
+        );
+        self.agent_verification_key = verification_key.to_vec();
+    }
+
+    #[private]
+    pub fn set_cost_per_metric(&mut self, cost_per_metric: CostPerMetric) {
+        self.cost_per_metric = cost_per_metric;
+    }
+
     pub fn update_lock_time(&mut self, new_value: u64) -> u64 {
         require!(
             env::predecessor_account_id() == self.tokens.owner_id,
@@ -229,6 +302,16 @@ impl Contract {
         // Log an event-like message
         env::log_str(format!("lock_time updated: {}", new_value).as_str());
         new_value
+    }
+
+    pub fn compute_cost(&mut self, public_metrics: CostPerMetric) -> u128 {
+        let cost_per_metric = self.cost_per_metric.clone();
+        cost_per_metric.bookmark_count * public_metrics.bookmark_count
+            + cost_per_metric.impression_count * public_metrics.impression_count
+            + cost_per_metric.like_count * public_metrics.like_count
+            + cost_per_metric.quote_count * public_metrics.quote_count
+            + cost_per_metric.reply_count * public_metrics.reply_count
+            + cost_per_metric.retweet_count * public_metrics.retweet_count
     }
 }
 
@@ -245,8 +328,13 @@ impl NonFungibleTokenMetadataProvider for Contract {
 
 #[cfg(test)]
 mod tests {
+    use hex;
     use near_sdk::test_utils::{accounts, VMContextBuilder};
     use near_sdk::testing_env;
+    use p256::ecdsa::{
+        signature::Signer, signature::Verifier, Signature, SigningKey, VerifyingKey,
+    };
+    use p256::elliptic_curve::rand_core::OsRng;
     use std::collections::HashMap;
     use std::time::SystemTime;
 
@@ -280,11 +368,78 @@ mod tests {
         }
     }
 
+    fn build_with_signature(tweet_id: &str, secret_key: SigningKey) -> (String, Vec<u8>) {
+        let input = InputMintRequest {
+            tweet_id: tweet_id.to_string(),
+            image_url: format!("ipfs://"),
+            notify: "".to_string(),
+            public_metric: CostPerMetric {
+                retweet_count: 64,
+                reply_count: 64,
+                like_count: 64,
+                quote_count: 64,
+                bookmark_count: 64,
+                impression_count: 64,
+            },
+        };
+        let input_data = serde_json::to_string(&input).unwrap();
+
+        let _signature: Signature = secret_key.sign(&input_data.as_bytes());
+        (input_data.to_owned(), _signature.to_vec())
+    }
+
+    #[test]
+    fn test_signature() {
+        let secret_key = SigningKey::random(&mut OsRng);
+        let verifying_key: VerifyingKey = secret_key.verifying_key().to_owned();
+
+        // Sign message
+        let message = b"Hello, ECDSA!";
+        let _signature: Signature = secret_key.sign(&message.clone());
+        println!("signature valid?: {}", _signature);
+        println!("verifying_key valid?: {:?}", verifying_key.to_sec1_bytes());
+        println!("secret_key valid?: {:?}", secret_key.to_bytes());
+        assert!(verifying_key.verify(message, &_signature).is_ok());
+    }
+
+    #[test]
+    fn test_determinist_signature() {
+        let secret_byte: [u8; 32] = [
+            36, 134, 238, 249, 169, 144, 14, 88, 156, 220, 33, 126, 123, 186, 185, 21, 54, 141,
+            121, 240, 254, 139, 234, 203, 21, 204, 88, 53, 28, 215, 138, 101,
+        ];
+
+        println!("secret_byte valid?: {}", hex::encode(secret_byte.clone()));
+
+        let secret_key = SigningKey::from_slice(&secret_byte)
+            .ok()
+            .expect("Secret key parsing to be successful");
+        let verifying_key: VerifyingKey = secret_key.verifying_key().to_owned();
+
+        // Sign message
+        let message = b"Hello, ECDSA!";
+        let _signature: Signature = secret_key.sign(&message.clone());
+        println!("signature valid?: {}", _signature);
+        println!(
+            "verifying_key valid?: {:?}",
+            verifying_key.clone().to_sec1_bytes()
+        );
+        println!(
+            "verifying_key valid?: {}",
+            hex::encode(verifying_key.to_sec1_bytes())
+        );
+        println!("secret_key valid?: {:?}", secret_key.to_bytes());
+        assert!(verifying_key.verify(message, &_signature).is_ok());
+    }
+
     #[test]
     fn test_new() {
         let mut context = get_context(accounts(1));
         testing_env!(context.build());
-        let contract = Contract::new_default_meta(accounts(1).into());
+        let contract = Contract::new_default_meta(
+            accounts(1).into(),
+            "04e3350fbfb92fa0d761acdfc09610283cf977cf8254d6a93c7d8fc697f62df262ad10b284fbd77acc701776be9c256b21e414c574d1af638f430c9fb073254ec8".to_string(),
+        );
         testing_env!(context.is_view(true).build());
         assert_eq!(contract.nft_token("1".to_string()), None);
     }
@@ -301,7 +456,10 @@ mod tests {
     fn test_mint() {
         let mut context = get_context(accounts(0));
         testing_env!(context.build());
-        let mut contract = Contract::new_default_meta(accounts(0).into());
+        let mut contract = Contract::new_default_meta(
+            accounts(0).into(),
+            "04e3350fbfb92fa0d761acdfc09610283cf977cf8254d6a93c7d8fc697f62df262ad10b284fbd77acc701776be9c256b21e414c574d1af638f430c9fb073254ec8".to_string(),
+        );
 
         testing_env!(context
             .storage_usage(env::storage_usage())
@@ -321,7 +479,10 @@ mod tests {
     fn test_get_lock_time() {
         let mut context = get_context(accounts(0));
         testing_env!(context.build());
-        let contract = Contract::new_default_meta(accounts(0).into());
+        let contract = Contract::new_default_meta(
+            accounts(0).into(),
+            "04e3350fbfb92fa0d761acdfc09610283cf977cf8254d6a93c7d8fc697f62df262ad10b284fbd77acc701776be9c256b21e414c574d1af638f430c9fb073254ec8".to_string(),
+        );
 
         testing_env!(context
             .storage_usage(env::storage_usage())
@@ -336,7 +497,10 @@ mod tests {
     fn test_is_valid_request() {
         let mut context = get_context(accounts(0));
         testing_env!(context.build());
-        let contract = Contract::new_default_meta(accounts(0).into());
+        let contract = Contract::new_default_meta(
+            accounts(0).into(),
+            "04e3350fbfb92fa0d761acdfc09610283cf977cf8254d6a93c7d8fc697f62df262ad10b284fbd77acc701776be9c256b21e414c574d1af638f430c9fb073254ec8".to_string(),
+        );
 
         testing_env!(context
             .storage_usage(env::storage_usage())
@@ -355,7 +519,18 @@ mod tests {
     fn test_is_invalid_request() {
         let mut context = get_context(accounts(0));
         testing_env!(context.build());
-        let mut contract = Contract::new_default_meta(accounts(0).into());
+        let signer =
+            hex::decode("2486eef9a9900e589cdc217e7bbab915368d79f0fe8beacb15cc58351cd78a65")
+                .unwrap();
+        let secret_key = SigningKey::from_slice(signer.as_slice())
+            .ok()
+            .expect("Secret key parsing need to be successful");
+        let verifying_key: VerifyingKey = secret_key.verifying_key().to_owned();
+        println!("verifying_key valid?: {:?}", verifying_key.to_sec1_bytes());
+        let mut contract = Contract::new_default_meta(
+            accounts(0).into(),
+            hex::encode(verifying_key.to_sec1_bytes()),
+        );
 
         let current_time = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
@@ -370,8 +545,8 @@ mod tests {
 
         // mint request
         let tweet_id = "XXX4071245224308850";
-        let entry =
-            contract.mint_tweet_request(tweet_id.to_string(), format!("ipfs://"), format!(""));
+        let (input_data, _signature) = build_with_signature(tweet_id, secret_key);
+        let entry = contract.mint_tweet_request(input_data, _signature);
         assert_eq!(entry.0, accounts(3));
     }
     #[test]
@@ -383,7 +558,18 @@ mod tests {
 
         let mut context = get_context(accounts(0));
         testing_env!(context.build());
-        let mut contract = Contract::new_default_meta(accounts(0).into());
+        let signer =
+            hex::decode("2486eef9a9900e589cdc217e7bbab915368d79f0fe8beacb15cc58351cd78a65")
+                .unwrap();
+        let secret_key = SigningKey::from_slice(signer.as_slice())
+            .ok()
+            .expect("Secret key parsing need to be successful");
+        let verifying_key: VerifyingKey = secret_key.verifying_key().to_owned();
+        println!("verifying_key valid?: {:?}", verifying_key.to_sec1_bytes());
+        let mut contract = Contract::new_default_meta(
+            accounts(0).into(),
+            hex::encode(verifying_key.to_sec1_bytes()),
+        );
         testing_env!(context
             .storage_usage(env::storage_usage())
             .attached_deposit(MINT_STORAGE_COST)
@@ -393,8 +579,8 @@ mod tests {
 
         // mint request
         let tweet_id = "1834071245224308850";
-        let entry =
-            contract.mint_tweet_request(tweet_id.to_string(), format!("ipfs://"), format!(""));
+        let (input_data, _signature) = build_with_signature(tweet_id, secret_key);
+        let entry = contract.mint_tweet_request(input_data.clone(), _signature.clone());
         assert_eq!(entry.0, accounts(3));
         assert_eq!(entry.1, current_time.as_millis() as u64);
 
@@ -404,8 +590,8 @@ mod tests {
             .predecessor_account_id(accounts(5))
             .block_timestamp(current_time.as_nanos() as u64)
             .build());
-        let entry =
-            contract.mint_tweet_request(tweet_id.to_string(), format!("ipfs://"), format!(""));
+
+        let entry = contract.mint_tweet_request(input_data, _signature);
         assert_eq!(entry.0, accounts(3));
     }
 
@@ -417,7 +603,18 @@ mod tests {
 
         let mut context = get_context(accounts(0));
         testing_env!(context.build());
-        let mut contract = Contract::new_default_meta(accounts(0).into());
+        let signer =
+            hex::decode("2486eef9a9900e589cdc217e7bbab915368d79f0fe8beacb15cc58351cd78a65")
+                .unwrap();
+        let secret_key = SigningKey::from_slice(signer.as_slice())
+            .ok()
+            .expect("Secret key parsing need to be successful");
+        let verifying_key: VerifyingKey = secret_key.verifying_key().to_owned();
+        println!("verifying_key valid?: {:?}", verifying_key.to_sec1_bytes());
+        let mut contract = Contract::new_default_meta(
+            accounts(0).into(),
+            hex::encode(verifying_key.to_sec1_bytes()),
+        );
         testing_env!(context
             .storage_usage(env::storage_usage())
             .attached_deposit(MINT_STORAGE_COST)
@@ -426,9 +623,10 @@ mod tests {
             .build());
 
         // mint request
-        let tweet_id = "1834071245224308850";
-        let entry =
-            contract.mint_tweet_request(tweet_id.to_string(), format!("ipfs://"), format!(""));
+        let tweet_id = "1862859048518844688";
+        let (input_data, _signature) = build_with_signature(tweet_id, secret_key.clone());
+
+        let entry = contract.mint_tweet_request(input_data, _signature);
         assert_eq!(entry.0, accounts(3));
         assert_eq!(entry.1, current_time.as_millis() as u64);
 
@@ -443,8 +641,8 @@ mod tests {
             )
             .build());
 
-        let entry =
-            contract.mint_tweet_request(tweet_id.to_string(), format!("ipfs://"), format!(""));
+        let (input_data, _signature) = build_with_signature(tweet_id, secret_key);
+        let entry = contract.mint_tweet_request(input_data, _signature);
         assert_eq!(entry.0, accounts(4));
     }
 
@@ -453,7 +651,18 @@ mod tests {
     fn test_update_lock_time_other_user() {
         let mut context = get_context(accounts(0));
         testing_env!(context.build());
-        let mut contract = Contract::new_default_meta(accounts(0).into());
+        let signer =
+            hex::decode("2486eef9a9900e589cdc217e7bbab915368d79f0fe8beacb15cc58351cd78a65")
+                .unwrap();
+        let secret_key = SigningKey::from_slice(signer.as_slice())
+            .ok()
+            .expect("Secret key parsing need to be successful");
+        let verifying_key: VerifyingKey = secret_key.verifying_key().to_owned();
+        println!("verifying_key valid?: {:?}", verifying_key.to_sec1_bytes());
+        let mut contract = Contract::new_default_meta(
+            accounts(0).into(),
+            hex::encode(verifying_key.to_sec1_bytes()),
+        );
 
         testing_env!(context
             .storage_usage(env::storage_usage())
@@ -467,7 +676,18 @@ mod tests {
     fn test_update_lock_time() {
         let mut context = get_context(accounts(0));
         testing_env!(context.build());
-        let mut contract = Contract::new_default_meta(accounts(0).into());
+        let signer =
+            hex::decode("2486eef9a9900e589cdc217e7bbab915368d79f0fe8beacb15cc58351cd78a65")
+                .unwrap();
+        let secret_key = SigningKey::from_slice(signer.as_slice())
+            .ok()
+            .expect("Secret key parsing need to be successful");
+        let verifying_key: VerifyingKey = secret_key.verifying_key().to_owned();
+        println!("verifying_key valid?: {:?}", verifying_key.to_sec1_bytes());
+        let mut contract = Contract::new_default_meta(
+            accounts(0).into(),
+            hex::encode(verifying_key.to_sec1_bytes()),
+        );
 
         testing_env!(context
             .storage_usage(env::storage_usage())
@@ -482,7 +702,18 @@ mod tests {
     fn test_transfer() {
         let mut context = get_context(accounts(0));
         testing_env!(context.build());
-        let mut contract = Contract::new_default_meta(accounts(0).into());
+        let signer =
+            hex::decode("2486eef9a9900e589cdc217e7bbab915368d79f0fe8beacb15cc58351cd78a65")
+                .unwrap();
+        let secret_key = SigningKey::from_slice(signer.as_slice())
+            .ok()
+            .expect("Secret key parsing need to be successful");
+        let verifying_key: VerifyingKey = secret_key.verifying_key().to_owned();
+        println!("verifying_key valid?: {:?}", verifying_key.to_sec1_bytes());
+        let mut contract = Contract::new_default_meta(
+            accounts(0).into(),
+            hex::encode(verifying_key.to_sec1_bytes()),
+        );
 
         testing_env!(context
             .storage_usage(env::storage_usage())
@@ -519,7 +750,18 @@ mod tests {
     fn test_approve() {
         let mut context = get_context(accounts(0));
         testing_env!(context.build());
-        let mut contract = Contract::new_default_meta(accounts(0).into());
+        let signer =
+            hex::decode("2486eef9a9900e589cdc217e7bbab915368d79f0fe8beacb15cc58351cd78a65")
+                .unwrap();
+        let secret_key = SigningKey::from_slice(signer.as_slice())
+            .ok()
+            .expect("Secret key parsing need to be successful");
+        let verifying_key: VerifyingKey = secret_key.verifying_key().to_owned();
+        println!("verifying_key valid?: {:?}", verifying_key.to_sec1_bytes());
+        let mut contract = Contract::new_default_meta(
+            accounts(0).into(),
+            hex::encode(verifying_key.to_sec1_bytes()),
+        );
 
         testing_env!(context
             .storage_usage(env::storage_usage())
@@ -550,8 +792,18 @@ mod tests {
     fn test_revoke() {
         let mut context = get_context(accounts(0));
         testing_env!(context.build());
-        let mut contract = Contract::new_default_meta(accounts(0).into());
-
+        let signer =
+            hex::decode("2486eef9a9900e589cdc217e7bbab915368d79f0fe8beacb15cc58351cd78a65")
+                .unwrap();
+        let secret_key = SigningKey::from_slice(signer.as_slice())
+            .ok()
+            .expect("Secret key parsing need to be successful");
+        let verifying_key: VerifyingKey = secret_key.verifying_key().to_owned();
+        println!("verifying_key valid?: {:?}", verifying_key.to_sec1_bytes());
+        let mut contract = Contract::new_default_meta(
+            accounts(0).into(),
+            hex::encode(verifying_key.to_sec1_bytes()),
+        );
         testing_env!(context
             .storage_usage(env::storage_usage())
             .attached_deposit(MINT_STORAGE_COST)
@@ -588,7 +840,18 @@ mod tests {
     fn test_revoke_all() {
         let mut context = get_context(accounts(0));
         testing_env!(context.build());
-        let mut contract = Contract::new_default_meta(accounts(0).into());
+        let signer =
+            hex::decode("2486eef9a9900e589cdc217e7bbab915368d79f0fe8beacb15cc58351cd78a65")
+                .unwrap();
+        let secret_key = SigningKey::from_slice(signer.as_slice())
+            .ok()
+            .expect("Secret key parsing need to be successful");
+        let verifying_key: VerifyingKey = secret_key.verifying_key().to_owned();
+        println!("verifying_key valid?: {:?}", verifying_key.to_sec1_bytes());
+        let mut contract = Contract::new_default_meta(
+            accounts(0).into(),
+            hex::encode(verifying_key.to_sec1_bytes()),
+        );
 
         testing_env!(context
             .storage_usage(env::storage_usage())

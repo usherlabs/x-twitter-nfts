@@ -13,6 +13,12 @@ near-contract-standards = "4.1.1"
 near-contract-tools = "0.7.2"
 serde = { version = "1.0.144", features = ["derive"] }
 serde_json = { version = "1.0.85", default-features = false }
+p256 = { version = "0.13.2", features = ["arithmetic"] }
+hex = "0.4.3"
+getrandom = { version = "0.2", features = ["js"] }
+
+[dev-dependencies]
+rand = "0.7.3"
 
 [profile.release]
 overflow-checks = true
