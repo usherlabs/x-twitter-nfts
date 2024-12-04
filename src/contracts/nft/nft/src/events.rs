@@ -14,6 +14,7 @@ pub struct TweetMintRequest {
     pub tweet_id: String,
     pub account: AccountId,
     pub deposit: Balance,
+    pub image_url: String,
     pub notify: String,
 }
 
