@@ -72,6 +72,7 @@ pub struct Contract {
     tweet_requests: LookupMap<String, MintRequestData>,
     lock_time: u64,
     min_deposit: Balance,
+    price_per_point: Balance,
     // NOTE DENOMINATOR is 10e6
     cost_per_metric: PublicMetric,
 }
@@ -89,7 +90,7 @@ enum StorageKey {
     TweetRequests,
 }
 
-const MIN_DEPOSIT: Balance = 5870000000000000000000;
+const PRICE_PER_POINT: Balance = 2000000000000000000000;
 
 #[near_bindgen]
 impl Contract {
@@ -126,7 +127,8 @@ impl Contract {
             metadata: LazyOption::new(StorageKey::Metadata, Some(&metadata)),
             tweet_requests: LookupMap::new(StorageKey::TweetRequests),
             lock_time: 30 * 60 * 1000,
-            min_deposit: MIN_DEPOSIT,
+            min_deposit: PRICE_PER_POINT * 10,
+            price_per_point: PRICE_PER_POINT,
             // NOT DENOMINATOR 10e6
             cost_per_metric: PublicMetric {
                 bookmark_count: 1190000,
@@ -314,7 +316,7 @@ impl Contract {
 
     pub fn compute_cost(&mut self, public_metrics: PublicMetric) -> u128 {
         let cost_per_metric = self.cost_per_metric.clone();
-        let cost = self.min_deposit
+        let cost = self.price_per_point
             * (cost_per_metric.bookmark_count * public_metrics.bookmark_count
                 + cost_per_metric.impression_count * public_metrics.impression_count
                 + cost_per_metric.like_count * public_metrics.like_count
@@ -322,10 +324,15 @@ impl Contract {
                 + cost_per_metric.reply_count * public_metrics.reply_count
                 + cost_per_metric.retweet_count * public_metrics.retweet_count)
             / 1000000;
-        if cost.lt(&MIN_DEPOSIT) {
-            return MIN_DEPOSIT * 2;
+        if cost.lt(&self.min_deposit) {
+            return self.min_deposit;
         }
         cost
+    }
+
+    #[private]
+    pub fn set_min_deposit(&mut self, min_deposit: Balance) {
+        self.min_deposit = min_deposit;
     }
 }
 
