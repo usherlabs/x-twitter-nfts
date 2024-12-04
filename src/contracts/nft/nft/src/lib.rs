@@ -170,7 +170,7 @@ impl Contract {
 
         if env::attached_deposit().ge(&self.compute_cost(extra.public_metric.clone())) {
             let token = self.tokens.internal_mint_with_refund(
-                token_id,
+                token_id.clone(),
                 receiver_id.clone(),
                 Some(token_metadata),
                 Some(receiver_id),
@@ -179,6 +179,7 @@ impl Contract {
             request.claimable_deposit =
                 env::attached_deposit() - (&self.compute_cost(extra.public_metric.clone()));
             self.tweet_requests.insert(&token.token_id, &request);
+            self.claim_funds(token_id);
             return token;
         } else {
             // penalize user by decreasing Claimable Balance
@@ -286,8 +287,16 @@ impl Contract {
     #[private]
     fn claim_funds(&mut self, tweet_id: String) {
         if let Some(mint_request) = self.tweet_requests.get(&tweet_id) {
-            Promise::new(mint_request.minter).transfer(mint_request.claimable_deposit);
-            self.tweet_requests.remove(&tweet_id);
+            Promise::new(mint_request.minter.clone()).transfer(mint_request.claimable_deposit);
+            self.tweet_requests.insert(
+                &tweet_id,
+                &MintRequestData {
+                    minter: mint_request.minter,
+                    lock_time: mint_request.lock_time,
+                    claimable_deposit: 0,
+                    status: MintRequestStatus::IsFulfilled,
+                },
+            );
             let event = CancelMintRequest {
                 tweet_id: tweet_id, // You might want to generate a unique ID here
                 account: env::predecessor_account_id(),
