@@ -153,19 +153,41 @@ impl Contract {
         receiver_id: AccountId,
         token_metadata: TokenMetadata,
     ) -> Token {
+        let mut request = self
+            .get_request(token_id.clone())
+            .expect("Invalid: No mint Request Found");
+        let extra: NFtMetaDataExtra =
+            serde_json::from_str(&token_metadata.clone().extra.expect("nft extra must exit"))
+                .unwrap();
         assert_eq!(
             env::predecessor_account_id(),
             self.tokens.owner_id,
             "NOT OWNER"
         );
-        let token = self.tokens.internal_mint_with_refund(
-            token_id,
-            receiver_id.clone(),
-            Some(token_metadata),
-            Some(receiver_id),
-        );
-        self.tweet_requests.remove(&token.token_id);
-        token
+
+        if env::attached_deposit().ge(&self.compute_cost(extra.public_metric.clone())) {
+            let token = self.tokens.internal_mint_with_refund(
+                token_id,
+                receiver_id.clone(),
+                Some(token_metadata),
+                Some(receiver_id),
+            );
+            request.status = MintRequestStatus::IsFulfilled;
+            request.claimable_deposit =
+                env::attached_deposit() - (&self.compute_cost(extra.public_metric.clone()));
+            self.tweet_requests.insert(&token.token_id, &request);
+            return token;
+        } else {
+            // penalize user by decreasing Claimable Balance
+            request.claimable_deposit = request.claimable_deposit * 9 / 10;
+            self.tweet_requests.insert(&token_id, &request);
+            self.claim_funds(token_id);
+            env::panic_str(&format!(
+                "Minimum deposit Not met of {}, you attached {}",
+                self.compute_cost(extra.public_metric),
+                env::attached_deposit()
+            ))
+        }
     }
 
     #[payable]
@@ -177,7 +199,7 @@ impl Contract {
         public_metrics: PublicMetric,
     ) -> MintRequestData {
         require!(
-            env::attached_deposit().eq(&self.compute_cost(public_metrics)),
+            env::attached_deposit().ge(&self.compute_cost(public_metrics)),
             format!(
                 "Minimum deposit Not met of {}, you attached {}",
                 &self.compute_cost(public_metrics),
@@ -297,7 +319,7 @@ impl Contract {
                 + cost_per_metric.quote_count * public_metrics.quote_count
                 + cost_per_metric.reply_count * public_metrics.reply_count
                 + cost_per_metric.retweet_count * public_metrics.retweet_count)
-            * 1000000;
+            / 1000000;
         if cost.lt(&MIN_DEPOSIT) {
             return MIN_DEPOSIT * 2;
         }
@@ -346,6 +368,10 @@ mod tests {
     }
 
     fn sample_token_metadata() -> TokenMetadata {
+        let json_string = r#"
+        {"minted_to":"eclipse_interop.testnet","public_metric":{"bookmark_count":1,"impression_count":0,"like_count":0,"quote_count":0,"reply_count":0,"retweet_count":0}}
+        "#;
+
         TokenMetadata {
             title: Some("Olympus Mons".into()),
             description: Some("The tallest mountain in the charted solar system".into()),
@@ -356,7 +382,7 @@ mod tests {
             expires_at: None,
             starts_at: None,
             updated_at: None,
-            extra: None,
+            extra: Some(json_string.into()),
             reference: None,
             reference_hash: None,
         }
@@ -392,6 +418,12 @@ mod tests {
             .build());
 
         let token_id = "0".to_string();
+        contract.mint_tweet_request(
+            token_id.clone(),
+            format!("ipfs://"),
+            "@xxxxxx".to_owned(),
+            get_test_public_metrics(),
+        );
         let token = contract.nft_mint(token_id.clone(), accounts(0), sample_token_metadata());
         assert_eq!(token.token_id, token_id);
         assert_eq!(token.owner_id.to_string(), accounts(0).to_string());
@@ -592,6 +624,12 @@ mod tests {
             .predecessor_account_id(accounts(0))
             .build());
         let token_id = "0".to_string();
+        contract.mint_tweet_request(
+            token_id.clone(),
+            format!("ipfs://"),
+            "@xxxxxx".to_owned(),
+            get_test_public_metrics(),
+        );
         contract.nft_mint(token_id.clone(), accounts(0), sample_token_metadata());
 
         testing_env!(context
@@ -629,6 +667,12 @@ mod tests {
             .predecessor_account_id(accounts(0))
             .build());
         let token_id = "0".to_string();
+        contract.mint_tweet_request(
+            token_id.clone(),
+            format!("ipfs://"),
+            "@xxxxxx".to_owned(),
+            get_test_public_metrics(),
+        );
         contract.nft_mint(token_id.clone(), accounts(0), sample_token_metadata());
 
         // alice approves bob
@@ -660,6 +704,12 @@ mod tests {
             .predecessor_account_id(accounts(0))
             .build());
         let token_id = "0".to_string();
+        contract.mint_tweet_request(
+            token_id.clone(),
+            format!("ipfs://"),
+            "@xxxxxx".to_owned(),
+            get_test_public_metrics(),
+        );
         contract.nft_mint(token_id.clone(), accounts(0), sample_token_metadata());
 
         // alice approves bob
@@ -698,6 +748,12 @@ mod tests {
             .predecessor_account_id(accounts(0))
             .build());
         let token_id = "0".to_string();
+        contract.mint_tweet_request(
+            token_id.clone(),
+            format!("ipfs://"),
+            "@xxxxxx".to_owned(),
+            get_test_public_metrics(),
+        );
         contract.nft_mint(token_id.clone(), accounts(0), sample_token_metadata());
 
         // alice approves bob
