@@ -127,6 +127,7 @@ impl Contract {
             tweet_requests: LookupMap::new(StorageKey::TweetRequests),
             lock_time: 30 * 60 * 1000,
             min_deposit: MIN_DEPOSIT,
+            // NOT DENOMINATOR 10e6
             cost_per_metric: PublicMetric {
                 bookmark_count: 1190000,
                 impression_count: 100,
@@ -305,6 +306,7 @@ impl Contract {
         new_value
     }
 
+    // NOT DENOMINATOR 10e6
     #[private]
     pub fn set_cost_per_metric(&mut self, cost_per_metric: PublicMetric) {
         self.cost_per_metric = cost_per_metric;
