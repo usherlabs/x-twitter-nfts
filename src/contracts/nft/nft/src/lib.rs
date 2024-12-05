@@ -49,14 +49,15 @@ pub struct NFtMetaDataExtra {
     public_metric: PublicMetric,
 }
 
-#[derive(BorshSerialize, BorshDeserialize, Serialize, Deserialize, Clone)]
+#[derive(BorshSerialize, BorshDeserialize, PartialEq, Clone)]
 enum MintRequestStatus {
     Created,
+    Cancelled,
     IsFulfilled,
     RoyaltyClaimed,
 }
 
-#[derive(Serialize, Deserialize, BorshDeserialize, BorshSerialize, Clone)]
+#[derive(BorshDeserialize, BorshSerialize, Clone)]
 pub struct MintRequestData {
     minter: AccountId,
     lock_time: u64,
@@ -179,13 +180,13 @@ impl Contract {
             request.claimable_deposit =
                 env::attached_deposit() - (&self.compute_cost(extra.public_metric.clone()));
             self.tweet_requests.insert(&token.token_id, &request);
-            self.claim_funds(token_id);
+            self.claim_funds(token_id, MintRequestStatus::IsFulfilled);
             return token;
         } else {
             // penalize user by decreasing Claimable Balance
             request.claimable_deposit = request.claimable_deposit * 9 / 10;
             self.tweet_requests.insert(&token_id, &request);
-            self.claim_funds(token_id);
+            self.claim_funds(token_id, MintRequestStatus::Cancelled);
             env::panic_str(&format!(
                 "Minimum deposit Not met of {}, you attached {}",
                 self.compute_cost(extra.public_metric),
@@ -200,13 +201,12 @@ impl Contract {
         tweet_id: String,
         image_url: String,
         notify: String,
-        public_metrics: PublicMetric,
     ) -> MintRequestData {
         require!(
-            env::attached_deposit().ge(&self.compute_cost(public_metrics)),
+            env::attached_deposit().ge(&self.min_deposit),
             format!(
                 "Minimum deposit Not met of {}, you attached {}",
-                &self.compute_cost(public_metrics),
+                &self.min_deposit,
                 env::attached_deposit()
             )
         );
@@ -252,7 +252,7 @@ impl Contract {
                 env::block_timestamp_ms() - mint_request.lock_time >= self.get_lock_time(),
                 format!("CANT cancel until {}ms has PASSED", self.get_lock_time())
             );
-            self.claim_funds(tweet_id);
+            self.claim_funds(tweet_id, MintRequestStatus::Cancelled);
         }
     }
 
@@ -285,24 +285,28 @@ impl Contract {
     }
 
     #[private]
-    fn claim_funds(&mut self, tweet_id: String) {
+    fn claim_funds(&mut self, tweet_id: String, status: MintRequestStatus) {
         if let Some(mint_request) = self.tweet_requests.get(&tweet_id) {
             Promise::new(mint_request.minter.clone()).transfer(mint_request.claimable_deposit);
-            self.tweet_requests.insert(
-                &tweet_id,
-                &MintRequestData {
-                    minter: mint_request.minter,
-                    lock_time: mint_request.lock_time,
-                    claimable_deposit: 0,
-                    status: MintRequestStatus::IsFulfilled,
-                },
-            );
-            let event = CancelMintRequest {
-                tweet_id: tweet_id, // You might want to generate a unique ID here
-                account: env::predecessor_account_id(),
-                withdraw: mint_request.claimable_deposit,
-            };
-            event.emit();
+            if status == MintRequestStatus::IsFulfilled {
+                self.tweet_requests.insert(
+                    &tweet_id,
+                    &MintRequestData {
+                        minter: mint_request.minter,
+                        lock_time: mint_request.lock_time,
+                        claimable_deposit: 0,
+                        status: MintRequestStatus::IsFulfilled,
+                    },
+                );
+            } else if status == MintRequestStatus::Cancelled {
+                self.tweet_requests.remove(&tweet_id);
+                let event = CancelMintRequest {
+                    tweet_id: tweet_id, // You might want to generate a unique ID here
+                    account: env::predecessor_account_id(),
+                    withdraw: mint_request.claimable_deposit,
+                };
+                event.emit();
+            }
         }
     }
 
@@ -440,7 +444,7 @@ mod tests {
             token_id.clone(),
             format!("ipfs://"),
             "@xxxxxx".to_owned(),
-            get_test_public_metrics(),
+            // get_test_public_metrics(),
         );
         let token = contract.nft_mint(token_id.clone(), accounts(0), sample_token_metadata());
         assert_eq!(token.token_id, token_id);
@@ -506,7 +510,7 @@ mod tests {
             tweet_id.to_string(),
             format!("ipfs://"),
             format!(""),
-            get_test_public_metrics(),
+            // get_test_public_metrics(),
         );
         assert_eq!(entry.minter, accounts(3));
     }
@@ -533,7 +537,7 @@ mod tests {
             tweet_id.to_string(),
             format!("ipfs://"),
             format!(""),
-            get_test_public_metrics(),
+            // get_test_public_metrics(),
         );
         assert_eq!(entry.minter, accounts(3));
         assert_eq!(entry.lock_time, current_time.as_millis() as u64);
@@ -548,7 +552,7 @@ mod tests {
             tweet_id.to_string(),
             format!("ipfs://"),
             format!(""),
-            get_test_public_metrics(),
+            // get_test_public_metrics(),
         );
         assert_eq!(entry.minter, accounts(3));
     }
@@ -575,7 +579,7 @@ mod tests {
             tweet_id.to_string(),
             format!("ipfs://"),
             format!(""),
-            get_test_public_metrics(),
+            // get_test_public_metrics(),
         );
         assert_eq!(entry.minter, accounts(3));
         assert_eq!(entry.lock_time, current_time.as_millis() as u64);
@@ -595,7 +599,7 @@ mod tests {
             tweet_id.to_string(),
             format!("ipfs://"),
             format!(""),
-            get_test_public_metrics(),
+            // get_test_public_metrics(),
         );
         assert_eq!(entry.minter, accounts(4));
     }
@@ -646,7 +650,7 @@ mod tests {
             token_id.clone(),
             format!("ipfs://"),
             "@xxxxxx".to_owned(),
-            get_test_public_metrics(),
+            // get_test_public_metrics(),
         );
         contract.nft_mint(token_id.clone(), accounts(0), sample_token_metadata());
 
@@ -689,7 +693,7 @@ mod tests {
             token_id.clone(),
             format!("ipfs://"),
             "@xxxxxx".to_owned(),
-            get_test_public_metrics(),
+            // get_test_public_metrics(),
         );
         contract.nft_mint(token_id.clone(), accounts(0), sample_token_metadata());
 
@@ -726,7 +730,7 @@ mod tests {
             token_id.clone(),
             format!("ipfs://"),
             "@xxxxxx".to_owned(),
-            get_test_public_metrics(),
+            // get_test_public_metrics(),
         );
         contract.nft_mint(token_id.clone(), accounts(0), sample_token_metadata());
 
@@ -770,7 +774,7 @@ mod tests {
             token_id.clone(),
             format!("ipfs://"),
             "@xxxxxx".to_owned(),
-            get_test_public_metrics(),
+            // get_test_public_metrics(),
         );
         contract.nft_mint(token_id.clone(), accounts(0), sample_token_metadata());
 
