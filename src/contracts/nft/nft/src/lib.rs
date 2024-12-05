@@ -31,14 +31,51 @@ use near_sdk::{
     env, near_bindgen, require, AccountId, Balance, BorshStorageKey, PanicOnDefault, Promise,
     PromiseOrValue,
 };
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, BorshDeserialize, BorshSerialize, Clone, Copy)]
+pub struct PublicMetric {
+    bookmark_count: u128,
+    impression_count: u128,
+    like_count: u128,
+    quote_count: u128,
+    reply_count: u128,
+    retweet_count: u128,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct NFtMetaDataExtra {
+    minted_to: String,
+    public_metric: PublicMetric,
+}
+
+#[derive(BorshSerialize, BorshDeserialize, PartialEq, Clone)]
+enum MintRequestStatus {
+    Created,
+    Cancelled,
+    IsFulfilled,
+    RoyaltyClaimed,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Clone)]
+pub struct MintRequestData {
+    minter: AccountId,
+    lock_time: u64,
+    claimable_deposit: Balance,
+    status: MintRequestStatus,
+}
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct Contract {
     tokens: NonFungibleToken,
     metadata: LazyOption<NFTContractMetadata>,
-    tweet_requests: LookupMap<String, (AccountId, u64, String, String)>,
+    tweet_requests: LookupMap<String, MintRequestData>,
     lock_time: u64,
+    min_deposit: Balance,
+    price_per_point: Balance,
+    // NOTE DENOMINATOR is 10e6
+    cost_per_metric: PublicMetric,
 }
 
 const DATA_IMAGE_SVG_NEAR_ICON: &str =
@@ -54,7 +91,7 @@ enum StorageKey {
     TweetRequests,
 }
 
-const MIN_DEPOSIT: Balance = 5870000000000000000000;
+const PRICE_PER_POINT: Balance = 2000000000000000000000;
 
 #[near_bindgen]
 impl Contract {
@@ -91,6 +128,17 @@ impl Contract {
             metadata: LazyOption::new(StorageKey::Metadata, Some(&metadata)),
             tweet_requests: LookupMap::new(StorageKey::TweetRequests),
             lock_time: 30 * 60 * 1000,
+            min_deposit: PRICE_PER_POINT * 10,
+            price_per_point: PRICE_PER_POINT,
+            // NOT DENOMINATOR 10e6
+            cost_per_metric: PublicMetric {
+                bookmark_count: 1190000,
+                impression_count: 100,
+                like_count: 500000,
+                quote_count: 5000000,
+                reply_count: 2000000,
+                retweet_count: 1400000,
+            },
         }
     }
 
@@ -109,19 +157,41 @@ impl Contract {
         receiver_id: AccountId,
         token_metadata: TokenMetadata,
     ) -> Token {
+        let mut request = self
+            .get_request(token_id.clone())
+            .expect("Invalid: No mint Request Found");
+        let extra: NFtMetaDataExtra =
+            serde_json::from_str(&token_metadata.clone().extra.expect("nft extra must exit"))
+                .unwrap();
         assert_eq!(
             env::predecessor_account_id(),
             self.tokens.owner_id,
             "NOT OWNER"
         );
-        let token = self.tokens.internal_mint_with_refund(
-            token_id,
-            receiver_id.clone(),
-            Some(token_metadata),
-            Some(receiver_id),
-        );
-        self.tweet_requests.remove(&token.token_id);
-        token
+
+        if env::attached_deposit().ge(&self.compute_cost(extra.public_metric.clone())) {
+            let token = self.tokens.internal_mint_with_refund(
+                token_id.clone(),
+                receiver_id.clone(),
+                Some(token_metadata),
+                Some(receiver_id),
+            );
+            request.claimable_deposit =
+                env::attached_deposit() - (&self.compute_cost(extra.public_metric.clone()));
+            self.tweet_requests.insert(&token.token_id, &request);
+            self.claim_funds(token_id, request, MintRequestStatus::IsFulfilled);
+            return token;
+        } else {
+            // penalize user by decreasing Claimable Balance
+            request.claimable_deposit = request.claimable_deposit * 9 / 10;
+            self.tweet_requests.insert(&token_id, &request);
+            self.claim_funds(token_id, request, MintRequestStatus::Cancelled);
+            env::panic_str(&format!(
+                "Minimum deposit Not met of {}, you attached {}",
+                self.compute_cost(extra.public_metric),
+                env::attached_deposit()
+            ))
+        }
     }
 
     #[payable]
@@ -130,12 +200,12 @@ impl Contract {
         tweet_id: String,
         image_url: String,
         notify: String,
-    ) -> (AccountId, u64, String) {
+    ) -> MintRequestData {
         require!(
-            env::attached_deposit().eq(&MIN_DEPOSIT),
+            env::attached_deposit().ge(&self.min_deposit),
             format!(
                 "Minimum deposit Not met of {}, you attached {}",
-                &MIN_DEPOSIT,
+                &self.min_deposit,
                 env::attached_deposit()
             )
         );
@@ -149,10 +219,16 @@ impl Contract {
         if !self.is_tweet_available(tweet_id.clone()) {
             env::panic_str("This tweet_id has a lock on it");
         }
-        // Get the signer's account ID
-        let signer_account_id = env::predecessor_account_id();
-        let now = env::block_timestamp_ms();
-        let entry = (signer_account_id, now, image_url, notify);
+
+        let entry = MintRequestData {
+            // Get the signer's account ID
+            minter: env::predecessor_account_id(),
+            //Current Block Time
+            lock_time: env::block_timestamp_ms(),
+
+            claimable_deposit: env::attached_deposit(),
+            status: MintRequestStatus::Created,
+        };
         self.tweet_requests.insert(&tweet_id, &entry);
 
         // Log an event-like message
@@ -160,25 +236,26 @@ impl Contract {
             tweet_id: tweet_id, // You might want to generate a unique ID here
             account: env::predecessor_account_id(),
             deposit: env::attached_deposit(),
-            notify: entry.3,
+            image_url,
+            notify: notify,
         };
         event.emit();
 
-        (entry.0, entry.1, entry.2)
+        entry
     }
 
     pub fn cancel_mint_request(&mut self, tweet_id: String) {
         let tweet_request = self.tweet_requests.get(&tweet_id);
-        if let Some((_id, timestamp, _, _)) = tweet_request {
+        if let Some(mint_request) = tweet_request {
             require!(
-                env::block_timestamp_ms() - timestamp >= self.get_lock_time(),
+                env::block_timestamp_ms() - mint_request.lock_time >= self.get_lock_time(),
                 format!("CANT cancel until {}ms has PASSED", self.get_lock_time())
             );
-            self.claim_funds(tweet_id);
+            self.claim_funds(tweet_id, mint_request, MintRequestStatus::Cancelled);
         }
     }
 
-    pub fn get_request(&self, tweet_id: String) -> Option<(AccountId, u64, String, String)> {
+    pub fn get_request(&self, tweet_id: String) -> Option<MintRequestData> {
         self.tweet_requests.get(&tweet_id)
     }
 
@@ -195,8 +272,8 @@ impl Contract {
         }
         //replace env::block_timestamp with
         match entry {
-            Some((_, timestamp, _, _)) => {
-                env::block_timestamp_ms() - timestamp > self.get_lock_time()
+            Some(mint_request) => {
+                env::block_timestamp_ms() - mint_request.lock_time > self.get_lock_time()
             }
             None => true,
         }
@@ -207,14 +284,29 @@ impl Contract {
     }
 
     #[private]
-    fn claim_funds(&mut self, tweet_id: String) {
-        if let Some((id, _, _, _)) = self.tweet_requests.get(&tweet_id) {
-            Promise::new(id).transfer(MIN_DEPOSIT);
+    fn claim_funds(
+        &mut self,
+        tweet_id: String,
+        mint_request: MintRequestData,
+        status: MintRequestStatus,
+    ) {
+        Promise::new(mint_request.minter.clone()).transfer(mint_request.claimable_deposit);
+        if status == MintRequestStatus::IsFulfilled {
+            self.tweet_requests.insert(
+                &tweet_id,
+                &MintRequestData {
+                    minter: mint_request.minter,
+                    lock_time: mint_request.lock_time,
+                    claimable_deposit: 0,
+                    status: MintRequestStatus::IsFulfilled,
+                },
+            );
+        } else if status == MintRequestStatus::Cancelled {
             self.tweet_requests.remove(&tweet_id);
             let event = CancelMintRequest {
                 tweet_id: tweet_id, // You might want to generate a unique ID here
                 account: env::predecessor_account_id(),
-                withdraw: MIN_DEPOSIT,
+                withdraw: mint_request.claimable_deposit,
             };
             event.emit();
         }
@@ -229,6 +321,33 @@ impl Contract {
         // Log an event-like message
         env::log_str(format!("lock_time updated: {}", new_value).as_str());
         new_value
+    }
+
+    // NOT DENOMINATOR 10e6
+    #[private]
+    pub fn set_cost_per_metric(&mut self, cost_per_metric: PublicMetric) {
+        self.cost_per_metric = cost_per_metric;
+    }
+
+    pub fn compute_cost(&mut self, public_metrics: PublicMetric) -> u128 {
+        let cost_per_metric = self.cost_per_metric.clone();
+        let cost = self.price_per_point
+            * (cost_per_metric.bookmark_count * public_metrics.bookmark_count
+                + cost_per_metric.impression_count * public_metrics.impression_count
+                + cost_per_metric.like_count * public_metrics.like_count
+                + cost_per_metric.quote_count * public_metrics.quote_count
+                + cost_per_metric.reply_count * public_metrics.reply_count
+                + cost_per_metric.retweet_count * public_metrics.retweet_count)
+            / 1000000;
+        if cost.lt(&self.min_deposit) {
+            return self.min_deposit;
+        }
+        cost
+    }
+
+    #[private]
+    pub fn set_min_deposit(&mut self, min_deposit: Balance) {
+        self.min_deposit = min_deposit;
     }
 }
 
@@ -252,7 +371,16 @@ mod tests {
 
     use super::*;
 
-    const MINT_STORAGE_COST: u128 = 5870000000000000000000;
+    fn get_test_public_metrics() -> PublicMetric {
+        PublicMetric {
+            impression_count: 0,
+            bookmark_count: 0,
+            quote_count: 0,
+            like_count: 0,
+            reply_count: 0,
+            retweet_count: 0,
+        }
+    }
 
     fn get_context(predecessor_account_id: AccountId) -> VMContextBuilder {
         let mut builder = VMContextBuilder::new();
@@ -264,6 +392,10 @@ mod tests {
     }
 
     fn sample_token_metadata() -> TokenMetadata {
+        let json_string = r#"
+        {"minted_to":"eclipse_interop.testnet","public_metric":{"bookmark_count":1,"impression_count":0,"like_count":0,"quote_count":0,"reply_count":0,"retweet_count":0}}
+        "#;
+
         TokenMetadata {
             title: Some("Olympus Mons".into()),
             description: Some("The tallest mountain in the charted solar system".into()),
@@ -274,7 +406,7 @@ mod tests {
             expires_at: None,
             starts_at: None,
             updated_at: None,
-            extra: None,
+            extra: Some(json_string.into()),
             reference: None,
             reference_hash: None,
         }
@@ -305,11 +437,17 @@ mod tests {
 
         testing_env!(context
             .storage_usage(env::storage_usage())
-            .attached_deposit(MINT_STORAGE_COST)
+            .attached_deposit(contract.compute_cost(get_test_public_metrics()))
             .predecessor_account_id(accounts(0))
             .build());
 
         let token_id = "0".to_string();
+        contract.mint_tweet_request(
+            token_id.clone(),
+            format!("ipfs://"),
+            "@xxxxxx".to_owned(),
+            // get_test_public_metrics(),
+        );
         let token = contract.nft_mint(token_id.clone(), accounts(0), sample_token_metadata());
         assert_eq!(token.token_id, token_id);
         assert_eq!(token.owner_id.to_string(), accounts(0).to_string());
@@ -363,16 +501,20 @@ mod tests {
 
         testing_env!(context
             .storage_usage(env::storage_usage())
-            .attached_deposit(MINT_STORAGE_COST)
+            .attached_deposit(contract.compute_cost(get_test_public_metrics()))
             .predecessor_account_id(accounts(3))
             .block_timestamp(current_time.as_nanos() as u64)
             .build());
 
         // mint request
         let tweet_id = "XXX4071245224308850";
-        let entry =
-            contract.mint_tweet_request(tweet_id.to_string(), format!("ipfs://"), format!(""));
-        assert_eq!(entry.0, accounts(3));
+        let entry = contract.mint_tweet_request(
+            tweet_id.to_string(),
+            format!("ipfs://"),
+            format!(""),
+            // get_test_public_metrics(),
+        );
+        assert_eq!(entry.minter, accounts(3));
     }
     #[test]
     #[should_panic(expected = "This tweet_id has a lock on it")]
@@ -386,27 +528,35 @@ mod tests {
         let mut contract = Contract::new_default_meta(accounts(0).into());
         testing_env!(context
             .storage_usage(env::storage_usage())
-            .attached_deposit(MINT_STORAGE_COST)
+            .attached_deposit(contract.compute_cost(get_test_public_metrics()))
             .predecessor_account_id(accounts(3))
             .block_timestamp(current_time.as_nanos() as u64)
             .build());
 
         // mint request
         let tweet_id = "1834071245224308850";
-        let entry =
-            contract.mint_tweet_request(tweet_id.to_string(), format!("ipfs://"), format!(""));
-        assert_eq!(entry.0, accounts(3));
-        assert_eq!(entry.1, current_time.as_millis() as u64);
+        let entry = contract.mint_tweet_request(
+            tweet_id.to_string(),
+            format!("ipfs://"),
+            format!(""),
+            // get_test_public_metrics(),
+        );
+        assert_eq!(entry.minter, accounts(3));
+        assert_eq!(entry.lock_time, current_time.as_millis() as u64);
 
         testing_env!(context
             .storage_usage(env::storage_usage())
-            .attached_deposit(MINT_STORAGE_COST)
+            .attached_deposit(contract.compute_cost(get_test_public_metrics()))
             .predecessor_account_id(accounts(5))
             .block_timestamp(current_time.as_nanos() as u64)
             .build());
-        let entry =
-            contract.mint_tweet_request(tweet_id.to_string(), format!("ipfs://"), format!(""));
-        assert_eq!(entry.0, accounts(3));
+        let entry = contract.mint_tweet_request(
+            tweet_id.to_string(),
+            format!("ipfs://"),
+            format!(""),
+            // get_test_public_metrics(),
+        );
+        assert_eq!(entry.minter, accounts(3));
     }
 
     #[test]
@@ -420,22 +570,26 @@ mod tests {
         let mut contract = Contract::new_default_meta(accounts(0).into());
         testing_env!(context
             .storage_usage(env::storage_usage())
-            .attached_deposit(MINT_STORAGE_COST)
+            .attached_deposit(contract.compute_cost(get_test_public_metrics()))
             .predecessor_account_id(accounts(3))
             .block_timestamp(current_time.as_nanos() as u64)
             .build());
 
         // mint request
         let tweet_id = "1834071245224308850";
-        let entry =
-            contract.mint_tweet_request(tweet_id.to_string(), format!("ipfs://"), format!(""));
-        assert_eq!(entry.0, accounts(3));
-        assert_eq!(entry.1, current_time.as_millis() as u64);
+        let entry = contract.mint_tweet_request(
+            tweet_id.to_string(),
+            format!("ipfs://"),
+            format!(""),
+            // get_test_public_metrics(),
+        );
+        assert_eq!(entry.minter, accounts(3));
+        assert_eq!(entry.lock_time, current_time.as_millis() as u64);
 
         let offset_sec = 1;
         testing_env!(context
             .storage_usage(env::storage_usage())
-            .attached_deposit(MINT_STORAGE_COST)
+            .attached_deposit(contract.compute_cost(get_test_public_metrics()))
             .predecessor_account_id(accounts(4))
             .block_timestamp(
                 (current_time.as_nanos() as u64)
@@ -443,9 +597,13 @@ mod tests {
             )
             .build());
 
-        let entry =
-            contract.mint_tweet_request(tweet_id.to_string(), format!("ipfs://"), format!(""));
-        assert_eq!(entry.0, accounts(4));
+        let entry = contract.mint_tweet_request(
+            tweet_id.to_string(),
+            format!("ipfs://"),
+            format!(""),
+            // get_test_public_metrics(),
+        );
+        assert_eq!(entry.minter, accounts(4));
     }
 
     #[test]
@@ -486,10 +644,16 @@ mod tests {
 
         testing_env!(context
             .storage_usage(env::storage_usage())
-            .attached_deposit(MINT_STORAGE_COST)
+            .attached_deposit(contract.compute_cost(get_test_public_metrics()))
             .predecessor_account_id(accounts(0))
             .build());
         let token_id = "0".to_string();
+        contract.mint_tweet_request(
+            token_id.clone(),
+            format!("ipfs://"),
+            "@xxxxxx".to_owned(),
+            // get_test_public_metrics(),
+        );
         contract.nft_mint(token_id.clone(), accounts(0), sample_token_metadata());
 
         testing_env!(context
@@ -523,10 +687,16 @@ mod tests {
 
         testing_env!(context
             .storage_usage(env::storage_usage())
-            .attached_deposit(MINT_STORAGE_COST)
+            .attached_deposit(contract.compute_cost(get_test_public_metrics()))
             .predecessor_account_id(accounts(0))
             .build());
         let token_id = "0".to_string();
+        contract.mint_tweet_request(
+            token_id.clone(),
+            format!("ipfs://"),
+            "@xxxxxx".to_owned(),
+            // get_test_public_metrics(),
+        );
         contract.nft_mint(token_id.clone(), accounts(0), sample_token_metadata());
 
         // alice approves bob
@@ -554,10 +724,16 @@ mod tests {
 
         testing_env!(context
             .storage_usage(env::storage_usage())
-            .attached_deposit(MINT_STORAGE_COST)
+            .attached_deposit(contract.compute_cost(get_test_public_metrics()))
             .predecessor_account_id(accounts(0))
             .build());
         let token_id = "0".to_string();
+        contract.mint_tweet_request(
+            token_id.clone(),
+            format!("ipfs://"),
+            "@xxxxxx".to_owned(),
+            // get_test_public_metrics(),
+        );
         contract.nft_mint(token_id.clone(), accounts(0), sample_token_metadata());
 
         // alice approves bob
@@ -592,10 +768,16 @@ mod tests {
 
         testing_env!(context
             .storage_usage(env::storage_usage())
-            .attached_deposit(MINT_STORAGE_COST)
+            .attached_deposit(contract.compute_cost(get_test_public_metrics()))
             .predecessor_account_id(accounts(0))
             .build());
         let token_id = "0".to_string();
+        contract.mint_tweet_request(
+            token_id.clone(),
+            format!("ipfs://"),
+            "@xxxxxx".to_owned(),
+            // get_test_public_metrics(),
+        );
         contract.nft_mint(token_id.clone(), accounts(0), sample_token_metadata());
 
         // alice approves bob

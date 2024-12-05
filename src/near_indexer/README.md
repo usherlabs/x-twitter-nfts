@@ -42,9 +42,9 @@ Before you begin, make sure you have the following installed:
    cargo install sea-orm-cli
    ```
 
-3. Copy `.env.example` to `.env` and fill in the necessary values:
+3. Copy `.env.sample` to `.env` and fill in the necessary values:
    ```
-   cp .env.example .env
+   cp .env.sample .env
    nano .env
    ```
 
