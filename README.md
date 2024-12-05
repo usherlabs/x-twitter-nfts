@@ -4,7 +4,7 @@
 2. configure and run [Bitte Plugin](./src/bitte_plugin/README.md)
 3. configure and run [orchestrator](./src/near_indexer/README.md)
 
-## ZKAF Near/Aurora Testing Guide
+## Full Guide
 
 **TL;DR**
 
@@ -37,7 +37,7 @@ To run the repo:
 
 8. To set up Near indexer [see](./src/near_indexer/README.md)
 
-## Testing ZKAF
+## ZKAF Near/Aurora Testing Guide
 
 ### Important Note
 
