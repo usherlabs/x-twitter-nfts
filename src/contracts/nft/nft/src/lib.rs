@@ -176,17 +176,16 @@ impl Contract {
                 Some(token_metadata),
                 Some(receiver_id),
             );
-            request.status = MintRequestStatus::IsFulfilled;
             request.claimable_deposit =
                 env::attached_deposit() - (&self.compute_cost(extra.public_metric.clone()));
             self.tweet_requests.insert(&token.token_id, &request);
-            self.claim_funds(token_id, MintRequestStatus::IsFulfilled);
+            self.claim_funds(token_id, request, MintRequestStatus::IsFulfilled);
             return token;
         } else {
             // penalize user by decreasing Claimable Balance
             request.claimable_deposit = request.claimable_deposit * 9 / 10;
             self.tweet_requests.insert(&token_id, &request);
-            self.claim_funds(token_id, MintRequestStatus::Cancelled);
+            self.claim_funds(token_id, request, MintRequestStatus::Cancelled);
             env::panic_str(&format!(
                 "Minimum deposit Not met of {}, you attached {}",
                 self.compute_cost(extra.public_metric),
@@ -252,7 +251,7 @@ impl Contract {
                 env::block_timestamp_ms() - mint_request.lock_time >= self.get_lock_time(),
                 format!("CANT cancel until {}ms has PASSED", self.get_lock_time())
             );
-            self.claim_funds(tweet_id, MintRequestStatus::Cancelled);
+            self.claim_funds(tweet_id, mint_request, MintRequestStatus::Cancelled);
         }
     }
 
@@ -285,28 +284,31 @@ impl Contract {
     }
 
     #[private]
-    fn claim_funds(&mut self, tweet_id: String, status: MintRequestStatus) {
-        if let Some(mint_request) = self.tweet_requests.get(&tweet_id) {
-            Promise::new(mint_request.minter.clone()).transfer(mint_request.claimable_deposit);
-            if status == MintRequestStatus::IsFulfilled {
-                self.tweet_requests.insert(
-                    &tweet_id,
-                    &MintRequestData {
-                        minter: mint_request.minter,
-                        lock_time: mint_request.lock_time,
-                        claimable_deposit: 0,
-                        status: MintRequestStatus::IsFulfilled,
-                    },
-                );
-            } else if status == MintRequestStatus::Cancelled {
-                self.tweet_requests.remove(&tweet_id);
-                let event = CancelMintRequest {
-                    tweet_id: tweet_id, // You might want to generate a unique ID here
-                    account: env::predecessor_account_id(),
-                    withdraw: mint_request.claimable_deposit,
-                };
-                event.emit();
-            }
+    fn claim_funds(
+        &mut self,
+        tweet_id: String,
+        mint_request: MintRequestData,
+        status: MintRequestStatus,
+    ) {
+        Promise::new(mint_request.minter.clone()).transfer(mint_request.claimable_deposit);
+        if status == MintRequestStatus::IsFulfilled {
+            self.tweet_requests.insert(
+                &tweet_id,
+                &MintRequestData {
+                    minter: mint_request.minter,
+                    lock_time: mint_request.lock_time,
+                    claimable_deposit: 0,
+                    status: MintRequestStatus::IsFulfilled,
+                },
+            );
+        } else if status == MintRequestStatus::Cancelled {
+            self.tweet_requests.remove(&tweet_id);
+            let event = CancelMintRequest {
+                tweet_id: tweet_id, // You might want to generate a unique ID here
+                account: env::predecessor_account_id(),
+                withdraw: mint_request.claimable_deposit,
+            };
+            event.emit();
         }
     }
 
