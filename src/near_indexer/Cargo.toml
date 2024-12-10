@@ -21,7 +21,7 @@ serde_json = "1.0.128"
 reqwest = { version = "0.12.4", features = ["json", "multipart"] }
 regex = "1.11.0"
 near-client = "0.7.2"
-verity-client = { git = "https://github.com/usherlabs/verity-dp.git", branch = "feature/better-workspaces" }
+verity-client = { git = "https://github.com/usherlabs/verity-dp.git", rev = "52a04916992a98a89feadbc5f6786be26821c725" }
 k256 = { version = "0.13", features = ["pem"] }
 rand = "0.8.5"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }

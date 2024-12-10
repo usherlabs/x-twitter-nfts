@@ -1,13 +1,13 @@
 use std::env;
 
-use super::{TweetResponse, ZkInputParam};
 use super::methods::VERIFY_ELF;
+use super::{TweetResponse, ZkInputParam};
 use alloy_sol_types::SolValue;
 use risc0_ethereum_contracts::groth16;
 use risc0_zkvm::{default_prover, ExecutorEnv, ProverOpts, VerifierContext};
 use std::error::Error;
 use tracing::debug;
-use verity_client::client::{ VerityClient, VerityClientConfig};
+use verity_client::client::{VerityClient, VerityClientConfig};
 
 pub fn generate_groth16_proof(zk_inputs: ZkInputParam) -> (Vec<u8>, Vec<u8>) {
     // serialize the inputs to bytes to pass to the remote prover
@@ -39,9 +39,7 @@ pub fn generate_groth16_proof(zk_inputs: ZkInputParam) -> (Vec<u8>, Vec<u8>) {
     (seal, journal_output)
 }
 
-pub async fn get_proof(
-    tweet_id: String,
-) -> Result<(String, TweetResponse), Box<dyn Error>> {
+pub async fn get_proof(tweet_id: String) -> Result<(String, TweetResponse), Box<dyn Error>> {
     let verity_client = get_verity_client();
     let _temp = verity_client
         .get(
