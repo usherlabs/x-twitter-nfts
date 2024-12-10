@@ -12,6 +12,7 @@ use methods::VERIFY_ELF;
 use near::{extract_metadata_from_request, verify_near_proof};
 use near_client::client::NearClient;
 use near_client::prelude::{AccountId, Finality};
+use openssl::sha::sha256;
 use proof::{generate_groth16_proof, get_proof};
 use reqwest::Url;
 use sea_orm::ActiveValue::Set;
@@ -23,9 +24,6 @@ use std::str::FromStr;
 use std::{env, time::Duration};
 use tokio::task::spawn_blocking;
 use tracing::{debug, error, info};
-
-
-
 
 #[async_std::main]
 async fn main() {
@@ -230,7 +228,19 @@ pub async fn process_near_transaction(
                     );
 
                     // perform verification near
-                    // mint NFT if near verification is successfull
+                    // mint NFT if near verification is successful
+
+                    let x = serde_json::to_string(&extract_metadata_from_request(
+                        tweet_res_data.clone(),
+                        meta_data.clone(),
+                    ))
+                    .unwrap();
+                    assert_eq!(
+                        hex::encode(sha256(x.as_bytes())),
+                        hex::encode(journal_output.clone()),
+                        "invalid token_metadata"
+                    );
+
                     let near_tx_response = verify_near_proof(
                         journal_output,
                         extract_metadata_from_request(tweet_res_data, meta_data),
