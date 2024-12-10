@@ -45,7 +45,7 @@ pub struct TweetResponse {
     /// data
     pub data: Option<Vec<TweetData>>,
     /// users info
-    pub includes: Option<Includes>,
+    pub includes: Includes,
 
     errors: Option<Vec<ErrorObject>>,
 }

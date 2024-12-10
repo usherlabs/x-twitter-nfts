@@ -32,7 +32,7 @@ async fn main() {
     //Load Essential for env Variables
     env::var("TWEET_BEARER").expect("TWEET_BEARER must be set");
 
-    let nft_contract_id = env::var("NFT_CONTRACT_ID").unwrap_or("local-nft.testnet".to_owned());
+    let nft_contract_id = env::var("NFT_CONTRACT_ID").unwrap_or("x-bitte-nft.testnet".to_owned());
     let db = Database::connect(env::var("DATABASE_URL").expect("DATABASE_URL must be set"))
         .await
         .unwrap();
@@ -101,7 +101,7 @@ pub async fn process_near_transaction(
     client: &NearClient,
     notifier: &twitter::OathTweeterHandler,
 ) -> Result<bool, DbErr> {
-    let nft_contract_id = env::var("NFT_CONTRACT_ID").unwrap_or("local-nft.testnet".to_owned());
+    let nft_contract_id = env::var("NFT_CONTRACT_ID").unwrap_or("x-bitte-nft.testnet".to_owned());
     let nft_contract_id = AccountId::from_str(&nft_contract_id).unwrap();
 
     let pk = transaction.id.parse::<i32>().unwrap();

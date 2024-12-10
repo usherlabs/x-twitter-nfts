@@ -8,9 +8,8 @@ use near_primitives::views::QueryRequest;
 use serde_json::from_slice;
 use serde_json::json;
 use std::env;
-use tokio::time;
 
-use indexer::helper::{self, AssetMetadata, TweetResponse};
+use indexer::helper::{AssetMetadata, TweetResponse, User};
 
 pub async fn get_nft_by_id(token_id: TokenId) -> Result<Token, Box<dyn std::error::Error>> {
     let rpc_url = env::var("NEAR_RPC_URL").expect("RPC_URL_NOT_PRESENT");
@@ -67,8 +66,19 @@ pub fn generate_tweet_nft_payload(
         title: Some(tweet_data.id.clone()), // ex. "Arch Nemesis: Mail Carrier" or "Parcel #5055"
         description: Some(tweet_data.text.clone()), // free-form description
         extra: Some(
-            json!({"public_metric": public_metric, "minted_to":meta_data.owner_account_id.clone() })
-                .to_string(),
+            json!(
+            {
+                "public_metric": public_metric,
+                "minted_to":meta_data.owner_account_id.clone(),
+                "author_id":tweet_data.author_id.clone(),
+                "user": (tweet.includes.users.get(0).unwrap_or(&User{
+                 name: "".to_string(),
+                 id:"".to_string(),
+                 username: Some("".to_string()),
+                 created_at:"".to_string()
+                 })).username
+                        })
+            .to_string(),
         ), // anything extra the NFT wants to store on-chain. Can be stringified JSON.
         media: Some(meta_data.image_url), // URL to associated media, preferably to decentralized, content-addressed storage
         media_hash: None, // Base64-encoded sha256 hash of content referenced by the `media` field. Required if `media` is included.

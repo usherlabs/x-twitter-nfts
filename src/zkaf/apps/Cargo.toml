@@ -13,13 +13,12 @@ env_logger = { version = "0.10" }
 ethers = { workspace = true }
 log = { workspace = true }
 methods = { workspace = true }
-verity-verifier = { workspace = true }
 risc0-ethereum-contracts = { workspace = true }
 risc0-zkvm = { workspace = true, features = ["client"] }
 tokio = { version = "1.35", features = ["full"] }
-serde = "1.0"
+serde = "1.0.215"
 hex = { workspace = true }
-serde_json = "1.0.107"
+serde_json = "1.0.133"
 sha256 = "1.5.0"
 near-jsonrpc-client = "0.9.0"
 near-crypto = "0.21.1"
@@ -29,3 +28,6 @@ near-jsonrpc-primitives = "0.21.1"
 indexer = { path = "../../near_indexer" }
 dotenv = { workspace = true }
 near-contract-standards = "5.5.0"
+verity-verifier = { git = "https://github.com/usherlabs/verity-dp", version = "0.0.0", default-features = false, features = [
+    "no-session",
+] }

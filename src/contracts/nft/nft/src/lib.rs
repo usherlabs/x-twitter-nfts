@@ -47,9 +47,10 @@ pub struct PublicMetric {
 pub struct NFtMetaDataExtra {
     minted_to: String,
     public_metric: PublicMetric,
+    author_id: String,
 }
 
-#[derive(BorshSerialize, BorshDeserialize, PartialEq, Clone)]
+#[derive(BorshSerialize, BorshDeserialize, Serialize, Deserialize, PartialEq, Clone)]
 enum MintRequestStatus {
     Created,
     Cancelled,
@@ -57,7 +58,14 @@ enum MintRequestStatus {
     RoyaltyClaimed,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Clone)]
+#[derive(BorshSerialize, BorshDeserialize, PartialEq)]
+enum RoyaltyOperation {
+    Increase,
+    Decrease,
+    Erase,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
 pub struct MintRequestData {
     minter: AccountId,
     lock_time: u64,
@@ -76,6 +84,9 @@ pub struct Contract {
     price_per_point: Balance,
     // NOTE DENOMINATOR is 10e6
     cost_per_metric: PublicMetric,
+
+    royalty_manager: AccountId,
+    royalty_balances: LookupMap<String, Balance>,
 }
 
 const DATA_IMAGE_SVG_NEAR_ICON: &str =
@@ -89,6 +100,7 @@ enum StorageKey {
     Enumeration,
     Approval,
     TweetRequests,
+    RoyaltyBalances,
 }
 
 const PRICE_PER_POINT: Balance = 2000000000000000000000;
@@ -98,7 +110,7 @@ impl Contract {
     /// Initializes the contract owned by `owner_id` with
     /// default metadata (for example purposes only).
     #[init]
-    pub fn new_default_meta(owner_id: AccountId) -> Self {
+    pub fn new_default_meta(owner_id: AccountId, royalty_manager: AccountId) -> Self {
         Self::new(
             owner_id,
             NFTContractMetadata {
@@ -110,11 +122,16 @@ impl Contract {
                 reference: None,
                 reference_hash: None,
             },
+            royalty_manager,
         )
     }
 
     #[init]
-    pub fn new(owner_id: AccountId, metadata: NFTContractMetadata) -> Self {
+    pub fn new(
+        owner_id: AccountId,
+        metadata: NFTContractMetadata,
+        royalty_manager: AccountId,
+    ) -> Self {
         assert!(!env::state_exists(), "Already initialized");
         metadata.assert_valid();
         Self {
@@ -128,8 +145,9 @@ impl Contract {
             metadata: LazyOption::new(StorageKey::Metadata, Some(&metadata)),
             tweet_requests: LookupMap::new(StorageKey::TweetRequests),
             lock_time: 30 * 60 * 1000,
-            min_deposit: PRICE_PER_POINT * 10,
+            min_deposit: env::storage_byte_cost() * 1024,
             price_per_point: PRICE_PER_POINT,
+
             // NOT DENOMINATOR 10e6
             cost_per_metric: PublicMetric {
                 bookmark_count: 1190000,
@@ -139,6 +157,9 @@ impl Contract {
                 reply_count: 2000000,
                 retweet_count: 1400000,
             },
+
+            royalty_manager,
+            royalty_balances: LookupMap::new(StorageKey::RoyaltyBalances),
         }
     }
 
@@ -169,15 +190,24 @@ impl Contract {
             "NOT OWNER"
         );
 
-        if env::attached_deposit().ge(&self.compute_cost(extra.public_metric.clone())) {
+        if request
+            .claimable_deposit
+            .ge(&self.compute_cost(extra.public_metric.clone()))
+        {
             let token = self.tokens.internal_mint_with_refund(
                 token_id.clone(),
                 receiver_id.clone(),
-                Some(token_metadata),
+                Some(token_metadata.clone()),
                 Some(receiver_id),
             );
-            request.claimable_deposit =
-                env::attached_deposit() - (&self.compute_cost(extra.public_metric.clone()));
+            let refund_amount =
+                request.claimable_deposit - (&self.compute_cost(extra.public_metric.clone()));
+            let value = request.claimable_deposit
+                - &self.min_deposit
+                - &refund_amount
+                - (env::used_gas().0 as u128);
+            self.royalty_operation(extra.author_id, value * 8 / 10, RoyaltyOperation::Increase);
+            request.claimable_deposit = refund_amount;
             self.tweet_requests.insert(&token.token_id, &request);
             self.claim_funds(token_id, request, MintRequestStatus::IsFulfilled);
             return token;
@@ -185,11 +215,11 @@ impl Contract {
             // penalize user by decreasing Claimable Balance
             request.claimable_deposit = request.claimable_deposit * 9 / 10;
             self.tweet_requests.insert(&token_id, &request);
-            self.claim_funds(token_id, request, MintRequestStatus::Cancelled);
+            self.claim_funds(token_id, request.clone(), MintRequestStatus::Cancelled);
             env::panic_str(&format!(
-                "Minimum deposit Not met of {}, you attached {}",
+                "Minimum deposit Not met of {}, you attached {} while minting.",
                 self.compute_cost(extra.public_metric),
-                env::attached_deposit()
+                request.claimable_deposit
             ))
         }
     }
@@ -279,6 +309,66 @@ impl Contract {
         }
     }
 
+    #[private]
+    fn royalty_operation(
+        &mut self,
+        author_id: String,
+        amount: Balance,
+        operation: RoyaltyOperation,
+    ) {
+        if operation == RoyaltyOperation::Erase {
+            self.royalty_balances.insert(&author_id, &0);
+        } else if self.royalty_balances.contains_key(&author_id) {
+            let balance = self.royalty_balances.get(&author_id).unwrap();
+            match operation {
+                RoyaltyOperation::Decrease => {
+                    if balance < amount {
+                        env::panic_str(
+                            format!(
+                                "Amount Request {} is greater than royalty {}",
+                                amount, balance
+                            )
+                            .as_str(),
+                        )
+                    } else {
+                        self.royalty_balances
+                            .insert(&author_id, &(balance - amount));
+                    }
+                }
+                RoyaltyOperation::Increase => {
+                    self.royalty_balances
+                        .insert(&author_id, &(balance + amount));
+                }
+                RoyaltyOperation::Erase => {}
+            }
+        } else {
+            if RoyaltyOperation::Increase == operation {
+                self.royalty_balances.insert(&author_id, &amount);
+            } else {
+                env::panic_str(format!("Invalid operation {} has no royalty", author_id).as_str())
+            }
+        }
+    }
+
+    pub fn royalty_withdraw(&mut self, amount: Balance) {
+        require!(
+            env::predecessor_account_id() == self.royalty_manager,
+            "Insufficient Access"
+        );
+        let storage_cost = u128::from(env::storage_usage()) * env::storage_byte_cost();
+        if storage_cost - env::account_balance() >= amount {
+            Promise::new(self.royalty_manager.clone()).transfer(amount);
+        } else {
+            env::panic_str(
+                format!(
+                    "Invalid Amount: Claimable Account Balance: {}",
+                    storage_cost - env::account_balance()
+                )
+                .as_str(),
+            )
+        }
+    }
+
     pub fn get_lock_time(&self) -> u64 {
         self.lock_time
     }
@@ -331,16 +421,18 @@ impl Contract {
 
     pub fn compute_cost(&mut self, public_metrics: PublicMetric) -> u128 {
         let cost_per_metric = self.cost_per_metric.clone();
-        let cost = self.price_per_point
-            * (cost_per_metric.bookmark_count * public_metrics.bookmark_count
-                + cost_per_metric.impression_count * public_metrics.impression_count
-                + cost_per_metric.like_count * public_metrics.like_count
-                + cost_per_metric.quote_count * public_metrics.quote_count
-                + cost_per_metric.reply_count * public_metrics.reply_count
-                + cost_per_metric.retweet_count * public_metrics.retweet_count)
-            / 1000000;
+        let cost = self.min_deposit
+            + (self.price_per_point
+                * (cost_per_metric.bookmark_count * public_metrics.bookmark_count
+                    + cost_per_metric.impression_count * public_metrics.impression_count
+                    + cost_per_metric.like_count * public_metrics.like_count
+                    + cost_per_metric.quote_count * public_metrics.quote_count
+                    + cost_per_metric.reply_count * public_metrics.reply_count
+                    + cost_per_metric.retweet_count * public_metrics.retweet_count)
+                / 1000000);
         if cost.lt(&self.min_deposit) {
-            return self.min_deposit;
+            println!("{}", &self.min_deposit);
+            return self.min_deposit * 5;
         }
         cost
     }
@@ -374,7 +466,7 @@ mod tests {
     fn get_test_public_metrics() -> PublicMetric {
         PublicMetric {
             impression_count: 0,
-            bookmark_count: 0,
+            bookmark_count: 1,
             quote_count: 0,
             like_count: 0,
             reply_count: 0,
@@ -393,7 +485,7 @@ mod tests {
 
     fn sample_token_metadata() -> TokenMetadata {
         let json_string = r#"
-        {"minted_to":"eclipse_interop.testnet","public_metric":{"bookmark_count":1,"impression_count":0,"like_count":0,"quote_count":0,"reply_count":0,"retweet_count":0}}
+        {"minted_to":"eclipse_interop.testnet","public_metric":{"bookmark_count":1,"impression_count":0,"like_count":0,"quote_count":0,"reply_count":0,"retweet_count":0},"author_id":"1234"}
         "#;
 
         TokenMetadata {
@@ -416,7 +508,7 @@ mod tests {
     fn test_new() {
         let mut context = get_context(accounts(1));
         testing_env!(context.build());
-        let contract = Contract::new_default_meta(accounts(1).into());
+        let contract = Contract::new_default_meta(accounts(1).into(), accounts(5));
         testing_env!(context.is_view(true).build());
         assert_eq!(contract.nft_token("1".to_string()), None);
     }
@@ -433,7 +525,7 @@ mod tests {
     fn test_mint() {
         let mut context = get_context(accounts(0));
         testing_env!(context.build());
-        let mut contract = Contract::new_default_meta(accounts(0).into());
+        let mut contract = Contract::new_default_meta(accounts(0).into(), accounts(5));
 
         testing_env!(context
             .storage_usage(env::storage_usage())
@@ -459,7 +551,7 @@ mod tests {
     fn test_get_lock_time() {
         let mut context = get_context(accounts(0));
         testing_env!(context.build());
-        let contract = Contract::new_default_meta(accounts(0).into());
+        let contract = Contract::new_default_meta(accounts(0).into(), accounts(5));
 
         testing_env!(context
             .storage_usage(env::storage_usage())
@@ -474,7 +566,7 @@ mod tests {
     fn test_is_valid_request() {
         let mut context = get_context(accounts(0));
         testing_env!(context.build());
-        let contract = Contract::new_default_meta(accounts(0).into());
+        let contract = Contract::new_default_meta(accounts(0).into(), accounts(5));
 
         testing_env!(context
             .storage_usage(env::storage_usage())
@@ -493,7 +585,7 @@ mod tests {
     fn test_is_invalid_request() {
         let mut context = get_context(accounts(0));
         testing_env!(context.build());
-        let mut contract = Contract::new_default_meta(accounts(0).into());
+        let mut contract = Contract::new_default_meta(accounts(0).into(), accounts(5));
 
         let current_time = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
@@ -525,7 +617,7 @@ mod tests {
 
         let mut context = get_context(accounts(0));
         testing_env!(context.build());
-        let mut contract = Contract::new_default_meta(accounts(0).into());
+        let mut contract = Contract::new_default_meta(accounts(0).into(), accounts(5));
         testing_env!(context
             .storage_usage(env::storage_usage())
             .attached_deposit(contract.compute_cost(get_test_public_metrics()))
@@ -567,7 +659,7 @@ mod tests {
 
         let mut context = get_context(accounts(0));
         testing_env!(context.build());
-        let mut contract = Contract::new_default_meta(accounts(0).into());
+        let mut contract = Contract::new_default_meta(accounts(0).into(), accounts(5));
         testing_env!(context
             .storage_usage(env::storage_usage())
             .attached_deposit(contract.compute_cost(get_test_public_metrics()))
@@ -611,7 +703,7 @@ mod tests {
     fn test_update_lock_time_other_user() {
         let mut context = get_context(accounts(0));
         testing_env!(context.build());
-        let mut contract = Contract::new_default_meta(accounts(0).into());
+        let mut contract = Contract::new_default_meta(accounts(0).into(), accounts(5));
 
         testing_env!(context
             .storage_usage(env::storage_usage())
@@ -625,7 +717,7 @@ mod tests {
     fn test_update_lock_time() {
         let mut context = get_context(accounts(0));
         testing_env!(context.build());
-        let mut contract = Contract::new_default_meta(accounts(0).into());
+        let mut contract = Contract::new_default_meta(accounts(0).into(), accounts(5));
 
         testing_env!(context
             .storage_usage(env::storage_usage())
@@ -640,7 +732,7 @@ mod tests {
     fn test_transfer() {
         let mut context = get_context(accounts(0));
         testing_env!(context.build());
-        let mut contract = Contract::new_default_meta(accounts(0).into());
+        let mut contract = Contract::new_default_meta(accounts(0).into(), accounts(5));
 
         testing_env!(context
             .storage_usage(env::storage_usage())
@@ -683,7 +775,7 @@ mod tests {
     fn test_approve() {
         let mut context = get_context(accounts(0));
         testing_env!(context.build());
-        let mut contract = Contract::new_default_meta(accounts(0).into());
+        let mut contract = Contract::new_default_meta(accounts(0).into(), accounts(5));
 
         testing_env!(context
             .storage_usage(env::storage_usage())
@@ -720,7 +812,7 @@ mod tests {
     fn test_revoke() {
         let mut context = get_context(accounts(0));
         testing_env!(context.build());
-        let mut contract = Contract::new_default_meta(accounts(0).into());
+        let mut contract = Contract::new_default_meta(accounts(0).into(), accounts(5));
 
         testing_env!(context
             .storage_usage(env::storage_usage())
@@ -764,7 +856,7 @@ mod tests {
     fn test_revoke_all() {
         let mut context = get_context(accounts(0));
         testing_env!(context.build());
-        let mut contract = Contract::new_default_meta(accounts(0).into());
+        let mut contract = Contract::new_default_meta(accounts(0).into(), accounts(5));
 
         testing_env!(context
             .storage_usage(env::storage_usage())
