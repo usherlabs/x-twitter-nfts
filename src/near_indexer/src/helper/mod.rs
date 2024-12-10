@@ -40,17 +40,17 @@ pub struct AssetMetadata {
 /// The tweet structure gotten from the API
 ///
 /// Containing the details about a tweet
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct TweetResponse {
     /// data
     pub data: Option<Vec<TweetData>>,
     /// users info
     pub includes: Includes,
 
-    errors: Option<Vec<ErrorObject>>,
+    pub errors: Option<Vec<ErrorObject>>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ErrorObject {
     value: String,
     detail: String,
@@ -61,7 +61,7 @@ pub struct ErrorObject {
 /// The data substructure of a tweet
 ///
 /// Containing the details about a tweet
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct TweetData {
     /// date created
     pub created_at: String,
@@ -80,7 +80,7 @@ pub struct TweetData {
 /// The PublicMetrics substructure of a tweet
 ///
 /// Containing the details about a tweet
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct PublicMetrics {
     /// pub retweet_count
     pub retweet_count: u32,
@@ -99,7 +99,7 @@ pub struct PublicMetrics {
 /// The Includes substructure of a metadata NFT
 ///
 /// Containing the details about a metadata NFT
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Includes {
     /// users
     pub users: Vec<User>,
@@ -108,7 +108,7 @@ pub struct Includes {
 /// The User substructure of a tweet
 ///
 /// Containing the details about a tweet
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct User {
     /// pub id: String,
     pub id: String,
@@ -301,19 +301,19 @@ pub struct Tab {
     pub tab: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct MintRequestData {
     pub notify: String,
     pub tweet_id: String,
     pub image_url: String,
 }
 #[allow(non_snake_case)]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct IpfsData {
     pub IpfsHash: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct NftData {
     #[allow(dead_code)]
     token_id: String,

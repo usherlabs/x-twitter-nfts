@@ -24,6 +24,9 @@ use std::{env, time::Duration};
 use tokio::task::spawn_blocking;
 use tracing::{debug, error, info};
 
+
+
+
 #[async_std::main]
 async fn main() {
     // Load .env

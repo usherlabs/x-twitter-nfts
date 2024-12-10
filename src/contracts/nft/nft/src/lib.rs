@@ -419,7 +419,7 @@ impl Contract {
         self.cost_per_metric = cost_per_metric;
     }
 
-    pub fn compute_cost(&mut self, public_metrics: PublicMetric) -> u128 {
+    pub fn compute_cost(&self, public_metrics: PublicMetric) -> u128 {
         let cost_per_metric = self.cost_per_metric.clone();
         let cost = self.min_deposit
             + (self.price_per_point
@@ -431,7 +431,6 @@ impl Contract {
                     + cost_per_metric.retweet_count * public_metrics.retweet_count)
                 / 1000000);
         if cost.lt(&self.min_deposit) {
-            println!("{}", &self.min_deposit);
             return self.min_deposit * 5;
         }
         cost

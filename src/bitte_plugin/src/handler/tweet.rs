@@ -1,11 +1,17 @@
-use std::env;
+use std::{env, ops::Index, str::FromStr};
 
+use indexer::helper::TweetResponse;
+use near_client::{
+    client::NearClient,
+    prelude::{AccountId, Finality},
+};
 use reqwest::{
     multipart::{Form, Part},
     Client,
 };
 use rocket::serde::json::{json, Json, Value};
 use tracing::debug;
+use url::Url;
 
 use crate::{handler::IpfsData, helper, models::response::NetworkResponse};
 
@@ -38,14 +44,41 @@ pub async fn mint_tweet_request(tweet_id: Option<String>) -> NetworkResponse {
         }));
     }
 
-    let description = get_tweet_content(&tweet_id).await;
+    let result = get_tweet_content(&tweet_id).await;
 
-    if description.is_err() {
+    let near_client = NearClient::new(
+        Url::from_str(
+            &env::var("NEAR_RPC").unwrap_or(String::from("https://rpc.testnet.near.org")),
+        )
+        .unwrap(),
+    )
+    .unwrap();
+
+    if result.is_err() {
         return NetworkResponse::BadRequest(json!({
-            "error": format!("failed to retrieve tweet Description : {}",description.err().expect("Failed to get post image"))
+            "error": format!("failed to retrieve tweet Description : {}",result.err().expect("Failed to get post image"))
         }));
     }
-    let description = description.unwrap();
+
+    let (description, public_metric) = result.unwrap();
+
+    let computed_cost = near_client
+        .view::<u128>(
+            &AccountId::from_str(
+                &env::var("NEAR_CONTRACT_ADDRESS")
+                    .unwrap_or("x-bitte-nft.testnet".to_string())
+                    .to_owned(),
+            )
+            .unwrap(),
+            Finality::Final,
+            "compute_cost",
+            Some(json!({
+                "public_metrics": public_metric
+            })),
+        )
+        .await
+        .unwrap()
+        .data();
 
     debug!("description: {}", &description);
     let image = helper::create_twitter_post_image_from_id(_tweet_id.unwrap()).await;
@@ -104,11 +137,16 @@ pub async fn mint_tweet_request(tweet_id: Option<String>) -> NetworkResponse {
         response.unwrap().IpfsHash
     );
 
-    debug!("image_url: {}", &image_url);
+    debug!(
+        "image_url: {} \ncomputed_cost:{}",
+        &image_url,
+        &(computed_cost * 12 / 10).to_string()
+    );
 
     NetworkResponse::StatusOk(json!({
         "description": description,
-        "imageURL": image_url
+        "imageURL": image_url,
+        "computed_cost": (computed_cost*12/10).to_string(),
     }))
 }
 
@@ -123,12 +161,12 @@ pub async fn mint_tweet_request(tweet_id: Option<String>) -> NetworkResponse {
 /// A `Result` containing the tweet text as a `String`, or an error if the request fails.
 async fn get_tweet_content(
     tweet_id: &str,
-) -> Result<String, Box<dyn std::error::Error + Sync + Send>> {
+) -> Result<(String, Value), Box<dyn std::error::Error + Sync + Send>> {
     // Create a new HTTP client
     let client = Client::new();
 
     // Construct the API URL with the tweet ID
-    let url = format!("https://api.x.com/2/tweets?ids={}", tweet_id);
+    let url = format!("https://api.x.com/2/tweets?ids={}&&tweet.fields=created_at,public_metrics&expansions=author_id&user.fields=created_at", tweet_id);
 
     // Send GET request to the API
     let response = client
@@ -144,10 +182,18 @@ async fn get_tweet_content(
         .await?;
 
     // Parse the JSON response
-    let json: Value = response.json().await?;
+    let json: TweetResponse = response.json().await?;
 
+    if json.clone().errors.is_some() {
+        return Err(format!("Error Found while fetching tweet").into());
+    }
+
+    let tweet_data = json.data.unwrap();
     // Extract and return the tweet text
-    Ok(json["data"][0]["text"].as_str().unwrap_or("").to_string())
+    Ok((
+        tweet_data.index(0).text.clone(),
+        serde_json::to_value(tweet_data.index(0).public_metrics.clone()).unwrap(),
+    ))
 }
 
 /// Cleans up image links by converting IPFS or Arweave URLs to their hash-only formats
@@ -187,14 +233,17 @@ fn cleanup_image_link(image_url: &str) -> String {
     }
 }
 
-#[get("/tweet-contract-call?<tweet_id>&<image_url>&<notify>")]
+#[get("/tweet-contract-call?<tweet_id>&<image_url>&<notify>&<computed_cost>")]
 pub async fn tweet_contract_call(
     tweet_id: String,
     image_url: String,
+    computed_cost: String,
     notify: Option<String>,
 ) -> Json<Value> {
     // Get the NEAR contract address from environment variable
-    let contract_id = env::var("NEAR_CONTRACT_ADDRESS").unwrap_or(String::from("xlassixx.near"));
+    let contract_id = env::var("NEAR_CONTRACT_ADDRESS")
+        .unwrap_or(String::from("xlassixx.near"))
+        .to_owned();
 
     // Default value for notify if not provided
     let notify = notify.unwrap_or(String::from(""));
@@ -212,9 +261,9 @@ pub async fn tweet_contract_call(
                     "image_url": cleanup_image_link(&image_url),
                     "notify": notify,
                 },
-                "deposit":"5870000000000000000000",
+                "deposit":computed_cost,
                 "gas": "100000000000000",
-                "amount": "5870000000000000000000",
+                "amount": computed_cost,
                 "defaultGas" : "3000000000000000000",
                 },
                 ],

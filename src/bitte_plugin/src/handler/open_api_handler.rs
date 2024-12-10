@@ -55,6 +55,9 @@ pub fn open_api_specification() -> Json<Value> {
                             },
                             "description": {
                               "type": "string"
+                            },
+                            "computed_cost": {
+                              "type": "string"
                             }
                           }
                         }
@@ -119,6 +122,16 @@ pub fn open_api_specification() -> Json<Value> {
                     },
                     "example": "@ryan_soury",
                     "description": "The tweet account to notify when is reward/post is complete"
+                  },
+                  {
+                    "in": "query",
+                    "name": "computed_cost",
+                    "required": true,
+                    "schema": {
+                      "type": "string"
+                    },
+                    "example": "680000000000000000000",
+                    "description": "The cost/amount of deposit required for the mint"
                   }
                 ],
                 "responses": {
