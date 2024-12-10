@@ -30,7 +30,7 @@
   - `microsoft-edge`
 
 
-**Install Any of your preferred chrome engine or Binaries**: You can usually install these using your system’s package manager. For example:
+**Install Any of your preferred chrome engine or Binaries**: You can usually install these using your system’s package manager. For sample:
 
   - **Debian/Ubuntu**:
 
@@ -59,9 +59,9 @@
 ## To run
 
 - create environment files
-  Copy `.env.example` to `.env.local` an and fill in the necessary values:
+  Copy `.env.sample` to `.env.local` an and fill in the necessary values:
     ```
-    cp .env.example .env.local
+    cp .env.sample .env.local
     nano .env.local
     echo "BITTE_CONFIG=''" > .env
     ```

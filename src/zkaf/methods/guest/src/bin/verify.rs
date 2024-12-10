@@ -4,10 +4,10 @@ use std::io::Read;
 use alloy_sol_types::SolValue;
 use risc0_zkvm::guest::env;
 
+use near_contract_standards::non_fungible_token::metadata::TokenMetadata;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use verity_verifier::verify_proof;
-use near_contract_standards::non_fungible_token::metadata::TokenMetadata;
 
 /// Containing the details needed for verification of a proof
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -128,8 +128,18 @@ pub fn generate_tweet_nft_payload(
         title: Some(tweet_data.id.clone()), // ex. "Arch Nemesis: Mail Carrier" or "Parcel #5055"
         description: Some(tweet_data.text.clone()), // free-form description
         extra: Some(
-            json!({"public_metric": public_metric, "minted_to":meta_data.owner_account_id.clone() })
-                .to_string(),
+            json!({
+               "public_metric": public_metric,
+               "minted_to":meta_data.owner_account_id.clone(),
+               "author_id":tweet_data.author_id.clone(),
+               "user": (tweet.includes.users.get(0).unwrap_or(&User{
+                name: "".to_string(),
+                id:"".to_string(),
+                username: Some("".to_string()),
+                created_at:"".to_string()
+                })).username
+            })
+            .to_string(),
         ), // anything extra the NFT wants to store on-chain. Can be stringified JSON.
         media: Some(meta_data.image_url), // URL to associated media, preferably to decentralized, content-addressed storage
         media_hash: None, // Base64-encoded sha256 hash of content referenced by the `media` field. Required if `media` is included.

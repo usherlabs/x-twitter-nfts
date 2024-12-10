@@ -16,3 +16,13 @@ struct PluginInfo {
 struct IpfsData {
     IpfsHash: String,
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct PublicMetric {
+    bookmark_count: u128,
+    impression_count: u128,
+    like_count: u128,
+    quote_count: u128,
+    reply_count: u128,
+    retweet_count: u128,
+}

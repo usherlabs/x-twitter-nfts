@@ -1,5 +1,5 @@
 export NEAR_VERIFIER_CONTRACT_ACCOUNT=local-verifier.testnet
-export NEAR_NFT_CONTRACT=local-nft.testnet
+export NEAR_NFT_CONTRACT=x-bitte-nft.testnet
 export EVM_VERIFIER_ADDRESS="0xa82219472Be3faC01D0b20F043a5B03AeA64FB25"
 
 

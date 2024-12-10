@@ -6,7 +6,6 @@ This contract, along with the ZK circuit can be found in the `zkaf` folder, and 
 - `contracts` : This folder contains the solidity contracts which are responsible for on-chain verification.
 - `methods` : This folder contains the ZK circuit.
 
-
 ### Testing the contract
 
 ```jsx
@@ -33,7 +32,7 @@ library ImageID {
 ### Deploying the contract
 
 ```jsx
-export ETH_WALLET_PRIVATE_KEY="" 
+export ETH_WALLET_PRIVATE_KEY=""
 forge script script/Deploy.s.sol --rpc-url https://aurora-testnet.drpc.org --broadcast --legacy
 ```
 
@@ -54,14 +53,14 @@ export NEAR_RPC_URL="https://rpc.testnet.near.org"
 export NEAR_SIGNER_ACCOUNT_ID="local-verifier.testnet"
 export NEAR_ACCOUNT_SECRET_KEY=""
 export NEAR_VERIFIER_CONTRACT_ACCOUNT_ID="local-verifier.testnet"
-export NEAR_NFT_CONTRACT_ACCOUNT_ID="local-nft.testnet"
+export NEAR_NFT_CONTRACT_ACCOUNT_ID="x-bitte-nft.testnet"
 
 # BONSAI parameters
 export BONSAI_API_KEY="" # provided with your api key
-export BONSAI_API_URL="https://api.bonsai.xyz/" 
+export BONSAI_API_URL="https://api.bonsai.xyz/"
 
 # FORGE parameters
-export ETH_WALLET_PRIVATE_KEY= 
+export ETH_WALLET_PRIVATE_KEY=
 ```
 
 `env.sample`

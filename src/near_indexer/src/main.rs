@@ -12,6 +12,7 @@ use methods::VERIFY_ELF;
 use near::{extract_metadata_from_request, verify_near_proof};
 use near_client::client::NearClient;
 use near_client::prelude::{AccountId, Finality};
+use openssl::sha::sha256;
 use proof::{generate_groth16_proof, get_proof};
 use reqwest::Url;
 use sea_orm::ActiveValue::Set;
@@ -32,7 +33,7 @@ async fn main() {
     //Load Essential for env Variables
     env::var("TWEET_BEARER").expect("TWEET_BEARER must be set");
 
-    let nft_contract_id = env::var("NFT_CONTRACT_ID").unwrap_or("local-nft.testnet".to_owned());
+    let nft_contract_id = env::var("NFT_CONTRACT_ID").unwrap_or("x-bitte-nft.testnet".to_owned());
     let db = Database::connect(env::var("DATABASE_URL").expect("DATABASE_URL must be set"))
         .await
         .unwrap();
@@ -101,7 +102,7 @@ pub async fn process_near_transaction(
     client: &NearClient,
     notifier: &twitter::OathTweeterHandler,
 ) -> Result<bool, DbErr> {
-    let nft_contract_id = env::var("NFT_CONTRACT_ID").unwrap_or("local-nft.testnet".to_owned());
+    let nft_contract_id = env::var("NFT_CONTRACT_ID").unwrap_or("x-bitte-nft.testnet".to_owned());
     let nft_contract_id = AccountId::from_str(&nft_contract_id).unwrap();
 
     let pk = transaction.id.parse::<i32>().unwrap();
@@ -227,7 +228,19 @@ pub async fn process_near_transaction(
                     );
 
                     // perform verification near
-                    // mint NFT if near verification is successfull
+                    // mint NFT if near verification is successful
+
+                    let x = serde_json::to_string(&extract_metadata_from_request(
+                        tweet_res_data.clone(),
+                        meta_data.clone(),
+                    ))
+                    .unwrap();
+                    assert_eq!(
+                        hex::encode(sha256(x.as_bytes())),
+                        hex::encode(journal_output.clone()),
+                        "invalid token_metadata"
+                    );
+
                     let near_tx_response = verify_near_proof(
                         journal_output,
                         extract_metadata_from_request(tweet_res_data, meta_data),

@@ -1,4 +1,4 @@
-use super::{AssetMetadata, TweetResponse};
+use super::{AssetMetadata, TweetResponse, User};
 use near_contract_standards::non_fungible_token::metadata::TokenMetadata;
 use near_jsonrpc_client::methods::query::RpcQueryRequest;
 use near_jsonrpc_client::methods::tx::RpcTransactionResponse;
@@ -123,8 +123,18 @@ pub fn extract_metadata_from_request(
         title: Some(tweet_data.id.clone()), // ex. "Arch Nemesis: Mail Carrier" or "Parcel #5055"
         description: Some(tweet_data.text.clone()), // free-form description
         extra: Some(
-            json!({"public_metric": public_metric, "minted_to":meta_data.owner_account_id.clone() })
-                .to_string(),
+            json!({
+                "public_metric": public_metric,
+                "minted_to":meta_data.owner_account_id.clone(),
+                "author_id":tweet_data.author_id.clone(),
+                "user": (tweet.includes.users.get(0).unwrap_or(&User{
+                 name: "".to_string(),
+                 id:"".to_string(),
+                 username: Some("".to_string()),
+                 created_at:"".to_string()
+                 })).username
+            })
+            .to_string(),
         ), // anything extra the NFT wants to store on-chain. Can be stringified JSON.
         media: Some(meta_data.image_url), // URL to associated media, preferably to decentralized, content-addressed storage
         media_hash: None, // Base64-encoded sha256 hash of content referenced by the `media` field. Required if `media` is included.
@@ -142,7 +152,11 @@ pub fn extract_metadata_from_request(
 
 #[cfg(test)]
 mod tests {
-    use crate::helper::{aurora::TxSender, proof::{generate_groth16_proof, get_proof}, ZkInputParam};
+    use crate::helper::{
+        aurora::TxSender,
+        proof::{generate_groth16_proof, get_proof},
+        ZkInputParam,
+    };
 
     use super::*;
     use dotenv::dotenv;
