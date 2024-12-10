@@ -54,6 +54,7 @@ pub struct NFtMetaDataExtra {
 enum MintRequestStatus {
     Created,
     Cancelled,
+    Unsuccessful,
     IsFulfilled,
     RoyaltyClaimed,
 }
@@ -289,7 +290,8 @@ impl Contract {
         self.tweet_requests.get(&tweet_id)
     }
 
-    fn is_tweet_available(&self, tweet_id: String) -> bool {
+    #[private]
+    fn is_tweet_available(&mut self, tweet_id: String) -> bool {
         let entry = self.tweet_requests.get(&tweet_id);
 
         if self
@@ -303,7 +305,15 @@ impl Contract {
         //replace env::block_timestamp with
         match entry {
             Some(mint_request) => {
-                env::block_timestamp_ms() - mint_request.lock_time > self.get_lock_time()
+                if env::block_timestamp_ms() - mint_request.lock_time > self.get_lock_time() {
+                    self.claim_funds(
+                        tweet_id.clone(),
+                        mint_request,
+                        MintRequestStatus::Unsuccessful,
+                    );
+                    return true;
+                }
+                return false;
             }
             None => true,
         }
@@ -380,8 +390,8 @@ impl Contract {
         mint_request: MintRequestData,
         status: MintRequestStatus,
     ) {
-        Promise::new(mint_request.minter.clone()).transfer(mint_request.claimable_deposit);
         if status == MintRequestStatus::IsFulfilled {
+            Promise::new(mint_request.minter.clone()).transfer(mint_request.claimable_deposit);
             self.tweet_requests.insert(
                 &tweet_id,
                 &MintRequestData {
@@ -391,12 +401,25 @@ impl Contract {
                     status: MintRequestStatus::IsFulfilled,
                 },
             );
-        } else if status == MintRequestStatus::Cancelled {
+        } else if status == MintRequestStatus::Cancelled
+            || status == MintRequestStatus::Unsuccessful
+        {
+            Promise::new(mint_request.minter.clone()).transfer(
+                if status == MintRequestStatus::Cancelled {
+                    mint_request.claimable_deposit * 9 / 10
+                } else {
+                    mint_request.claimable_deposit
+                },
+            );
             self.tweet_requests.remove(&tweet_id);
             let event = CancelMintRequest {
                 tweet_id: tweet_id, // You might want to generate a unique ID here
                 account: env::predecessor_account_id(),
-                withdraw: mint_request.claimable_deposit * 9 / 10,
+                withdraw: if status == MintRequestStatus::Cancelled {
+                    mint_request.claimable_deposit * 9 / 10
+                } else {
+                    mint_request.claimable_deposit
+                },
             };
             event.emit();
         }
