@@ -275,12 +275,17 @@ impl Contract {
         entry
     }
 
+    #[payable]
     pub fn cancel_mint_request(&mut self, tweet_id: String) {
         let tweet_request = self.tweet_requests.get(&tweet_id);
         if let Some(mint_request) = tweet_request {
             require!(
                 env::block_timestamp_ms() - mint_request.lock_time >= self.get_lock_time(),
                 format!("CANT cancel until {}ms has PASSED", self.get_lock_time())
+            );
+            require!(
+                mint_request.minter.eq(&env::predecessor_account_id()),
+                "You cant cancel A mint intent you didn't create"
             );
             self.claim_funds(tweet_id, mint_request, MintRequestStatus::Cancelled);
         }

@@ -270,3 +270,29 @@ pub async fn tweet_contract_call(
             }
     ))
 }
+
+
+#[get("/tweet-cancel-call?<tweet_id>")]
+pub async fn tweet_contract_cancel_call(tweet_id: String) -> Json<Value> {
+    // Get the NEAR contract address from environment variable
+    let contract_id = env::var("NEAR_CONTRACT_ADDRESS")
+        .unwrap_or(String::from("xlassixx.near"))
+        .to_owned();
+
+    // Construct the JSON payload for the smart contract call
+    Json(json!(
+            {
+            "receiverId":  contract_id,
+            "action_kind":"FunctionCall",
+            "functionCalls": [
+                {
+                "methodName": "cancel_mint_request",
+                "args": {
+                    "tweet_id": tweet_id,
+                },
+                "gas": "100000000000000",
+                },
+                ],
+            }
+    ))
+}

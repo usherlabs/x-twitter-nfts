@@ -9,7 +9,7 @@ use dotenvy::dotenv;
 use handler::{
     catcher_handler::*,
     open_api_handler::open_api_specification,
-    tweet::{mint_tweet_request, tweet_contract_call},
+    tweet::{mint_tweet_request, tweet_contract_call, tweet_contract_cancel_call},
 };
 
 use std::{env, path::Path};
@@ -51,7 +51,14 @@ fn rocket() -> _ {
         // Mount the OpenAPI specification route at /.well-known
         .mount("/.well-known", routes![open_api_specification])
         // Mount API routes
-        .mount("/api", routes![mint_tweet_request, tweet_contract_call])
+        .mount(
+            "/api",
+            routes![
+                mint_tweet_request,
+                tweet_contract_call,
+                tweet_contract_cancel_call
+            ],
+        )
         // Register error catchers
         .register("/", catchers![unprocessable_entity_catcher, not_found])
 }
