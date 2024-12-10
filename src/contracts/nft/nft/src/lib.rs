@@ -396,7 +396,7 @@ impl Contract {
             let event = CancelMintRequest {
                 tweet_id: tweet_id, // You might want to generate a unique ID here
                 account: env::predecessor_account_id(),
-                withdraw: mint_request.claimable_deposit,
+                withdraw: mint_request.claimable_deposit * 9 / 10,
             };
             event.emit();
         }
