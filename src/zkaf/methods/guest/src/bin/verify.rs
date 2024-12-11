@@ -133,10 +133,10 @@ pub fn generate_tweet_nft_payload(
                "minted_to":meta_data.owner_account_id.clone(),
                "author_id":tweet_data.author_id.clone(),
                "user": (tweet.includes.users.get(0).unwrap_or(&User{
-                name: "".to_string(),
-                id:"".to_string(),
-                username: Some("".to_string()),
-                created_at:"".to_string()
+                    name: "".to_string(),
+                    id:"".to_string(),
+                    username: Some("".to_string()),
+                    created_at:"".to_string()
                 })).username
             })
             .to_string(),

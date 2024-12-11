@@ -146,6 +146,8 @@ impl Contract {
             metadata: LazyOption::new(StorageKey::Metadata, Some(&metadata)),
             tweet_requests: LookupMap::new(StorageKey::TweetRequests),
             lock_time: 30 * 60 * 1000,
+
+            // Min deposit is calculated dynamically based on storage cost.
             min_deposit: env::storage_byte_cost() * 1024,
             price_per_point: PRICE_PER_POINT,
 
@@ -182,6 +184,9 @@ impl Contract {
         let mut request = self
             .get_request(token_id.clone())
             .expect("Invalid: No mint Request Found");
+
+        // This token metadata is passed in from the verifier contract.
+        // Veriifer contract is responsible for verifying the input metadata matches the zkVerified metadata
         let extra: NFtMetaDataExtra =
             serde_json::from_str(&token_metadata.clone().extra.expect("nft extra must exit"))
                 .unwrap();
@@ -207,6 +212,11 @@ impl Contract {
                 - &self.min_deposit
                 - &refund_amount
                 - (env::used_gas().0 as u128);
+
+            // We're allocating 80% of the deposit to the author.
+            // 20% is used to cover the cost of the minting.
+            // 8 / 10 = 80 / 100
+            // The remaining 20% of the value remains in the contract.
             self.royalty_operation(extra.author_id, value * 8 / 10, RoyaltyOperation::Increase);
             request.claimable_deposit = refund_amount;
             self.tweet_requests.insert(&token.token_id, &request);
@@ -336,6 +346,9 @@ impl Contract {
         } else if self.royalty_balances.contains_key(&author_id) {
             let balance = self.royalty_balances.get(&author_id).unwrap();
             match operation {
+                // This is never called.
+                // It's added because Storage settings are immutable and cannote be changed.
+                // However, the logic of the contract can be upgraded.
                 RoyaltyOperation::Decrease => {
                     if balance < amount {
                         env::panic_str(
@@ -351,9 +364,11 @@ impl Contract {
                     }
                 }
                 RoyaltyOperation::Increase => {
+                    // We're simply adding a an amount in a balance map for authors by their X id
                     self.royalty_balances
                         .insert(&author_id, &(balance + amount));
                 }
+                // Once on-chain payouts are integrated, balances can be automatically erased on payout
                 RoyaltyOperation::Erase => {}
             }
         } else {
@@ -366,6 +381,7 @@ impl Contract {
     }
 
     pub fn royalty_withdraw(&mut self, amount: Balance) {
+        // Check ensures that the royalty manager does not need to be deployer/AccountID of the Contract.
         require!(
             env::predecessor_account_id() == self.royalty_manager,
             "Insufficient Access"
@@ -383,6 +399,8 @@ impl Contract {
             )
         }
     }
+
+    // TODO: Include a function to allow the existing royalty_manager to set a new royalty_manager
 
     pub fn get_lock_time(&self) -> u64 {
         self.lock_time
@@ -411,15 +429,16 @@ impl Contract {
         {
             Promise::new(mint_request.minter.clone()).transfer(
                 if status == MintRequestStatus::Cancelled {
-                    mint_request.claimable_deposit * 9 / 10
+                    mint_request.claimable_deposit * 9 / 10 // Transferring 90% of the origin deposit back to the minter.
                 } else {
-                    mint_request.claimable_deposit
+                    mint_request.claimable_deposit // Else if unsuccessful, transferring 100% of the origin deposit back to the minter.
                 },
             );
             self.tweet_requests.remove(&tweet_id);
             let event = CancelMintRequest {
                 tweet_id: tweet_id, // You might want to generate a unique ID here
                 account: env::predecessor_account_id(),
+                // TODO: Set the withdraw amount once, and re-use
                 withdraw: if status == MintRequestStatus::Cancelled {
                     mint_request.claimable_deposit * 9 / 10
                 } else {
@@ -447,6 +466,8 @@ impl Contract {
         self.cost_per_metric = cost_per_metric;
     }
 
+    // This function is called internally, and externally.
+    // External calls are used to determine the cost of minting an NFT.
     pub fn compute_cost(&self, public_metrics: PublicMetric) -> u128 {
         let cost_per_metric = self.cost_per_metric.clone();
         let cost = self.min_deposit
@@ -459,11 +480,14 @@ impl Contract {
                     + cost_per_metric.retweet_count * public_metrics.retweet_count)
                 / 1000000);
         if cost.lt(&self.min_deposit) {
+            // The 5x is a buffer that allows the UX to determine what minimum it should deposit at the time of intent submission.
+            // This prevents extremely early X posts that haven't accumulated any metrics from being rejected from minting.
             return self.min_deposit * 5;
         }
         cost
     }
 
+    // In Near, the Account that deploys the Contract has access to private functions on the deployed Contract.
     #[private]
     pub fn set_min_deposit(&mut self, min_deposit: Balance) {
         self.min_deposit = min_deposit;
