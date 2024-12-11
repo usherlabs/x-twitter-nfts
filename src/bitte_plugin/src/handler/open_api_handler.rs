@@ -322,11 +322,11 @@ pub fn open_api_specification() -> Json<Value> {
                     let mut bitte_config_path = PathBuf::from(current_dir);
                     bitte_config_path.push(".env");
                     let bitte_config = fs::read_to_string(bitte_config_path).unwrap();
-                // Split the contents into lines
-                let lines: Vec<&str> = bitte_config.split('\n').collect();
+                    // Split the contents into lines
+                    let lines: Vec<&str> = bitte_config.split('\n').collect();
 
-                // Collect lines starting with "BITTE_CONFIG"
-                let config_lines: Vec<String> = lines.iter()
+                    // Collect lines starting with "BITTE_CONFIG"
+                    let config_lines: Vec<String> = lines.iter()
                     .filter(|line| line.starts_with("BITTE_CONFIG"))
                     .map(|line| line.to_string())
                     .collect();
