@@ -17,14 +17,14 @@ alloy-primitives = { version = "0.6", default-features = false, features = [
 ] }
 alloy-sol-types = { version = "0.6" }
 risc0-zkvm = { version = "1.0", default-features = false, features = ['std'] }
-verity-verifier = { path = "./../verity/verifier", default-features = false, features = [
+verity-verifier = { git = "https://github.com/usherlabs/verity-dp", rev = "030110e32d1bccca5f2dd5108c6db1d6dc6694cd", version = "0.0.0", default-features = false, features = [
     "no-session",
 ] }
 sha256 = "1.5.0"
 hex = "0.4.3"
 ahash = "0.8.6"
 serde_json = "1.0.107"
-serde = { version = "1.0", features = ["derive", "std"] }
+serde = { version = "1.0.215", features = ["derive", "std"] }
 near-contract-standards = "5.5.0"
 
 [profile.release]

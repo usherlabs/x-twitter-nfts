@@ -1,0 +1,9 @@
+**/target/
+.git/
+.gitignore
+.vscode/
+*.rs.bk
+.idea/
+docs/
+src/zkaf/
+src/contracts

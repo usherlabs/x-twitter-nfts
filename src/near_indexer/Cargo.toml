@@ -1,5 +1,5 @@
 [package]
-name = "near-indexer"
+name = "indexer"
 version = "0.1.0"
 edition = "2021"
 publish = false
@@ -21,7 +21,7 @@ serde_json = "1.0.128"
 reqwest = { version = "0.12.4", features = ["json", "multipart"] }
 regex = "1.11.0"
 near-client = "0.7.2"
-verity-client = { git = "https://github.com/usherlabs/ccamp", rev = "be304188f69019fdb11ca305cb080749a468f9db" }
+verity-client = { git = "https://github.com/usherlabs/verity-dp.git", rev = "52a04916992a98a89feadbc5f6786be26821c725" }
 k256 = { version = "0.13", features = ["pem"] }
 rand = "0.8.5"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
@@ -30,7 +30,6 @@ near-jsonrpc-client = "0.9.0"
 near-crypto = "0.21.1"
 near-primitives = "0.21.1"
 sha256 = "1.5.0"
-near-chain-configs = "0.21.1"
 near-jsonrpc-primitives = "0.21.1"
 ethers = { version = "2.0" }
 risc0-build = { version = "1.0.1", features = ["docker"] }
@@ -42,8 +41,23 @@ risc0-zkvm = { version = "1.0.1", default-features = false, features = [
 risc0-zkp = { version = "1.0.1", default-features = false }
 serde = { version = "1.0.1", features = ["derive", "std"] }
 reqwest-oauth1 = "0.3.0"
-
+openssl = { version = "0.10.59", features = ["vendored"] }
+anyhow = "1.0.94"
 
 
 [workspace]
 members = [".", "migration"]
+
+
+[profile.release]
+opt-level = 3
+debug = false
+split-debuginfo = '...'  # Platform-specific.
+strip = "none"
+debug-assertions = false
+overflow-checks = false
+lto = false
+panic = 'unwind'
+incremental = false
+codegen-units = 16
+rpath = false

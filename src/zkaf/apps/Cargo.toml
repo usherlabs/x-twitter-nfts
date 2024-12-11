@@ -2,15 +2,6 @@
 name = "apps"
 version = { workspace = true }
 edition = { workspace = true }
-# build = "build.rs"
-
-[build-dependencies]
-risc0-build = { workspace = true }
-serde = "1.0"
-serde_json = "1.0.107"
-tlsn-core = { git = "https://github.com/tlsnotary/tlsn", commit = "7272d9623a8cf0e04f59b1656e873476a5f17a13" }
-p256 = { version = "0.13", features = ["ecdsa"] }
-verity-verifier = { workspace = true }
 
 
 [dependencies]
@@ -22,18 +13,21 @@ env_logger = { version = "0.10" }
 ethers = { workspace = true }
 log = { workspace = true }
 methods = { workspace = true }
-verity-verifier = { workspace = true }
 risc0-ethereum-contracts = { workspace = true }
 risc0-zkvm = { workspace = true, features = ["client"] }
 tokio = { version = "1.35", features = ["full"] }
-serde = "1.0"
+serde = "1.0.215"
 hex = { workspace = true }
-serde_json = "1.0.107"
+serde_json = "1.0.133"
 sha256 = "1.5.0"
 near-jsonrpc-client = "0.9.0"
 near-crypto = "0.21.1"
 near-primitives = "0.21.1"
 near-chain-configs = "0.21.1"
 near-jsonrpc-primitives = "0.21.1"
-near-contract-standards = "4.1.1"
+indexer = { path = "../../near_indexer" }
 dotenv = { workspace = true }
+near-contract-standards = "5.5.0"
+verity-verifier = { git = "https://github.com/usherlabs/verity-dp", rev = "030110e32d1bccca5f2dd5108c6db1d6dc6694cd", version = "0.0.0", default-features = false, features = [
+    "no-session",
+] }

@@ -1,6 +1,0 @@
-[submodule "src/verity"]
-	path = src/verity
-	url = git@github.com:usherlabs/verity.git
-[submodule "src/zkaf/methods/verity"]
-	path = src/zkaf/methods/verity
-	url = https://github.com/usherlabs/verity.git

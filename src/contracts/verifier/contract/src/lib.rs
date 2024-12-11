@@ -103,10 +103,9 @@ impl VerifierProxy {
                 // Parse only the last bit and use that to determine if this is true or false
                 let is_valid = bytes.get(31).unwrap().clone() == 1;
 
-                env::log_str("bytes: {bytes}");
                 // // if this proof is invalid then throw an error
                 if !is_valid {
-                    env::log_str("invalid Payload");
+                    env::panic_str(&format!("invalid Payload: {:?}", bytes));
                 }
 
                 #[derive(Deserialize)]

@@ -1,51 +1,47 @@
 # X (Twitter) NFTs
 
-1. Configure X (Twitter) API v2 Keys and Conversation/Tweet ID in `./src/twitter/.env`
-2. Start the Notary Server - *This server runs locally for testing purposes, but will be offered by Usher Labs' decentralised data security network for production environments.*
-   ```shell
-    ./start_notary_server.sh
-   ```
-3. Generate Twitter TLS Proof
-   ```shell
-    ./generate_twitter_proof.sh
-   ```
-   
-## ZKAF Near/Aurora Testing Guide
+1. clone [verity]() and run notary and prover. see [more](https://github.com/usherlabs/verity)
+2. configure and run [Bitte Plugin](./src/bitte_plugin/README.md)
+3. configure and run [orchestrator](./src/near_indexer/README.md)
 
-**TL;DR** 
+## Full Guide
+
+**TL;DR**
 
 To run the repo:
-1. Install dependencies  
-    1. First, [install Rust](https://www.rust-lang.org/tools/install) and [Foundry](https://book.getfoundry.sh/getting-started/installation), and then restart your terminal.
 
-    ```sh
-    # Install Rust
-    curl https://sh.rustup.rs -sSf | sh
-    # Install Foundry
-    curl -L https://foundry.paradigm.xyz | bash
-    ```
-    
-    2. Install the [necessary tool-chain to build the program](https://dev.risczero.com/api/zkvm/install)
-    3. Install Docker
+1. Install dependencies
 
-2. Navigate to the `zkaf` directory  
-    Moved into X (Twitter) NFTs — https://github.com/usherlabs/x-twitter-nfts/blob/f6c7fb0448408eda30ba0c0402014e94a5c0b868/src/zkaf
-    
+   1. First, [install Rust](https://www.rust-lang.org/tools/install) and [Foundry](https://book.getfoundry.sh/getting-started/installation), and then restart your terminal.
+
+   ```sh
+   # Install Rust
+   curl https://sh.rustup.rs -sSf | sh
+   # Install Foundry
+   curl -L https://foundry.paradigm.xyz | bash
+   ```
+
+   2. Install the [necessary tool-chain to build the program](https://dev.risczero.com/api/zkvm/install)
+   3. Install Docker
+
+2. Navigate to the `bitte_plugin` directory
 3. Create environment variables  
-    See all requires env variables: [.env.sample](https://github.com/usherlabs/x-twitter-nfts/blob/f6c7fb0448408eda30ba0c0402014e94a5c0b868/src/zkaf/.env.sample)
-    
-4. To deterministically build the ZK Circuit / Guest, Docker must be running — [Learn more](https://dev.risczero.com/terminology#deterministic-builds)
+   See all requires env variables: [.env.sample](./src/bitte_plugin/.env.sample)
 
-5. Run the publisher to generate and verify the proof.  
+4. Run the `bitte_plugin` [see](./src/bitte_plugin/README.md) 
 
-    ```shell
-    cargo run --bin publisher
-    ```
+6. Navigate to the `near_indexer` directory
+
+7. Create environment variables  
+   See all requires env variables: [.env.sample](./src/near_indexer/.env.sample)
+
+8. To set up Near indexer [see](./src/near_indexer/README.md)
+
+## ZKAF Near/Aurora Testing Guide
 
 ### Important Note
 
 Building the guest code generates a unique identifier called the `image_id` , Which is used as a unique identifier for the program. In order to ensure your build is determinisitic i.e to ensure that you build the same guest code as initially intended, make sure the `RISC0_USE_DOCKER` flag is set to true. This would ensure the proofs generated are compatible with the verifiers deployed.
-
 
 ```jsx
 # RISC0 Parameters
@@ -62,7 +58,7 @@ These contracts, along with the ZK circuit can be found in the `zkaf` folder. an
 
 ### Aurora
 
-The Aurora contract which handles the proof verification on-chain would be deployed first, then the contract address obtained upon deployment will be used as a parameter to deploy the near contract. Then all the variables used would be filled in here: https://github.com/usherlabs/twitter_notary/blob/f6c7fb0448408eda30ba0c0402014e94a5c0b868/src/zkaf/.env.sh.sample in order to generate and verify the proof on-chain. 
+The Aurora contract which handles the proof verification on-chain would be deployed first, then the contract address obtained upon deployment will be used as a parameter to deploy the near contract. Then all the variables used would be filled in here: https://github.com/usherlabs/twitter_notary/blob/f6c7fb0448408eda30ba0c0402014e94a5c0b868/src/zkaf/.env.sh.sample in order to generate and verify the proof on-chain.
 
 ### Testing the Aurora Contract
 
@@ -75,7 +71,7 @@ forge test
 #### Deploying the contract
 
 ```jsx
-export ETH_WALLET_PRIVATE_KEY="0x7a9dbc66cd59075f19a3d8d72e2bc04acceb7be9411c469e44dd310342a70eab" 
+export ETH_WALLET_PRIVATE_KEY="0x7a9dbc66cd59075f19a3d8d72e2bc04acceb7be9411c469e44dd310342a70eab"
 
 forge script script/Deploy.s.sol --rpc-url https://aurora-testnet.drpc.org --broadcast --legacy
 ```
@@ -88,17 +84,17 @@ The near contract is responsible for checking if a proof has been verified on th
 
 #### Prerequisites:
 
-- [ ]  A near testnet account (https://testnet.mynearwallet.com/)
-- [ ]  Install system dependency for rust-cli package
+- [ ] A near testnet account (https://testnet.mynearwallet.com/)
+- [ ] Install system dependency for rust-cli package
 
 ```bash
 sudo apt install -y pkg-config libusb-1.0-0-dev libftdi1-dev
 sudo apt-get install libudev-dev
 ```
 
-- [ ]  Near Rust CLI (https://docs.near.org/tools/near-cli-rs)
-- [ ]  Login to near on the CLI by running  `sh login.sh`
-- [ ]  Get some near testnet tokens at https://near-faucet.io/
+- [ ] Near Rust CLI (https://docs.near.org/tools/near-cli-rs)
+- [ ] Login to near on the CLI by running `sh login.sh`
+- [ ] Get some near testnet tokens at https://near-faucet.io/
 
 #### Deployment
 
@@ -150,10 +146,10 @@ export NEAR_CONTRACT_ACCOUNT_ID="usherzkaf.testnet" //replace with near account 
 
 # BONSAI parameters
 export BONSAI_API_KEY="" # provided with your api key
-export BONSAI_API_URL="https://api.bonsai.xyz/" 
+export BONSAI_API_URL="https://api.bonsai.xyz/"
 
 # FORGE parameters
-export ETH_WALLET_PRIVATE_KEY=  //EVM PK aith some aurora eth 
+export ETH_WALLET_PRIVATE_KEY=  //EVM PK aith some aurora eth
 ```
 
 #### `env.sample`
@@ -230,16 +226,16 @@ In this case, we attach the callback we had previously implemented and have it h
 
 ```rust
 pub struct TokenMetadata {
-    pub title: Option<String>, 
+    pub title: Option<String>,
     pub description: Option<String>,
-    pub media: Option<String>, 
+    pub media: Option<String>,
     pub media_hash: Option<Base64VecU8>,
     pub copies: Option<u64>,
     pub issued_at: Option<String>,
     pub expires_at: Option<String>,
     pub starts_at: Option<String>,
     pub updated_at: Option<String>,
-    pub extra: Option<String>, 
+    pub extra: Option<String>,
     pub reference: Option<String>,
     pub reference_hash: Option<Base64VecU8>,
 }
