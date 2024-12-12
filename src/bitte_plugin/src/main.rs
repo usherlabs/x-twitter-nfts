@@ -17,9 +17,9 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[launch]
 fn rocket() -> _ {
-    let path = Path::new(".env.local");
+    let path = Path::new("plugin.env");
     if path.exists() {
-        dotenvy::from_filename(".env.local").expect("Error occurred when loading .env.local");
+        dotenvy::from_filename("plugin.env").expect("Error occurred when loading plugin.env");
     } else {
         dotenv().expect("Error occurred when loading .env");
     }

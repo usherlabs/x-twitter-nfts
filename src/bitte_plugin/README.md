@@ -58,6 +58,8 @@
 
 ## To run
 
+TODO: The env files switched between .env and .env.local. We need to fix this.
+
 - create environment files
   Copy `.env.sample` to `.env.local` an and fill in the necessary values:
     ```

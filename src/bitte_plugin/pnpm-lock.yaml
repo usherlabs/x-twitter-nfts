@@ -12,8 +12,8 @@ importers:
         specifier: ^9.0.1
         version: 9.0.1
       make-agent:
-        specifier: ^0.0.17
-        version: 0.0.17(openapi-types@12.1.3)(typescript@5.6.3)
+        specifier: ^0.0.25
+        version: 0.0.25(@types/node@22.7.6)(openapi-types@12.1.3)(typescript@5.6.3)
 
 packages:
 
@@ -142,10 +142,6 @@ packages:
 
   '@types/node@22.7.6':
     resolution: {integrity: sha512-/d7Rnj0/ExXDMcioS78/kf1lMzYk4BZV8MZGTBKzTGZ6/406ukkbYlIsZmMPhcR5KlkunDHQLrtAVmSq7r+mSw==}
-
-  '@types/open@6.2.1':
-    resolution: {integrity: sha512-CzV16LToFaKwm1FfplVTF08E3pznw4fQNCQ87N+A1RU00zu/se7npvb6IC9db3/emnSThQ6R8qFKgrei2M4EYQ==}
-    deprecated: This is a stub types definition. open provides its own type definitions, so you do not need this installed.
 
   ajv-draft-04@1.0.0:
     resolution: {integrity: sha512-mv00Te6nmYbRp5DCwclxtt7yV/joXJPGS7nM+97GdxvuttCOfgI3K4U25zboyeX0O+myI8ERluxQe5wljMmVIw==}
@@ -407,8 +403,8 @@ packages:
   lru_map@0.4.1:
     resolution: {integrity: sha512-I+lBvqMMFfqaV8CJCISjI3wbjmwVu/VyOoU7+qtu9d7ioW5klMgsTTiUOUp+DJvfTTzKXoPbyC6YfgkNcyPSOg==}
 
-  make-agent@0.0.17:
-    resolution: {integrity: sha512-31htG27QQGtdL+NGNuWevHTjagDClGpCA2Gtzc3z0Y94a+IDCY76P8M58OMybPD70+VnmLdd8uflohW71RnVsA==}
+  make-agent@0.0.25:
+    resolution: {integrity: sha512-frfvuulLQLmnx6mOOMJ6y4xm2Gk3eDWDsjZJJZj9QkAcKxUL69mSSkm2QzJO5ayejvN7tYhIAOXrikGOcuWSUQ==}
     hasBin: true
     peerDependencies:
       typescript: ^5.0.0
@@ -858,10 +854,6 @@ snapshots:
     dependencies:
       undici-types: 6.19.8
 
-  '@types/open@6.2.1':
-    dependencies:
-      open: 10.1.0
-
   ajv-draft-04@1.0.0(ajv@8.17.1):
     optionalDependencies:
       ajv: 8.17.1
@@ -1118,11 +1110,9 @@ snapshots:
 
   lru_map@0.4.1: {}
 
-  make-agent@0.0.17(openapi-types@12.1.3)(typescript@5.6.3):
+  make-agent@0.0.25(@types/node@22.7.6)(openapi-types@12.1.3)(typescript@5.6.3):
     dependencies:
       '@apidevtools/swagger-parser': 10.1.0(openapi-types@12.1.3)
-      '@types/node': 22.7.6
-      '@types/open': 6.2.1
       borsh: 0.7.0
       commander: 12.1.0
       dotenv: 16.4.5
@@ -1135,6 +1125,7 @@ snapshots:
       typescript: 5.6.3
       vercel-url: 0.2.1(typescript@5.6.3)
     transitivePeerDependencies:
+      - '@types/node'
       - encoding
       - openapi-types
       - supports-color

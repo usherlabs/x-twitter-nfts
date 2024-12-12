@@ -10,6 +10,6 @@
   "license": "UNLICENSED",
   "devDependencies": {
     "concurrently": "^9.0.1",
-    "make-agent": "^0.0.17"
+    "make-agent": "^0.0.25"
   }
 }
