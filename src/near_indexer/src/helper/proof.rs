@@ -1,6 +1,6 @@
 use std::env;
 
-use super::methods::VERIFY_ELF;
+use crate::generated::methods::VERIFY_ELF;
 use super::{TweetResponse, ZkInputParam};
 use alloy_sol_types::SolValue;
 use risc0_ethereum_contracts::groth16;

@@ -1,5 +1,5 @@
 pub mod entity;
-
+pub mod generated;
 pub mod helper;
 
 use async_std::task::sleep;
