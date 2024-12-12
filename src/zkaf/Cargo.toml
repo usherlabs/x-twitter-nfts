@@ -28,7 +28,7 @@ risc0-zkvm = { version = "1.2.0", default-features = false }
 risc0-zkp = { version = "1.2.0", default-features = false }
 serde = { version = "1.0.215", features = ["derive", "std"] }
 dotenv = "0.15.0"
-verity-verifier = { git = "https://github.com/usherlabs/verity-dp", rev = "52a04916992a98a89feadbc5f6786be26821c725", version = "0.0.0", default_features = false, features = [
+verity-verifier = { git = "https://github.com/usherlabs/verity-dp", rev = "52a04916992a98a89feadbc5f6786be26821c725", version = "0.0.0", default-features = false, features = [
     "no-session",
 ] }
 
