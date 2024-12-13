@@ -330,9 +330,9 @@ pub fn open_api_specification() -> Json<Value> {
                     .filter(|line| line.starts_with("BITTE_CONFIG"))
                     .map(|line| line.to_string())
                     .collect();
-                  if config_lines.len()==0{
-                        return "".to_string()
-                    }
+                    if config_lines.len()==0{
+                          return "".to_string()
+                      }
                     let plugin_info:PluginInfo  = json::serde_json::from_str(config_lines.first().unwrap().replace("BITTE_CONFIG=", "").as_str()).unwrap();
                     plugin_info.url
                   }

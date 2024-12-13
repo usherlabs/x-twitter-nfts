@@ -28,6 +28,6 @@ near-jsonrpc-primitives = "0.21.1"
 indexer = { path = "../../near_indexer" }
 dotenv = { workspace = true }
 near-contract-standards = "5.5.0"
-verity-verifier = { git = "https://github.com/usherlabs/verity-dp", rev = "030110e32d1bccca5f2dd5108c6db1d6dc6694cd", version = "0.0.0", default-features = false, features = [
+verity-verifier = { git = "https://github.com/usherlabs/verity-dp", rev = "52a04916992a98a89feadbc5f6786be26821c725", version = "0.0.0", default-features = false, features = [
     "no-session",
 ] }

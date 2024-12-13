@@ -769,7 +769,7 @@ dependencies = [
  "serde_json",
  "sha256",
  "tokio",
- "verity-verifier 0.0.0 (git+https://github.com/usherlabs/verity-dp?rev=030110e32d1bccca5f2dd5108c6db1d6dc6694cd)",
+ "verity-verifier",
 ]
 
 [[package]]
@@ -4873,7 +4873,7 @@ dependencies = [
  "risc0-zkvm",
  "serde",
  "serde_json",
- "verity-verifier 0.0.0 (git+https://github.com/usherlabs/verity-dp.git?rev=52a04916992a98a89feadbc5f6786be26821c725)",
+ "verity-verifier",
 ]
 
 [[package]]
@@ -8881,25 +8881,7 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 [[package]]
 name = "tlsn-core-no-session"
 version = "0.0.0"
-source = "git+https://github.com/usherlabs/verity-dp?rev=030110e32d1bccca5f2dd5108c6db1d6dc6694cd#030110e32d1bccca5f2dd5108c6db1d6dc6694cd"
-dependencies = [
- "bimap",
- "bincode",
- "bytes",
- "mpz-circuits",
- "mpz-core",
- "mpz-garble-core",
- "opaque-debug",
- "rs_merkle",
- "serde",
- "thiserror 1.0.69",
- "tlsn-utils",
-]
-
-[[package]]
-name = "tlsn-core-no-session"
-version = "0.0.0"
-source = "git+https://github.com/usherlabs/verity-dp.git?rev=52a04916992a98a89feadbc5f6786be26821c725#52a04916992a98a89feadbc5f6786be26821c725"
+source = "git+https://github.com/usherlabs/verity-dp?rev=52a04916992a98a89feadbc5f6786be26821c725#52a04916992a98a89feadbc5f6786be26821c725"
 dependencies = [
  "bimap",
  "bincode",
@@ -9496,7 +9478,7 @@ checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
 [[package]]
 name = "verity-client"
 version = "0.2.0"
-source = "git+https://github.com/usherlabs/verity-dp.git?rev=52a04916992a98a89feadbc5f6786be26821c725#52a04916992a98a89feadbc5f6786be26821c725"
+source = "git+https://github.com/usherlabs/verity-dp?rev=52a04916992a98a89feadbc5f6786be26821c725#52a04916992a98a89feadbc5f6786be26821c725"
 dependencies = [
  "anyhow",
  "futures",
@@ -9513,21 +9495,11 @@ dependencies = [
 [[package]]
 name = "verity-verifier"
 version = "0.0.0"
-source = "git+https://github.com/usherlabs/verity-dp?rev=030110e32d1bccca5f2dd5108c6db1d6dc6694cd#030110e32d1bccca5f2dd5108c6db1d6dc6694cd"
+source = "git+https://github.com/usherlabs/verity-dp?rev=52a04916992a98a89feadbc5f6786be26821c725#52a04916992a98a89feadbc5f6786be26821c725"
 dependencies = [
  "cfg-if 1.0.0",
  "serde_json",
- "tlsn-core-no-session 0.0.0 (git+https://github.com/usherlabs/verity-dp?rev=030110e32d1bccca5f2dd5108c6db1d6dc6694cd)",
-]
-
-[[package]]
-name = "verity-verifier"
-version = "0.0.0"
-source = "git+https://github.com/usherlabs/verity-dp.git?rev=52a04916992a98a89feadbc5f6786be26821c725#52a04916992a98a89feadbc5f6786be26821c725"
-dependencies = [
- "cfg-if 1.0.0",
- "serde_json",
- "tlsn-core-no-session 0.0.0 (git+https://github.com/usherlabs/verity-dp.git?rev=52a04916992a98a89feadbc5f6786be26821c725)",
+ "tlsn-core-no-session",
 ]
 
 [[package]]
