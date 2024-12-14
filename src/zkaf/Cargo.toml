@@ -24,7 +24,7 @@ methods = { path = "./methods" }
 risc0-build = { version = "1.2.0", features = ["docker"] }
 risc0-build-ethereum = { git = "https://github.com/risc0/risc0-ethereum", tag = "v1.2.0" }
 risc0-ethereum-contracts = { git = "https://github.com/risc0/risc0-ethereum", tag = "v1.2.0" }
-risc0-zkvm = { version = "1.2.0", default-features = false }
+risc0-zkvm = { version = "1.2.0", default-features = false,features = ["client"] }
 risc0-zkp = { version = "1.2.0", default-features = false }
 serde = { version = "1.0.215", features = ["derive", "std"] }
 dotenv = "0.15.0"

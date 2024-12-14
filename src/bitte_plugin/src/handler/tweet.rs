@@ -48,7 +48,7 @@ pub async fn mint_tweet_request(tweet_id: Option<String>) -> NetworkResponse {
 
     let near_client = NearClient::new(
         Url::from_str(
-            &env::var("NEAR_RPC").unwrap_or(String::from("https://rpc.testnet.near.org")),
+            &env::var("NEAR_RPC").expect("NEAR RPC is missing"),
         )
         .unwrap(),
     )
@@ -66,7 +66,7 @@ pub async fn mint_tweet_request(tweet_id: Option<String>) -> NetworkResponse {
         .view::<u128>(
             &AccountId::from_str(
                 &env::var("NEAR_CONTRACT_ADDRESS")
-                    .unwrap_or("x-bitte-nft.testnet".to_string())
+                    .expect("NEAR  CONTRACT ADDRESS is missing")
                     .to_owned(),
             )
             .unwrap(),

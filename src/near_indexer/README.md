@@ -121,10 +121,26 @@ This will start the indexer and begin fetching NFT data from the Near blockchain
 | NEAR_VERIFIER_CONTRACT_ACCOUNT_ID | Verifier contract account ID |
 | NEAR_NFT_CONTRACT_ACCOUNT_ID | NFT contract account ID |
 | EVM_CHAIN_ID | Ethereum chain ID |
-| EVM_RPC_URL | Ethereum RPC URL |
+| AURORA_RPC_URL | Ethereum RPC URL |
 | ETH_WALLET_PRIVATE_KEY | Ethereum wallet private key |
 | RUST_LOG | Rust logging level |
+| ----Twitter/X pairs required to notify user after mint------------------|
 | TWEET_CONSUMER_KEY | Twitter consumer key |
 | TWEET_CONSUMER_SECRET | Twitter consumer secret |
 | TWEET_ACCESS_TOKEN | Twitter access token |
 | TWEET_TOKEN_SECRET | Twitter token secret |
+
+
+
+
+jjj
+
++---------------------+----------+
+| Property            | Earth    |
++=============+=======+==========+
+|             | min   | -89.2 °C |
+| Temperature +-------+----------+
+| 1961-1990   | mean  | 14 °C    |
+|             +-------+----------+
+|             | max   | 56.7 °C  |
++-------------+-------+----------+

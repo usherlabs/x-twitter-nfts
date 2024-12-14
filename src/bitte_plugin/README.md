@@ -76,6 +76,8 @@ TODO: The env files switched between .env and .env.local. We need to fix this.
 | TWEET_BEARER | Bearer token for Twitter API access |
 | ACCOUNT_ID | Account ID for agent registration purposes |
 | NEAR_CONTRACT_ADDRESS | NFT Contract address for Near blockchain |
+| HOST_URL | Optional - only required to be filled on production|
+
 
 
 ### Option 1

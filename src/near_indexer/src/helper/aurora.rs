@@ -26,7 +26,7 @@ impl TxSender {
             .expect("EVM_CHAIN_ID_NOT_PRESENT")
             .parse()
             .unwrap();
-        let rpc_url = env::var("EVM_RPC_URL").expect("EVM_RPC_URL_NOT_PRESENT");
+        let rpc_url = env::var("AURORA_RPC_URL").expect("AURORA_RPC_URL_NOT_PRESENT");
         let private_key =
             env::var("ETH_WALLET_PRIVATE_KEY").expect("ETH_WALLET_PRIVATE_KEY_NOT_PRESENT");
         let contract_address =

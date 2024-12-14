@@ -8,7 +8,7 @@ use dotenv::dotenv;
 use entity::near_transaction;
 use ethers::utils::hex;
 use helper::*;
-use methods::VERIFY_ELF;
+use generated::methods::VERIFY_ELF;
 use near::{extract_metadata_from_request, verify_near_proof};
 use near_client::client::NearClient;
 use near_client::prelude::{AccountId, Finality};
@@ -38,7 +38,7 @@ async fn main() {
         .await
         .unwrap();
 
-    let near_rpc = env::var("NEAR_RPC").unwrap_or("https://rpc.testnet.near.org/".to_owned());
+    let near_rpc = env::var("NEAR_RPC_URL").expect("NEAR_RPC_URL");
 
     // Init Near Client
     let client = NearClient::new(Url::from_str(&near_rpc).unwrap()).unwrap();

@@ -21,7 +21,7 @@ pub async fn verify_near_proof(
     let account_id = env::var("NEAR_SIGNER_ACCOUNT_ID").expect("ACCOUNT_ID_NOT_PRESENT");
     let secret_key = env::var("NEAR_ACCOUNT_SECRET_KEY").expect("SECRET_KEY_NOT_PRESENT");
     let contract_account_id =
-        env::var("NEAR_VERIFIER_CONTRACT_ACCOUNT_ID").expect("CONTRACT_ACCOUNT_ID_NOT_PRESENT");
+        env::var("NEAR_SIGNER_ACCOUNT_ID").expect("CONTRACT_ACCOUNT_ID_NOT_PRESENT");
 
     let signer_account_id: near_primitives::types::AccountId = account_id.parse()?;
     let signer_secret_key: near_crypto::SecretKey = secret_key.parse()?;
