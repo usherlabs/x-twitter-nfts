@@ -4,11 +4,11 @@ use crate::generated::methods::VERIFY_ELF;
 use super::{TweetResponse, ZkInputParam};
 use alloy_sol_types::SolValue;
 use risc0_ethereum_contracts::groth16;
-use risc0_zkvm::{ ExecutorEnv, ProverOpts, VerifierContext,BonsaiProver};
+use risc0_zkvm::{ ExecutorEnv, ProverOpts, VerifierContext, default_prover};
 use std::error::Error;
 use tracing::debug;
 use verity_client::client::{VerityClient, VerityClientConfig};
-use risc0_zkvm::Prover;
+// use risc0_zkvm::Prover;
 
 pub fn generate_groth16_proof(zk_inputs: ZkInputParam) -> (Vec<u8>, Vec<u8>) {
     // serialize the inputs to bytes to pass to the remote prover
@@ -17,7 +17,7 @@ pub fn generate_groth16_proof(zk_inputs: ZkInputParam) -> (Vec<u8>, Vec<u8>) {
 
     // begin the proving process
     let env = ExecutorEnv::builder().write_slice(&input).build().unwrap();
-    let receipt = BonsaiProver::new("groth16")
+    let receipt =default_prover()
         .prove_with_ctx(
             env,
             &VerifierContext::default(),

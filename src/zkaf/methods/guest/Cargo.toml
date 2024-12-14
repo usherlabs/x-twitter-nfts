@@ -22,7 +22,7 @@ verity-verifier = { git = "https://github.com/usherlabs/verity-dp", rev = "52a04
 ] }
 sha256 = "1.5.0"
 hex = "0.4.3"
-ahash = "0.8.11"
+ahash = "0.8.6"
 serde_json = "1.0.107"
 serde = { version = "1.0.215", features = ["derive", "std"] }
 near-contract-standards = "5.5.0"

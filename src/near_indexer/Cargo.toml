@@ -32,14 +32,14 @@ near-primitives = "0.21.1"
 sha256 = "1.5.0"
 near-jsonrpc-primitives = "0.21.1"
 ethers = { version = "2.0" }
-risc0-build = { version = "1.2.0", features = ["docker"] }
-risc0-build-ethereum = { git = "https://github.com/risc0/risc0-ethereum", tag = "v1.2.0" }
-risc0-ethereum-contracts = { git = "https://github.com/risc0/risc0-ethereum", tag = "v1.2.0" }
-risc0-zkvm = { version = "1.2.0", default-features = false, features = [
-    "client","bonsai"
+risc0-build = { version = "1.0.1", features = ["docker"] }
+risc0-build-ethereum = { git = "https://github.com/risc0/risc0-ethereum", tag = "v1.0.0" }
+risc0-ethereum-contracts = { git = "https://github.com/risc0/risc0-ethereum", tag = "v1.0.0" }
+risc0-zkvm = { version = "1.0.1", default-features = false, features = [
+    "client",
 ] }
-risc0-zkp = { version = "1.2.0", default-features = false }
-serde = { version = "1.0.0", features = ["derive", "std"] }
+risc0-zkp = { version = "1.0.1", default-features = false }
+serde = { version = "1.0.1", features = ["derive", "std"] }
 reqwest-oauth1 = "0.3.0"
 openssl = { version = "0.10.59", features = ["vendored"] }
 anyhow = "1.0.94"

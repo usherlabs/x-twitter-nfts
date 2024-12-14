@@ -190,10 +190,6 @@ mod tests {
                 .await
                 .unwrap();
 
-            debug!(
-                "{:?} was committed to the journal",
-                hex::encode(&journal_output)
-            );
             debug!("{:?} was the provided seal", hex::encode(&seal));
             let aurora_client = TxSender::default();
             let aurora_tx_future = aurora_client
