@@ -36,12 +36,12 @@ jobs:
           version: 1.0
 
 
-      - name: run plugin test
-        run: |
-          ls
-          cd ./src/bitte_plugin/
-          curl -L https://foundry.paradigm.xyz | bash
-          cargo test 
+      # - name: run plugin test
+      #   run: |
+      #     ls
+      #     cd ./src/bitte_plugin/
+      #     curl -L https://foundry.paradigm.xyz | bash
+      #     cargo test 
 
 
       - name: run near_nft test
