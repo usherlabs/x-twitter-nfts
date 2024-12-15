@@ -7,7 +7,7 @@ use risc0_zkvm::guest::env;
 use near_contract_standards::non_fungible_token::metadata::TokenMetadata;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use verity_verifier::verify_proof;
+use verity_verify_tls::verify_proof;
 
 /// Containing the details needed for verification of a proof
 #[derive(Serialize, Deserialize, Debug, Clone)]
