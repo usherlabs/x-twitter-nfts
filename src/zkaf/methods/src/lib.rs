@@ -86,13 +86,13 @@ pub fn copy_elf(dest_folder: String) -> Result<(), Box<dyn std::error::Error>> {
     let dest_path = dest_path.join(dest_file);
 
     // Check if the content contains "include_bytes!" (used for embedded resources)
-    if content.contains("include_bytes!") {
-        // If it's an embedded resource, write the parsed constants
-        fs::write(&dest_path, &parse_constants(&content).unwrap())?;
-    } else {
+    // if content.contains("include_bytes!") {
+    //     // If it's an embedded resource, write the parsed constants
+    //     fs::write(&dest_path, &parse_constants(&content).unwrap())?;
+    // } else {
         // Otherwise, write the original content
         fs::write(&dest_path, &content)?;
-    }
+    // }
 
     println!("File copied successfully to: {}", dest_path.display());
 
