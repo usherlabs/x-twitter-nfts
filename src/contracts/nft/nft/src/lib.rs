@@ -400,6 +400,16 @@ impl Contract {
         }
     }
 
+    pub fn update_royalty_manager(&mut self, account: AccountId) {
+        // Check ensures that the royalty manager does not need to be deployer/AccountID of the Contract.
+        require!(
+            env::predecessor_account_id() == self.royalty_manager,
+            "Insufficient Access"
+        );
+        self.royalty_manager= account
+    }
+
+
     // TODO: Include a function to allow the existing royalty_manager to set a new royalty_manager
 
     pub fn get_lock_time(&self) -> u64 {
