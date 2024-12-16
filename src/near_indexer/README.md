@@ -102,28 +102,30 @@ This will start the indexer and begin fetching NFT data from the Near blockchain
 
 | Variable | Description |
 |----------|-------------|
+| THIRDWEB_CLIENT_ID | Client ID for Thirdweb integration |
+| RISC0_USE_DOCKER | Flag to use Docker (true/false) |
+| RUST_LOG | Rust logging level |
+| ----------Postgress DB setup------------------|
 | DATABASE_URL | PostgreSQL connection string |
 | POSTGRES_USER | Username for PostgreSQL |
 | POSTGRES_DB | Database name for PostgreSQL |
 | POSTGRES_PASSWORD | Password for PostgreSQL |
-| TWEET_BEARER | Bearer token for Twitter API access |
-| SIGNER_SK | Secret key for signing transactions |
-| THIRDWEB_CLIENT_ID | Client ID for Thirdweb integration |
-| NFT_CONTRACT_ID | ID of the NFT contract |
-| NEAR_RPC | Near RPC endpoint URL |
+| ----------Bonsai pair------------------|
 | BONSAI_API_KEY | API key for Bonsai |
 | BONSAI_API_URL | Bonsai API URL |
-| RISC0_USE_DOCKER | Flag to use Docker (true/false) |
-| EVM_VERIFIER_CONTRACT | EVM verifier smart contract address |
-| NEAR_RPC_URL | Near testnet RPC URL |
+| ----------Near signer Pair------------------|
 | NEAR_SIGNER_ACCOUNT_ID | Signer account ID on testnet |
 | NEAR_ACCOUNT_SECRET_KEY | Account secret key |
+| ----------Near Contract Parameters-----------------|
 | NEAR_VERIFIER_CONTRACT_ACCOUNT_ID | Verifier contract account ID |
-| NEAR_NFT_CONTRACT_ACCOUNT_ID | NFT contract account ID |
+| NEAR_RPC_URL | Near testnet RPC URL |
+| NFT_CONTRACT_ID | ID of the NFT contract |
+| ----------Aurora Parameter------------------|
 | EVM_CHAIN_ID | Ethereum chain ID |
-| AURORA_RPC_URL | Ethereum RPC URL |
-| ETH_WALLET_PRIVATE_KEY | Ethereum wallet private key |
-| RUST_LOG | Rust logging level |
+| AURORA_RPC_URL | AURORA RPC URL |
+| AURORA_VERIFIER_CONTRACT | EVM verifier smart contract address |
+| ----Twitter Bearer Key To query tweet info------------------|
+| TWEET_BEARER | Bearer token for Twitter API access |
 | ----Twitter/X pairs required to notify user after mint------------------|
 | TWEET_CONSUMER_KEY | Twitter consumer key |
 | TWEET_CONSUMER_SECRET | Twitter consumer secret |

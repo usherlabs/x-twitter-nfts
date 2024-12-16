@@ -28,9 +28,9 @@ impl TxSender {
             .unwrap();
         let rpc_url = env::var("AURORA_RPC_URL").expect("AURORA_RPC_URL_NOT_PRESENT");
         let private_key =
-            env::var("ETH_WALLET_PRIVATE_KEY").expect("ETH_WALLET_PRIVATE_KEY_NOT_PRESENT");
-        let contract_address =
-            env::var("EVM_VERIFIER_CONTRACT").expect("EVM_VERIFIER_CONTRACT_NOT_PRESENT");
+            env::var("AURORA_WALLET_PRIVATE_KEY").expect("AURORA_WALLET_PRIVATE_KEY_NOT_PRESENT");
+        let contract_address: String =
+            env::var("AURORA_VERIFIER_CONTRACT").expect("AURORA_VERIFIER_CONTRACT_NOT_PRESENT");
         println!("contract_address:{}", contract_address);
         return Self::new(chain_id, &rpc_url, &private_key, &contract_address).unwrap();
     }
