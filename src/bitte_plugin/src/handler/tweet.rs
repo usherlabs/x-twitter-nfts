@@ -242,7 +242,7 @@ pub async fn tweet_contract_call(
 ) -> Json<Value> {
     // Get the NEAR contract address from environment variable
     let contract_id = env::var("NEAR_CONTRACT_ADDRESS")
-        .unwrap_or(String::from("xlassixx.near"))
+        .unwrap().expect("NEAR_CONTRACT_ADDRESS must be set")
         .to_owned();
 
     // Default value for notify if not provided
@@ -275,7 +275,7 @@ pub async fn tweet_contract_call(
 pub async fn tweet_contract_cancel_call(tweet_id: String) -> Json<Value> {
     // Get the NEAR contract address from environment variable
     let contract_id = env::var("NEAR_CONTRACT_ADDRESS")
-        .unwrap_or(String::from("xlassixx.near"))
+        .unwrap().expect("NEAR_CONTRACT_ADDRESS must be set")
         .to_owned();
 
     // Construct the JSON payload for the smart contract call

@@ -53,7 +53,7 @@ export NEAR_RPC_URL="https://rpc.testnet.near.org"
 export NEAR_SIGNER_ACCOUNT_ID="local-verifier.testnet"
 export NEAR_ACCOUNT_SECRET_KEY=""
 export NEAR_VERIFIER_CONTRACT_ACCOUNT_ID="local-verifier.testnet"
-export NEAR_NFT_CONTRACT_ACCOUNT_ID="x-bitte-nft.testnet"
+export NFT_CONTRACT_ID="x-bitte-nft.testnet"
 
 # BONSAI parameters
 export BONSAI_API_KEY="" # provided with your api key

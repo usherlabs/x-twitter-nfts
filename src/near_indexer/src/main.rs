@@ -33,7 +33,7 @@ async fn main() {
     //Load Essential for env Variables
     env::var("TWEET_BEARER").expect("TWEET_BEARER must be set");
 
-    let nft_contract_id = env::var("NFT_CONTRACT_ID").unwrap_or("x-bitte-nft.testnet".to_owned());
+    let nft_contract_id = env::var("NFT_CONTRACT_ID").unwrap("NFT_CONTRACT_ID must be set");
     let db = Database::connect(env::var("DATABASE_URL").expect("DATABASE_URL must be set"))
         .await
         .unwrap();

@@ -8408,7 +8408,7 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 [[package]]
 name = "tlsn-core-no-session"
 version = "0.0.0"
-source = "git+https://github.com/usherlabs/verity-dp#316eeffb05cb9bd57c5a675357824900f246f6fd"
+source = "git+https://github.com/usherlabs/verity-dp.git#316eeffb05cb9bd57c5a675357824900f246f6fd"
 dependencies = [
  "bimap",
  "bincode",
@@ -9007,7 +9007,7 @@ dependencies = [
 [[package]]
 name = "verity-verify-tls"
 version = "0.0.0"
-source = "git+https://github.com/usherlabs/verity-dp#316eeffb05cb9bd57c5a675357824900f246f6fd"
+source = "git+https://github.com/usherlabs/verity-dp.git#316eeffb05cb9bd57c5a675357824900f246f6fd"
 dependencies = [
  "cfg-if 1.0.0",
  "serde_json",
