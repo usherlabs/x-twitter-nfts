@@ -132,17 +132,3 @@ This will start the indexer and begin fetching NFT data from the Near blockchain
 | TWEET_ACCESS_TOKEN | Twitter access token |
 | TWEET_TOKEN_SECRET | Twitter token secret |
 
-
-
-
-jjj
-
-+---------------------+----------+
-| Property            | Earth    |
-+=============+=======+==========+
-|             | min   | -89.2 °C |
-| Temperature +-------+----------+
-| 1961-1990   | mean  | 14 °C    |
-|             +-------+----------+
-|             | max   | 56.7 °C  |
-+-------------+-------+----------+
