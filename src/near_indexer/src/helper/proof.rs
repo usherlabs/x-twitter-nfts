@@ -74,7 +74,7 @@ pub async fn get_proof(tweet_id: String) -> Result<(String, TweetResponse), Box<
 
 pub fn get_verity_client() -> VerityClient {
     let verity_config = VerityClientConfig {
-        prover_url: env::var("VERITY_PROVER_URL").unwrap().expect("VERITY_PROVER_URL must be set")
+        prover_url: env::var("VERITY_PROVER_URL").expect("VERITY_PROVER_URL must be set")
     };
 
     VerityClient::new(verity_config)
