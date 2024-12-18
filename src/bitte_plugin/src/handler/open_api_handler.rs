@@ -340,11 +340,11 @@ pub fn open_api_specification() -> Json<Value> {
               }
             ],
             "x-mb": {
-              "account-id": env::var("ACCOUNT_ID").unwrap_or(String::from("<missing>.near")),
+              "account-id": env::var("ACCOUNT_ID").expect("ACCOUNT_ID not defend"),
               "assistant": {
                 "name": "Tweet Minter",
                 "description": "An assistant that provides a digital representation of a Post as an Image with its description and generates a custom transaction for the user",
-                "instructions": "Retrieve the X(twitter) post URL from the user's request. Ask the user if they want to AI generated art for the post with tweet-snapshot description or use the default tweet-snapshot and it's Image  that will be provided. If the user confirms, Show the Image and prompt them to provide the user profile to notify after minting. Confirm the user's profile and inform them that the post will be minted once verified on the Near Blockchain. Instruct the user to submit their transaction to get started and assure them that the specified profile will be notified once it's ready.",
+                "instructions": "Retrieve the X(twitter) post URL from the user's request. Ask the user if they want to AI generated art for the post or use the default tweet-snapshot that will be provided. If the user confirms, Show the Image and prompt them to provide the user profile to notify after minting. Confirm the user's profile and inform them that the post will be minted once verified on the Near Blockchain. Instruct the user to submit their transaction to get started and assure them that the specified profile will be notified once it's ready.",
                 "tools": [
                   {
                     "type": "generate-image"

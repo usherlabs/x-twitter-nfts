@@ -21,7 +21,7 @@ pub async fn verify_near_proof(
     let account_id = env::var("NEAR_SIGNER_ACCOUNT_ID").expect("ACCOUNT_ID_NOT_PRESENT");
     let secret_key = env::var("NEAR_ACCOUNT_SECRET_KEY").expect("SECRET_KEY_NOT_PRESENT");
     let contract_account_id =
-        env::var("NFT_CONTRACT_ID").expect("CONTRACT_ACCOUNT_ID_NOT_PRESENT");
+        env::var("NEAR_VERIFIER_CONTRACT_ACCOUNT_ID").expect("NEAR_VERIFIER_CONTRACT_ACCOUNT_ID_NOT_PRESENT");
 
     let signer_account_id: near_primitives::types::AccountId = account_id.parse()?;
     let signer_secret_key: near_crypto::SecretKey = secret_key.parse()?;
@@ -178,7 +178,8 @@ mod tests {
 
             let meta_data= AssetMetadata{
             image_url: "https://386f4b0d6749763bc7ab0a648c3e650f.ipfscdn.io/ipfs/QmXPD7KqFyFWwMTQyEo9HuTJjkKLxergS1YTt1wjJNAAHV".to_string(),
-            owner_account_id:"xlassixx.testnet".to_string(),
+            owner_account_id:
+                env::var("NEAR_VERIFIER_CONTRACT_ACCOUNT_ID").expect("NEAR_VERIFIER_CONTRACT_ACCOUNT_ID_NOT_PRESENT"),
             token_id: tweet_id.to_string(),
         };
 

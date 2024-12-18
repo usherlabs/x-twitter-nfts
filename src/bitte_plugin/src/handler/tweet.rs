@@ -233,23 +233,85 @@ fn cleanup_image_link(image_url: &str) -> String {
     }
 }
 
+async fn get_computed_cost(tweet_id: &str)->Result<(String, String), Box<dyn std::error::Error + Sync + Send>> {
+    let result = get_tweet_content(&tweet_id).await;
+
+    let near_client = NearClient::new(
+        Url::from_str(
+            &env::var("NEAR_RPC").expect("NEAR RPC is missing"),
+        )
+        .unwrap(),
+    )
+    .unwrap();
+
+    let (description, public_metric) = result.unwrap();
+
+    let computed_cost = near_client
+        .view::<u128>(
+            &AccountId::from_str(
+                &env::var("NEAR_CONTRACT_ADDRESS")
+                    .expect("NEAR  CONTRACT ADDRESS is missing")
+                    .to_owned(),
+            )
+            .unwrap(),
+            Finality::Final,
+            "compute_cost",
+            Some(json!({
+                "public_metrics": public_metric
+            })),
+        )
+        .await
+        .unwrap()
+        .data();
+
+    Ok((
+        description,
+        (computed_cost * 12 / 10).to_string(),
+    ))
+
+}
+
 #[get("/tweet-contract-call?<tweet_id>&<image_url>&<notify>&<computed_cost>")]
 pub async fn tweet_contract_call(
     tweet_id: String,
     image_url: String,
-    computed_cost: String,
+    computed_cost: Option<String>,
     notify: Option<String>,
-) -> Json<Value> {
+) -> NetworkResponse {
     // Get the NEAR contract address from environment variable
     let contract_id = env::var("NEAR_CONTRACT_ADDRESS")
-        .unwrap().expect("NEAR_CONTRACT_ADDRESS must be set")
+        .expect("NEAR_CONTRACT_ADDRESS must be set")
         .to_owned();
+
+    let computed_cost = if computed_cost.is_some(){
+        let computed = computed_cost.unwrap();
+        // if computed cost was auto filled by AI and too little replace 
+        if computed.len()<7{
+            let result = get_computed_cost(&tweet_id).await;
+            if result.is_err() {
+                return NetworkResponse::BadRequest(json!({
+                    "error": format!("failed to retrieve tweet Description : {}",result.err().expect("Failed to get post image"))
+                }));
+            }
+            result.unwrap().1
+        }else{
+            computed
+        }
+    } else {
+        let result = get_computed_cost(&tweet_id).await;
+        if result.is_err() {
+            return NetworkResponse::BadRequest(json!({
+                "error": format!("failed to retrieve tweet Description : {}",result.err().expect("Failed to get post image"))
+            }));
+        }
+        result.unwrap().1
+    };
 
     // Default value for notify if not provided
     let notify = notify.unwrap_or(String::from(""));
 
     // Construct the JSON payload for the smart contract call
-    Json(json!(
+    NetworkResponse::StatusOk(json!(
             {
             "receiverId":  contract_id,
             "action_kind":"FunctionCall",
@@ -274,8 +336,7 @@ pub async fn tweet_contract_call(
 #[get("/tweet-cancel-call?<tweet_id>")]
 pub async fn tweet_contract_cancel_call(tweet_id: String) -> Json<Value> {
     // Get the NEAR contract address from environment variable
-    let contract_id = env::var("NEAR_CONTRACT_ADDRESS")
-        .unwrap().expect("NEAR_CONTRACT_ADDRESS must be set")
+    let contract_id = env::var("NEAR_CONTRACT_ADDRESS").expect("NEAR_CONTRACT_ADDRESS must be set")
         .to_owned();
 
     // Construct the JSON payload for the smart contract call
