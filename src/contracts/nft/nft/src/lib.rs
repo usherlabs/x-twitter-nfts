@@ -439,7 +439,6 @@ impl Contract {
     }
 
 
-    // TODO: Include a function to allow the existing royalty_manager to set a new royalty_manager
 
     pub fn get_lock_time(&self) -> u64 {
         self.lock_time
