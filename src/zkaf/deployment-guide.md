@@ -45,7 +45,7 @@ The following environment variables need to be filled, copied and pasted into th
 ```jsx
 # EVM parameters
 export EVM_CHAIN_ID=1313161555
-export EVM_RPC_URL="https://testnet.aurora.dev"
+export AURORA_RPC_URL="https://testnet.aurora.dev"
 export EVM_VERIFIER_CONTRACT=0xa4015D18436d266074eC43bb9D2f8DfBAb2a45D5
 
 # NEAR parameters
@@ -53,7 +53,7 @@ export NEAR_RPC_URL="https://rpc.testnet.near.org"
 export NEAR_SIGNER_ACCOUNT_ID="local-verifier.testnet"
 export NEAR_ACCOUNT_SECRET_KEY=""
 export NEAR_VERIFIER_CONTRACT_ACCOUNT_ID="local-verifier.testnet"
-export NEAR_NFT_CONTRACT_ACCOUNT_ID="x-bitte-nft.testnet"
+export NFT_CONTRACT_ID="x-bitte-nft.testnet"
 
 # BONSAI parameters
 export BONSAI_API_KEY="" # provided with your api key

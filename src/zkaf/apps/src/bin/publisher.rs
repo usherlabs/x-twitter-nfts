@@ -12,8 +12,7 @@ use indexer::helper::{
 use sha256::digest;
 use std::thread;
 use std::time::Duration;
-use verity_verifier::verify_proof;
-// use methods::VERIFY_ELF;
+use verity_verify_tls::verify_proof;
 
 fn main() -> Result<()> {
     env_logger::init();

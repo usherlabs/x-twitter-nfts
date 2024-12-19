@@ -135,7 +135,7 @@ export RISC0_USE_DOCKER=true
 
 # EVM parameters
 export EVM_CHAIN_ID=1313161555
-export EVM_RPC_URL="https://testnet.aurora.dev"
+export AURORA_RPC_URL="https://testnet.aurora.dev"
 export EVM_VERIFIER_CONTRACT=0xa4015D18436d266074eC43bb9D2f8DfBAb2a45D5 //replace
 
 # NEAR parameters

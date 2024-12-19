@@ -17,14 +17,9 @@ risc0-zkp = { workspace = true }
 [dev-dependencies]
 alloy-primitives = { workspace = true }
 alloy-sol-types = { workspace = true }
-indexer = { path = "../../near_indexer" }
+# indexer = { path = "../../near_indexer" }
 risc0-zkvm = { workspace = true, features = ["client"] }
 serde = { workspace = true }
 hex = { workspace = true }
 serde_json = "1.0.107"
-verity-verifier = { workspace = true }
-
-[dependencies]
-verity-verifier = { git = "https://github.com/usherlabs/verity-dp", rev = "030110e32d1bccca5f2dd5108c6db1d6dc6694cd", version = "0.0.0", default-features = false, features = [
-    "no-session",
-] }
+verity-verify-tls = { workspace = true }
