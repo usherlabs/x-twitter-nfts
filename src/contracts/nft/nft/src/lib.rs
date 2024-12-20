@@ -180,7 +180,7 @@ impl Contract {
         &mut self,
         token_id: TokenId,
         receiver_id: AccountId,
-        mut  token_metadata: TokenMetadata,
+        mut token_metadata: TokenMetadata,
     ) -> Token {
         // Get the mint request for the given token ID
         let mut request = self
@@ -195,18 +195,16 @@ impl Contract {
 
         // Check if the caller is the owner of the contract
         require!(
-            env::predecessor_account_id().eq(
-            &self.tokens.owner_id),
+            env::predecessor_account_id().eq(&self.tokens.owner_id),
             "NOT OWNER"
         );
 
-
-         // Check if the request has enough deposit to cover costs
+        // Check if the request has enough deposit to cover costs
         if request
             .claimable_deposit
             .ge(&self.compute_cost(extra.public_metric.clone()))
         {
-             // Create extra metadata for the NFT
+            // Create extra metadata for the NFT
             let json_extra = json!([
                     {
                         "trait_type": "website",
@@ -219,10 +217,11 @@ impl Contract {
                         "value": token_metadata.extra,
                       },
 
-            ]).to_string();
+            ])
+            .to_string();
 
             // Update the extra metadata in the token metadata
-            token_metadata.extra=Some(json_extra);
+            token_metadata.extra = Some(json_extra);
 
             // Mint the NFT
             let token = self.tokens.internal_mint_with_refund(
@@ -232,7 +231,7 @@ impl Contract {
                 Some(receiver_id),
             );
 
-             // Calculate refund amount
+            // Calculate refund amount
             let refund_amount =
                 request.claimable_deposit - (&self.compute_cost(extra.public_metric.clone()));
             let value = request.claimable_deposit
@@ -407,8 +406,6 @@ impl Contract {
         }
     }
 
-    
-
     pub fn royalty_withdraw(&mut self, amount: Balance) {
         // Check ensures that the royalty manager does not need to be deployer/AccountID of the Contract.
         require!(
@@ -416,7 +413,7 @@ impl Contract {
             "Insufficient Access"
         );
         let storage_cost = u128::from(env::storage_usage()) * env::storage_byte_cost();
-        if  env::account_balance() - storage_cost >= amount {
+        if env::account_balance() - storage_cost >= amount {
             Promise::new(self.royalty_manager.clone()).transfer(amount);
         } else {
             env::panic_str(
@@ -435,10 +432,8 @@ impl Contract {
             env::predecessor_account_id() == self.royalty_manager,
             "Insufficient Access"
         );
-        self.royalty_manager= account
+        self.royalty_manager = account
     }
-
-
 
     pub fn get_lock_time(&self) -> u64 {
         self.lock_time
@@ -470,15 +465,13 @@ impl Contract {
             } else {
                 mint_request.claimable_deposit // Else if unsuccessful, transferring 100% of the origin deposit back to the minter.
             };
-            Promise::new(mint_request.minter.clone()).transfer(
-                amount,
-            );
+            Promise::new(mint_request.minter.clone()).transfer(amount);
             self.tweet_requests.remove(&tweet_id);
             let event = CancelMintRequest {
                 tweet_id: tweet_id, // You might want to generate a unique ID here
                 account: env::predecessor_account_id(),
                 // TODO: Set the withdraw amount once, and re-use
-                withdraw: amount
+                withdraw: amount,
             };
             event.emit();
         }
@@ -552,7 +545,7 @@ mod tests {
 
     use super::*;
 
-    fn get_test_public_metrics(likes:u128) -> PublicMetric {
+    fn get_test_public_metrics(likes: u128) -> PublicMetric {
         PublicMetric {
             impression_count: 0,
             bookmark_count: 1,
@@ -572,7 +565,7 @@ mod tests {
         builder
     }
 
-    fn sample_token_metadata(likes:u128) -> TokenMetadata {
+    fn sample_token_metadata(likes: u128) -> TokenMetadata {
         let json_string = r#"
         {"minted_to":"eclipse_interop.testnet","public_metric":{"bookmark_count":1,"impression_count":0,"like_count": like_count_num,"quote_count":0,"reply_count":0,"retweet_count":0},"author_id":"1234"}
         "#.replace("like_count_num",&likes.to_string());
@@ -622,11 +615,11 @@ mod tests {
             .predecessor_account_id(accounts(0))
             .build());
 
-        let  default_min_deposit= contract.min_deposit;
+        let default_min_deposit = contract.min_deposit;
 
-        contract.update_min_deposit(default_min_deposit*2);
+        contract.update_min_deposit(default_min_deposit * 2);
 
-        assert_eq!(contract.min_deposit, default_min_deposit*2);
+        assert_eq!(contract.min_deposit, default_min_deposit * 2);
     }
 
     #[test]
@@ -636,12 +629,10 @@ mod tests {
         testing_env!(context.build());
         let mut contract = Contract::new_default_meta(accounts(0).into(), accounts(5));
 
-
-        let  likes: u128= 1 as u128;
-
+        let likes: u128 = 1 as u128;
 
         let deposit = contract.compute_cost(get_test_public_metrics(likes));
-        let balance =env::account_balance();
+        let balance = env::account_balance();
 
         testing_env!(context
             .storage_usage(env::storage_usage())
@@ -650,13 +641,13 @@ mod tests {
             .build());
 
         let token_id = "1".to_string();
-        contract.mint_tweet_request(
+        contract.mint_tweet_request(token_id.clone(), format!("ipfs://"), "@xxxxxx".to_owned());
+        let _ = contract.nft_mint(
             token_id.clone(),
-            format!("ipfs://"),
-            "@xxxxxx".to_owned(),
-         );
-        let _ = contract.nft_mint(token_id.clone(), accounts(0), sample_token_metadata(likes+1));
-        assert_eq!(balance,env::account_balance());
+            accounts(0),
+            sample_token_metadata(likes + 1),
+        );
+        assert_eq!(balance, env::account_balance());
     }
 
     #[test]
@@ -666,27 +657,20 @@ mod tests {
         let mut contract = Contract::new_default_meta(accounts(0).into(), accounts(5));
         let _ = contract.update_lock_time(0);
 
-
-        let  likes: u128= 1 as u128;
-
+        let likes: u128 = 1 as u128;
 
         let deposit = contract.compute_cost(get_test_public_metrics(likes));
-        
-        
+
         testing_env!(context
             .storage_usage(env::storage_usage())
             .attached_deposit(deposit)
             .predecessor_account_id(accounts(2))
             .build());
-        
-        let token_id = "1".to_string();
-        contract.mint_tweet_request(
-            token_id.clone(),
-            format!("ipfs://"),
-            "@xxxxxx".to_owned(),
-        );
 
-        let balance =env::account_balance();
+        let token_id = "1".to_string();
+        contract.mint_tweet_request(token_id.clone(), format!("ipfs://"), "@xxxxxx".to_owned());
+
+        let balance = env::account_balance();
         let _ = contract.cancel_mint_request(token_id.clone());
 
         testing_env!(context
@@ -694,11 +678,9 @@ mod tests {
             .attached_deposit(deposit)
             .predecessor_account_id(accounts(2))
             .build());
-        assert_eq!(balance,env::account_balance());
+        assert_eq!(balance, env::account_balance());
     }
 
-
-    
     #[test]
     #[should_panic(contains = "Minimum deposit Not met of")]
     fn test_deposit_nft_mint() {
@@ -706,12 +688,10 @@ mod tests {
         testing_env!(context.build());
         let mut contract = Contract::new_default_meta(accounts(0).into(), accounts(5));
 
-
-        let  likes: u128= 1 as u128;
-
+        let likes: u128 = 1 as u128;
 
         let deposit = contract.compute_cost(get_test_public_metrics(likes));
-        let balance =env::account_balance();
+        let balance = env::account_balance();
 
         testing_env!(context
             .storage_usage(env::storage_usage())
@@ -720,17 +700,13 @@ mod tests {
             .build());
 
         let token_id = "1".to_string();
-        contract.mint_tweet_request(
-            token_id.clone(),
-            format!("ipfs://"),
-            "@xxxxxx".to_owned(),
-         );
+        contract.mint_tweet_request(token_id.clone(), format!("ipfs://"), "@xxxxxx".to_owned());
         let token = contract.nft_mint(token_id.clone(), accounts(0), sample_token_metadata(likes));
 
         // duplicated mint
         let token = contract.nft_mint(token_id.clone(), accounts(0), sample_token_metadata(likes));
 
-        assert_eq!(balance,env::account_balance());
+        assert_eq!(balance, env::account_balance());
     }
 
     #[test]
@@ -739,9 +715,7 @@ mod tests {
         testing_env!(context.build());
         let mut contract = Contract::new_default_meta(accounts(0).into(), accounts(5));
 
-
-
-        let  likes: u128= 1 as u128;
+        let likes: u128 = 1 as u128;
 
         let deposit = contract.compute_cost(get_test_public_metrics(likes));
 
@@ -763,15 +737,14 @@ mod tests {
         assert_eq!(token.owner_id.to_string(), accounts(0).to_string());
         assert_eq!(token.approved_account_ids.unwrap(), HashMap::new());
 
-
         testing_env!(context
             .storage_usage(env::storage_usage())
             .attached_deposit(1)
             .predecessor_account_id(accounts(5))
             .build());
         let balance = env::account_balance();
-        contract.royalty_withdraw(deposit*2/10);
-        assert_eq!(balance,env::account_balance()+deposit*2/10);
+        contract.royalty_withdraw(deposit * 2 / 10);
+        assert_eq!(balance, env::account_balance() + deposit * 2 / 10);
     }
 
     #[test]
@@ -961,7 +934,7 @@ mod tests {
         testing_env!(context.build());
         let mut contract = Contract::new_default_meta(accounts(0).into(), accounts(5));
 
-        let  likes: u128= 1 as u128;
+        let likes: u128 = 1 as u128;
 
         testing_env!(context
             .storage_usage(env::storage_usage())

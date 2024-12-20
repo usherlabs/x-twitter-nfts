@@ -102,7 +102,6 @@ This will start the indexer and begin fetching NFT data from the Near blockchain
 
 | Variable | Description |
 |----------|-------------|
-| THIRDWEB_CLIENT_ID | Client ID for Thirdweb integration |
 | RISC0_USE_DOCKER | Flag to use Docker (true/false) |
 | RUST_LOG | Rust logging level |
 | ----------Postgress DB setup------------------|
