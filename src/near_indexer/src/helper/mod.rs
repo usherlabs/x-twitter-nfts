@@ -4,7 +4,6 @@ pub mod near;
 pub mod twitter;
 
 pub mod indexer;
-pub mod methods;
 pub mod proof;
 
 use std::collections::HashMap;

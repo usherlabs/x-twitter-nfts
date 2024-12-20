@@ -1,13 +1,14 @@
 use std::env;
 
-use super::methods::VERIFY_ELF;
+use crate::generated::methods::VERIFY_ELF;
 use super::{TweetResponse, ZkInputParam};
 use alloy_sol_types::SolValue;
 use risc0_ethereum_contracts::groth16;
-use risc0_zkvm::{default_prover, ExecutorEnv, ProverOpts, VerifierContext};
+use risc0_zkvm::{ ExecutorEnv, ProverOpts, VerifierContext, default_prover};
 use std::error::Error;
 use tracing::debug;
 use verity_client::client::{VerityClient, VerityClientConfig};
+// use risc0_zkvm::Prover;
 
 pub fn generate_groth16_proof(zk_inputs: ZkInputParam) -> (Vec<u8>, Vec<u8>) {
     // serialize the inputs to bytes to pass to the remote prover
@@ -16,7 +17,7 @@ pub fn generate_groth16_proof(zk_inputs: ZkInputParam) -> (Vec<u8>, Vec<u8>) {
 
     // begin the proving process
     let env = ExecutorEnv::builder().write_slice(&input).build().unwrap();
-    let receipt = default_prover()
+    let receipt =default_prover()
         .prove_with_ctx(
             env,
             &VerifierContext::default(),
@@ -73,7 +74,7 @@ pub async fn get_proof(tweet_id: String) -> Result<(String, TweetResponse), Box<
 
 pub fn get_verity_client() -> VerityClient {
     let verity_config = VerityClientConfig {
-        prover_url: env::var("VERITY_PROVER_URL").unwrap_or(String::from("http://127.0.0.1:8080")),
+        prover_url: env::var("VERITY_PROVER_URL").expect("VERITY_PROVER_URL must be set")
     };
 
     VerityClient::new(verity_config)

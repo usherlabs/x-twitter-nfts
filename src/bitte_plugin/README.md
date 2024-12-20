@@ -58,13 +58,13 @@
 
 ## To run
 
-TODO: The env files switched between .env and .env.local. We need to fix this.
+TODO: The env files switched between .env and plugin.env. We need to fix this.
 
 - create environment files
-  Copy `.env.sample` to `.env.local` an and fill in the necessary values:
+  Copy `.env.sample` to `plugin.env` an and fill in the necessary values:
     ```
-    cp .env.sample .env.local
-    nano .env.local
+    cp .env.sample plugin.env
+    nano plugin.env
     echo "BITTE_CONFIG=''" > .env
     ```
 
@@ -76,6 +76,8 @@ TODO: The env files switched between .env and .env.local. We need to fix this.
 | TWEET_BEARER | Bearer token for Twitter API access |
 | ACCOUNT_ID | Account ID for agent registration purposes |
 | NEAR_CONTRACT_ADDRESS | NFT Contract address for Near blockchain |
+| HOST_URL | Optional - only required to be filled on production|
+
 
 
 ### Option 1

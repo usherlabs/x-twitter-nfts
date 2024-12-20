@@ -6,3 +6,4 @@ src/zkaf/inputs/*.json
 *.png
 node_modules
 .DS_Store
+default_*

@@ -25,7 +25,7 @@ services:
 
   app:
     build:
-      dockerfile: ./src/near_indexer/.indexer.dockerfile
+      dockerfile: ./src/near_indexer/Dockerfile
       context: . 
     container_name: verity-near-indexer-app
     environment:
