@@ -81,8 +81,8 @@ impl TxSender {
         seal: Vec<u8>,
     ) -> Option<TransactionReceipt> {
         let calldata = IVerifier::IVerifierCalls::verify_proof(IVerifier::verify_proofCall {
-            journal_output: journal_output,
-            seal,
+            journal_output: journal_output.into(),
+            seal: seal.into(),
         })
         .abi_encode();
 
