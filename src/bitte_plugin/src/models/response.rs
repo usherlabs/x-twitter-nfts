@@ -28,9 +28,8 @@ pub enum ResponseBody {
     Message(String),
     AuthToken(String),
     Body(Value),
-    Error(Value)
+    Error(Value),
 }
-
 
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "rocket::serde")]
@@ -49,5 +48,4 @@ pub struct ResponseData {
 pub struct ErrorResponse {
     pub data: ResponseBody,
     pub message: String,
-
 }

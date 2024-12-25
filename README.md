@@ -1,6 +1,5 @@
 # X (Twitter) NFTs
 
-
 > [!WARNING]  
 > **Welcome to the Boundless branch.**  
 >

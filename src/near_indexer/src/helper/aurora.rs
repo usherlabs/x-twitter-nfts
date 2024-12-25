@@ -1,10 +1,9 @@
 use alloy_sol_types::{sol, SolInterface};
 use ethers::prelude::*;
-use tracing::info;
 use std::env;
 use std::error::Error;
 use std::marker::{Send, Sync};
-
+use tracing::info;
 
 // `IVerifier` interface automatically generated via the alloy `sol!` macro.
 sol! {
