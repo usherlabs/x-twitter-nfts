@@ -5,11 +5,20 @@
         "./src/contracts/nft/nft/Cargo.toml",
         "./src/contracts/verifier/integration-tests/Cargo.toml",
         "./src/zkaf/Cargo.toml",
+        "./src/zkaf/apps/Cargo.toml",
+        "./src/zkaf/methods/Cargo.toml",
+        "./src/zkaf/methods/guest/Cargo.toml",
         "./src/bitte_plugin/Cargo.toml",
         "./src/near_indexer/Cargo.toml",
     ],
+    "rust-analyzer.runnables.extraEnv": {
+        "RISC0_SKIP_BUILD": "1"
+    },
     "rust-analyzer.check.extraEnv": {
-        "RISC0_SKIP_BUILD": "1",
+        "RISC0_SKIP_BUILD": "1"
+    },
+    "rust-analyzer.runnableEnv": {
+        "RISC0_SKIP_BUILD": "1"
     },
     "rust-analyzer.procMacro.enable": true,
     "rust-analyzer.server.path": null,
