@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 pub mod catcher_handler;
 pub mod open_api_handler;
 pub mod tweet;
+mod utils;
 
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug)]

@@ -47,7 +47,6 @@ impl OathTweeterHandler {
         .unwrap();
     }
 
-
     /// Creates a new `OathTweeterHandler` with the provided credentials.
     ///
     /// This method takes individual components of the Twitter API authentication
