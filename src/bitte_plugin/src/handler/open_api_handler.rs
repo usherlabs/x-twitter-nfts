@@ -329,7 +329,7 @@ pub fn open_api_specification() -> Json<Value> {
             "x-mb": {
               "account-id": account_id ,
               "assistant": {
-                "name": "X NFTs: Minting & Management Assistant",
+                "name": "X NFTs - Assistant",
                 "description": "An AI assistant designed to facilitate the minting of 1-of-1 NFTs from X (Twitter) posts, including capturing snapshots, managing intents, and handling cancellations.",
                 "instructions": "Step 1: Obtain the X (Twitter) post URL from the user's input.\n
                 Step 2: Inquire if the user wishes to generate NFT art using Bitte AI or capture a snapshot of the X Post/Tweet (tweet-snapshot).\n
