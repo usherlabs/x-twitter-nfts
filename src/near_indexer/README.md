@@ -146,7 +146,7 @@ This will initiate the indexer, which will begin fetching NFT data from the Near
 |-------------------|------------------------------------|
 | BONSAI_API_KEY    | API key for RiscZero Bonsai                 |
 | BONSAI_API_URL    | RiscoZero Bonsai API URL                     |
-| VERITY_PROVER_URL | Verity zkTLS Prover URL                     |
+| VERITY_PROVER_URL | Usher Labs' Verity zkTLS Prover URL                     |
 
 ### Near Signer
 
@@ -170,6 +170,7 @@ This will initiate the indexer, which will begin fetching NFT data from the Near
 | EVM_CHAIN_ID              | Ethereum chain ID                  |
 | AURORA_RPC_URL            | AURORA RPC URL                     |
 | AURORA_VERIFIER_CONTRACT  | EVM verifier smart contract address|
+| AURORA_WALLET_PRIVATE_KEY  | Private key for the EVM wallet used to submit zkProofs for verification |
 
 ### Twitter API
 
