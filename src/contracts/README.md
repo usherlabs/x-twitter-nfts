@@ -1,54 +1,54 @@
 # Core (Near) Contracts
 
-The Core Contracts in the X NFTs project are deployed on the Near blockchain.
-These contracts are responsible for:
+The Core Contracts in the X NFTs project are deployed on the NEAR blockchain. These contracts facilitate the creation and management of NFTs based on verified X (Twitter) data.
 
-1. Accepting and managing NFT mint intents from users
-2. Cross-referencing NFT metadata derived from Tweets with verified zkProofs of X (Twitter) data.
-3. Minting NFTs on the Near blockchain based on verified NFT metadata.
+## Key Responsibilities
+
+1. **Minting Intents**: Accept and manage NFT mint intents from users.
+2. **Metadata Verification**: Cross-reference NFT metadata derived from Tweets with verified zkProofs of X (Twitter) data.
+3. **NFT Minting**: Mint NFTs on the NEAR blockchain using verified metadata.
 
 ## Prerequisites
 
-- [ ] A near testnet account (https://testnet.mynearwallet.com/)
-- [ ] Install system dependency for rust-cli package
+- **NEAR Testnet Account**: Create an account at [NEAR Testnet Wallet](https://testnet.mynearwallet.com/).
+- **System Dependencies**: Install necessary packages for Rust CLI.
 
-```bash
-sudo apt install -y pkg-config libusb-1.0-0-dev libftdi1-dev
-sudo apt-get install libudev-dev
-```
+  ```bash
+  sudo apt install -y pkg-config libusb-1.0-0-dev libftdi1-dev
+  sudo apt-get install libudev-dev
+  ```
 
-- [ ] Near Rust CLI (https://docs.near.org/tools/near-cli-rs)
-- [ ] Login to near on the CLI by running `sh login.sh`
-- [ ] Get some near testnet tokens at https://near-faucet.io/
+- **NEAR Rust CLI**: Follow the [NEAR CLI Documentation](https://docs.near.org/tools/near-cli-rs) to install.
+- **Login**: Authenticate with NEAR using `sh login.sh`.
+- **Testnet Tokens**: Obtain tokens from [NEAR Faucet](https://near-faucet.io/).
 
 ## Deployment
 
-- Initial deployment can be performed by running `sh deploy_contract.sh`
+- **Initial Deployment**: Execute `sh deploy_contract.sh` to deploy the contracts.
 
-```bash
-#deploy_contract.sh
+  ```bash
+  # deploy_contract.sh
 
-export NEAR_CONTRACT_ACCOUNT=usherzkaf.testnet
-export VERIFIER_ADDRESS="0xa4015D18436d266074eC43bb9D2f8DfBAb2a45D5"
+  export NEAR_CONTRACT_ACCOUNT=usherzkaf.testnet
+  export VERIFIER_ADDRESS="0xa4015D18436d266074eC43bb9D2f8DfBAb2a45D5"
 
-...
-### The VERIFIER_ADDRESS should be replaced with the evm address obtained in previous step
-### The NEAR_CONTRACT_ACCOUNT should be replaced with the name of the logged in near account the contract was deployed to
-```
+  ...
+  # Replace VERIFIER_ADDRESS with the EVM address obtained in the previous step
+  # Replace NEAR_CONTRACT_ACCOUNT with the logged-in NEAR account name
+  ```
 
-After initial deployment, further deployments are considered upgrades to the contract and can be persisted by running `sh upgrade_contract.sh`
+- **Upgrades**: For contract upgrades, run `sh upgrade_contract.sh`.
 
-## Calling the contract
+## Contract Interaction
 
-The respective methods on the contract can be called by running the corresponding script in the `scripts` directory.
+Invoke contract methods using scripts located in the `scripts` directory.
 
-## Testing the Contract
+## Testing
 
-The contract can be tested by running `cargo test` at the root of the `integration-tests` folder.
+Run `cargo test` in the `integration-tests` folder to test the contract.
 
-:::note
-Please revise the `integration-tests` folder to determine whether `WARNING.md` is included.
-:::
+> **Warning**
+> Check the `integration-tests` folder to identify any breaking changes or the presence of a `WARNING.md` file.
 
 ## NEAR Smart Contract Callback Functionality for NFTs
 
