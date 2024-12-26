@@ -5,24 +5,22 @@ pub mod handler;
 pub mod helper;
 pub mod models;
 
-use dotenvy::dotenv;
 use handler::{
     catcher_handler::*,
     open_api_handler::open_api_specification,
     tweet::{mint_tweet_request, tweet_contract_call, tweet_contract_cancel_call},
 };
 
-use std::{env, path::Path};
+use std::env;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[launch]
 fn rocket() -> _ {
-    let path = Path::new("plugin.env");
-    if path.exists() {
-        dotenvy::from_filename("plugin.env").expect("Error occurred when loading plugin.env");
-    } else {
-        dotenv().expect("Error occurred when loading .env");
-    }
+    dotenvy::from_filename("plugin.env").expect("Error occurred when loading plugin.env");
+    println!(
+        "Loaded plugin.env with account_id: {}",
+        env::var("ACCOUNT_ID").unwrap()
+    );
 
     //Check if required Variable are set
     env::var("THIRDWEB_CLIENT_ID").expect("THIRDWEB_CLIENT_ID must be set");

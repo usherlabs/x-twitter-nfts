@@ -6,7 +6,11 @@ use crate::handler::utils::extract_plugin_url;
 /// Route handler for serving the OpenAPI specification
 #[get("/ai-plugin.json")]
 pub fn open_api_specification() -> Json<Value> {
-    let account_id = env::var("ACCOUNT_ID").expect("ACCOUNT_ID not defend");
+    let account_id = env::var("ACCOUNT_ID").expect("ACCOUNT_ID not defined");
+    let plugin_url = extract_plugin_url();
+
+    println!("Bitte AI Plugin Account ID: {}", account_id);
+    println!("Bitte AI Plugin URL: {}", plugin_url);
 
     // Create a JSON object representing the OpenAPI specification
     let routes = json!({
@@ -319,7 +323,7 @@ pub fn open_api_specification() -> Json<Value> {
             },
             "servers": [
               {
-                "url": extract_plugin_url()
+                "url": plugin_url
               }
             ],
             "x-mb": {
@@ -327,11 +331,11 @@ pub fn open_api_specification() -> Json<Value> {
               "assistant": {
                 "name": "X NFTs: Minting & Management Assistant",
                 "description": "An AI assistant designed to facilitate the minting of 1-of-1 NFTs from X (Twitter) posts, including capturing snapshots, managing intents, and handling cancellations.",
-                "instructions": "Step 1: Obtain the X (Twitter) post URL from the user's input.\n\
-                                Step 2: Inquire if the user wishes to generate NFT art using Bitte AI or capture a snapshot of the X Post/Tweet (tweet-snapshot).\n\
-                                Step 3: Upon user confirmation, display the image and request their X (Twitter) profile handle for notification purposes post-minting.\n\
-                                Verify the user's profile and inform them that minting will proceed once the zkProof of the X (Twitter) Post is validated on the Near Blockchain.\n\
-                                Guide the user to submit their transaction to initiate the process and ensure them that their profile will be notified upon completion.",
+                "instructions": "Step 1: Obtain the X (Twitter) post URL from the user's input.\n
+                Step 2: Inquire if the user wishes to generate NFT art using Bitte AI or capture a snapshot of the X Post/Tweet (tweet-snapshot).\n
+                Step 3: Upon user confirmation, display the image and request their X (Twitter) profile handle for notification purposes post-minting.\n
+                Verify the user's profile and inform them that minting will proceed once the zkProof of the X (Twitter) Post is validated on the Near Blockchain.\n
+                Guide the user to submit their transaction to initiate the process and ensure them that their profile will be notified upon completion.",
                 "tools": [
                   {
                     "type": "generate-image"
