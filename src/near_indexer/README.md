@@ -14,10 +14,10 @@
   - [Environment Variables](#environment-variables)
     - [General](#general)
     - [PostgreSQL](#postgresql)
-    - [Bonsai](#bonsai)
+    - [ZK Prover](#zk-prover)
     - [Near Signer](#near-signer)
     - [Near Contract](#near-contract)
-    - [Aurora](#aurora)
+    - [ZK Verifier / Aurora EVM](#zk-verifier--aurora-evm)
     - [Twitter API](#twitter-api)
     - [Twitter/X Notification](#twitterx-notification)
 
@@ -140,12 +140,13 @@ This will initiate the indexer, which will begin fetching NFT data from the Near
 | POSTGRES_DB       | PostgreSQL database name           |
 | POSTGRES_PASSWORD | PostgreSQL password                |
 
-### Bonsai
+### ZK Prover
 
 | Variable          | Description                        |
 |-------------------|------------------------------------|
-| BONSAI_API_KEY    | API key for Bonsai                 |
-| BONSAI_API_URL    | Bonsai API URL                     |
+| BONSAI_API_KEY    | API key for RiscZero Bonsai                 |
+| BONSAI_API_URL    | RiscoZero Bonsai API URL                     |
+| VERITY_PROVER_URL | Verity zkTLS Prover URL                     |
 
 ### Near Signer
 
@@ -162,7 +163,7 @@ This will initiate the indexer, which will begin fetching NFT data from the Near
 | NEAR_RPC_URL                      | Near testnet RPC URL               |
 | NFT_CONTRACT_ID                   | ID of the NFT contract             |
 
-### Aurora
+### ZK Verifier / Aurora EVM
 
 | Variable                  | Description                        |
 |---------------------------|------------------------------------|
