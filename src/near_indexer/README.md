@@ -1,4 +1,3 @@
-
 # Near Indexer Project
 
 ## Table of Contents
@@ -13,121 +12,176 @@
   - [Database Migrations](#database-migrations)
   - [Running the Project](#running-the-project)
   - [Environment Variables](#environment-variables)
+    - [General](#general)
+    - [PostgreSQL](#postgresql)
+    - [Bonsai](#bonsai)
+    - [Near Signer](#near-signer)
+    - [Near Contract](#near-contract)
+    - [Aurora](#aurora)
+    - [Twitter API](#twitter-api)
+    - [Twitter/X Notification](#twitterx-notification)
 
 ## Introduction
 
-This project is a Near indexer designed to fetch and index NFT data from the Near blockchain. It utilizes Rust and SeaORM for efficient data processing and storage.
+The Near Indexer Project is designed to efficiently fetch and index NFT data from the Near blockchain. Built with Rust and SeaORM, it ensures robust data processing and storage capabilities.
+
+In addition to indexing, it also functions as an orchestrator for the entire NFT minting process. 
+
+Users interact with the Near blockchain through the Bittle AI plugin (`bitte_plugin`) to send mint intents. 
+
+Once indexed, the orchestration process includes:
+
+- Fetching the Tweet from the X API.
+- Generating a zkTLS proof of the Tweet, ensuring tamper-resistance and authenticity.
+
+The zkProof is then verified and used to authenticate the NFT mint on the Near blockchain. 
+
+Processed transactions and mint intents are managed and stored in a local PostgreSQL database.
 
 ## Prerequisites
 
-Before you begin, make sure you have the following installed:
+Ensure the following are installed before proceeding:
 
-- Rust (version 1.81.0 or higher)
-- Cargo (Rust package manager)
-- Node.js (for optional frontend development)
-- PostgreSQL (database system)
+- **Rust**: Version 1.81.0 or higher
+- **Cargo**: Rust's package manager
+- **Node.js**: Required for optional frontend development
+- **PostgreSQL**: Database system
 
 ## Setup
 
-1. Clone the repository:
-   ```
+1. **Clone the Repository**:
+   
+   ```bash
    git clone https://github.com/usherlabs/x-twitter-nfts.git
    cd src/near-indexer
    ```
 
-2. Install dependencies:
-   ```
+2. **Install Dependencies**:
+   
+   ```bash
    cargo install sea-orm-cli
    ```
 
-3. Copy `.env.sample` to `.env` and fill in the necessary values:
-   ```
+3. **Configure Environment**:
+   Copy the sample environment file and update it with your specific configurations:
+   
+   ```bash
    cp .env.sample .env
    nano .env
    ```
 
 ## Usage
 
-This project is designed to run as a background service. To start it:
+The project is intended to run as a background service. Follow these steps to start it:
 
-1. Run database migrations:
-   ```
+1. **Run Database Migrations**:
+   ```bash
    sea-orm-cli migrate up
    ```
 
-2. Start the project:
-   ```
+2. **Start the Project**:
+   ```bash
    cargo run
    ```
 
 ## Configuration
 
-The main configuration is done through environment variables in the `.env` file. Make sure to set the following:
+Configuration is managed through environment variables in the `.env` file. Key variables include:
 
-- `DATABASE_URL`: Your PostgreSQL connection string
-- `NEAR_RPC_URL`: The URL of your Near RPC endpoint
-- `CONTRACT_ADDRESS`: The address of the NFT contract you want to index
-- `TOKEN_ID`: The ID of the NFT token you want to retrieve
+- `DATABASE_URL`: PostgreSQL connection string
+- `NEAR_RPC_URL`: Near RPC endpoint URL
+- `CONTRACT_ADDRESS`: NFT contract address to index
+- `TOKEN_ID`: NFT token ID to retrieve
 
 ## Database Migrations
 
-To apply database schema changes:
+To manage database schema changes:
 
-1. Create migration:
-   ```
+1. **Create a Migration**:
+   ```bash
    sea-orm-cli generate migration create_nfts_table
    ```
 
-2. Edit the generated migration file to add your schema changes
+2. **Edit the Migration File**: Add your schema changes.
 
-3. Apply migration:
-   ```
+3. **Apply the Migration**:
+   ```bash
    sea-orm-cli migrate up
    ```
 
 ## Running the Project
 
-To run the project:
+To execute the project:
 
-1. Ensure you've filled in the `.env` file with the required values
+1. Ensure the `.env` file is correctly configured.
 
 2. Run the following command:
-   ```
+   ```bash
    cargo run
    ```
 
-This will start the indexer and begin fetching NFT data from the Near blockchain.
+This will initiate the indexer, which will begin fetching NFT data from the Near blockchain.
 
 ## Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| RISC0_USE_DOCKER | Flag to use Docker (true/false) |
-| RUST_LOG | Rust logging level |
-| ----------Postgress DB setup------------------|
-| DATABASE_URL | PostgreSQL connection string |
-| POSTGRES_USER | Username for PostgreSQL |
-| POSTGRES_DB | Database name for PostgreSQL |
-| POSTGRES_PASSWORD | Password for PostgreSQL |
-| ----------Bonsai pair------------------|
-| BONSAI_API_KEY | API key for Bonsai |
-| BONSAI_API_URL | Bonsai API URL |
-| ----------Near signer Pair------------------|
-| NEAR_SIGNER_ACCOUNT_ID | Signer account ID on testnet |
-| NEAR_ACCOUNT_SECRET_KEY | Account secret key |
-| ----------Near Contract Parameters-----------------|
-| NEAR_VERIFIER_CONTRACT_ACCOUNT_ID | Verifier contract account ID |
-| NEAR_RPC_URL | Near testnet RPC URL |
-| NFT_CONTRACT_ID | ID of the NFT contract |
-| ----------Aurora Parameter------------------|
-| EVM_CHAIN_ID | Ethereum chain ID |
-| AURORA_RPC_URL | AURORA RPC URL |
-| AURORA_VERIFIER_CONTRACT | EVM verifier smart contract address |
-| ----Twitter Bearer Key To query tweet info------------------|
-| TWEET_BEARER | Bearer token for Twitter API access |
-| ----Twitter/X pairs required to notify user after mint------------------|
-| TWEET_CONSUMER_KEY | Twitter consumer key |
-| TWEET_CONSUMER_SECRET | Twitter consumer secret |
-| TWEET_ACCESS_TOKEN | Twitter access token |
-| TWEET_TOKEN_SECRET | Twitter token secret |
+### General
+
+| Variable          | Description                        |
+|-------------------|------------------------------------|
+| RISC0_USE_DOCKER  | Use Docker (true/false)            |
+| RUST_LOG          | Rust logging level                 |
+
+### PostgreSQL
+
+| Variable          | Description                        |
+|-------------------|------------------------------------|
+| DATABASE_URL      | PostgreSQL connection string       |
+| POSTGRES_USER     | PostgreSQL username                |
+| POSTGRES_DB       | PostgreSQL database name           |
+| POSTGRES_PASSWORD | PostgreSQL password                |
+
+### Bonsai
+
+| Variable          | Description                        |
+|-------------------|------------------------------------|
+| BONSAI_API_KEY    | API key for Bonsai                 |
+| BONSAI_API_URL    | Bonsai API URL                     |
+
+### Near Signer
+
+| Variable                  | Description                        |
+|---------------------------|------------------------------------|
+| NEAR_SIGNER_ACCOUNT_ID    | Signer account ID on testnet       |
+| NEAR_ACCOUNT_SECRET_KEY   | Account secret key                 |
+
+### Near Contract
+
+| Variable                          | Description                        |
+|-----------------------------------|------------------------------------|
+| NEAR_VERIFIER_CONTRACT_ACCOUNT_ID | Verifier contract account ID       |
+| NEAR_RPC_URL                      | Near testnet RPC URL               |
+| NFT_CONTRACT_ID                   | ID of the NFT contract             |
+
+### Aurora
+
+| Variable                  | Description                        |
+|---------------------------|------------------------------------|
+| EVM_CHAIN_ID              | Ethereum chain ID                  |
+| AURORA_RPC_URL            | AURORA RPC URL                     |
+| AURORA_VERIFIER_CONTRACT  | EVM verifier smart contract address|
+
+### Twitter API
+
+| Variable                  | Description                        |
+|---------------------------|------------------------------------|
+| TWEET_BEARER              | Bearer token for Twitter API access|
+
+### Twitter/X Notification
+
+| Variable                  | Description                        |
+|---------------------------|------------------------------------|
+| TWEET_CONSUMER_KEY        | Twitter consumer key               |
+| TWEET_CONSUMER_SECRET     | Twitter consumer secret            |
+| TWEET_ACCESS_TOKEN        | Twitter access token               |
+| TWEET_TOKEN_SECRET        | Twitter token secret               |
 
