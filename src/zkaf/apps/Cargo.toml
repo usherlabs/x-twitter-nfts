@@ -5,6 +5,8 @@ edition = { workspace = true }
 
 
 [dependencies]
+alloy = { workspace = true, features = ["signers", "full"] }
+boundless-market = { workspace = true }
 alloy-primitives = { workspace = true }
 alloy-sol-types = { workspace = true }
 anyhow = { workspace = true }
@@ -29,3 +31,4 @@ indexer = { path = "../../near_indexer" }
 dotenv = { workspace = true }
 near-contract-standards = "5.5.0"
 verity-verify-tls = { workspace = true }
+url = "2.5"

@@ -1,3 +1,4 @@
+pub mod boundless;
 use near_contract_standards::non_fungible_token::metadata::TokenMetadata;
 use near_contract_standards::non_fungible_token::{Token, TokenId};
 use near_jsonrpc_client::{methods, JsonRpcClient};

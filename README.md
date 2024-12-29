@@ -1,5 +1,18 @@
 # X (Twitter) NFTs
 
+
+> [!WARNING]  
+> **Welcome to the Boundless branch.**  
+>
+> This branch introduces a Proof of Concept for generating zkProofs directly on RiscZero's Boundless platform, a decentralized R0 ZK proving network.
+>
+> To explore the integration, begin with the `src/zkaf/apps/src/bin/publisher.rs` file, followed by `src/zkaf/apps/src/boundless.rs`. The `generate_boundless_proof` function in the latter file is central to this logic.
+>
+> For further details, please refer to the [`BOUNDLESS.md`](./BOUNDLESS.md) documentation.
+
+## TLS Proof Generation Guide
+
+
 1. clone [verity]() and run notary and prover. see [more](https://github.com/usherlabs/verity)
 2. configure and run [Bitte Plugin](./src/bitte_plugin/README.md)
 3. configure and run [orchestrator](./src/near_indexer/README.md)

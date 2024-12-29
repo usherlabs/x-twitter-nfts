@@ -8,6 +8,7 @@ version = "0.1.0"
 edition = "2021"
 
 [workspace.dependencies]
+alloy = { version = "0.6" }
 alloy-primitives = { version = "0.8.15", default-features = false, features = [
     "rlp",
     "serde",
@@ -31,6 +32,9 @@ dotenv = "0.15.0"
 verity-verify-tls = { git = "https://github.com/usherlabs/verity-dp.git",  version = "0.0.0", default-features = false, features = [
     "no-session",
 ] }
+boundless-market = "0.4"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 
 [profile.release]
