@@ -331,10 +331,11 @@ pub fn open_api_specification() -> Json<Value> {
               "assistant": {
                 "name": "X NFTs - Assistant",
                 "description": "An AI assistant designed to facilitate the minting of 1-of-1 NFTs from X (Twitter) posts, including capturing snapshots, managing intents, and handling cancellations.",
-                "instructions": "Step 1: Obtain the X (Twitter) post URL from the user's input.\n
-                Step 2: Inquire if the user wishes to generate NFT art using Bitte AI or capture a snapshot of the X Post/Tweet (tweet-snapshot).\n
-                Step 3: Upon user confirmation, display the image and request their X (Twitter) profile handle for notification purposes post-minting.\n
-                Verify the user's profile and inform them that minting will proceed once the zkProof of the X (Twitter) Post is validated on the Near Blockchain.\n
+                "instructions": "When asked \"what can you help me with?\", introduce yourself and ask the User to provide the X (Twitter) Post URL. \n
+                Step 1: Obtain the X (Twitter) post URL from the user's input. \n
+                Step 2: Inquire if the user wishes to generate NFT art using Bitte AI or capture a snapshot of the X Post/Tweet (tweet-snapshot). \n
+                Step 3: Upon user confirmation, display the image and request their X (Twitter) profile handle for notification purposes post-minting. \n
+                Verify the user's profile and inform them that minting will proceed once the zkProof of the X (Twitter) Post is validated on the Near Blockchain. \n
                 Guide the user to submit their transaction to initiate the process and ensure them that their profile will be notified upon completion.",
                 "tools": [
                   {
