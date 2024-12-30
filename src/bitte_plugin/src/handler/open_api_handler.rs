@@ -1,11 +1,17 @@
-use rocket::serde::json::{self, json, Json, Value};
-use std::{env, fs, path::PathBuf};
+use rocket::serde::json::{json, Json, Value};
+use std::env;
 
-use super::PluginInfo;
+use crate::handler::utils::extract_plugin_url;
 
 /// Route handler for serving the OpenAPI specification
 #[get("/ai-plugin.json")]
 pub fn open_api_specification() -> Json<Value> {
+    let account_id = env::var("ACCOUNT_ID").expect("ACCOUNT_ID not defined");
+    let plugin_url = extract_plugin_url();
+
+    println!("Bitte AI Plugin Account ID: {}", account_id);
+    println!("Bitte AI Plugin URL: {}", plugin_url);
+
     // Create a JSON object representing the OpenAPI specification
     let routes = json!({
             "/api/tweet": {
@@ -27,14 +33,14 @@ pub fn open_api_specification() -> Json<Value> {
                   "Derive",
                   "Duplicate",
                 ],
-                "summary": "Get tweet post data",
-                "description": "This endpoint returns an image of the post to be Rewarded along side an tweet description",
+                "summary": "Retrieve data for a specific X / Tweet post",
+                "description": "This endpoint provides an image and description of a post/tweet to X (Twitter) along with the cost to mint a unique 1 of 1 NFT representing the Post.",
                 "operationId": "tweet-snapshot",
                 "parameters": [
                   {
                     "name": "tweet_id",
                     "in": "query",
-                    "description": "The tweet Id of the post to be Rewarded (NB: Its a 19 digit long numeric ID)",
+                    "description": "The tweet ID of the post to be rewarded (Note: It is a 19-digit long numeric ID)",
                     "required": true,
                     "schema": {
                       "type": "string"
@@ -84,8 +90,8 @@ pub fn open_api_specification() -> Json<Value> {
             },
             "/api/tweet-contract-call": {
               "get": {
-                "summary": "Reward Transaction Request data/ create transaction",
-                "description": "A transaction objects to be signed by user to Reward Request/Reward reserve",
+                "summary": "Request a Transaction Object for to Submit Mint Tweet Intent",
+                "description": "Generate a transaction object that the user needs to sign in order to mint a tweet. This transaction includes details such as the tweet ID, image URL, notification account, and the computed cost for the reward.",
                 "operationId": "reserve-mint-transaction",
                 "tags": [
                     "tweet",
@@ -102,7 +108,7 @@ pub fn open_api_specification() -> Json<Value> {
                     "schema": {
                       "type": "string"
                     },
-                    "description": "Image URL to be Rewarded, this could be the IPFS or arweave URL in from ipfs://{CID} or ar://{Image_ID}"
+                    "description": "Image URL to be rewarded. This could be an IPFS URL in the format ipfs://{CID} or an Arweave URL in the format ar://{Image_ID}."
                   },
                   {
                     "in": "query",
@@ -111,7 +117,7 @@ pub fn open_api_specification() -> Json<Value> {
                     "schema": {
                       "type": "string"
                     },
-                    "description": "The tweet Id of the post to be Rewarded (NB: Its a 19 digit long ID)"
+                    "description": "The tweet ID of the post to be rewarded (Note: It is a 19-digit long ID)"
                   },
                   {
                     "in": "query",
@@ -121,7 +127,7 @@ pub fn open_api_specification() -> Json<Value> {
                       "type": "string"
                     },
                     "example": "@ryan_soury",
-                    "description": "The tweet account to notify when is reward/post is complete"
+                    "description": "The X (Twitter) account handle to notify when the reward/post is complete"
                   },
                   {
                     "in": "query",
@@ -131,12 +137,12 @@ pub fn open_api_specification() -> Json<Value> {
                       "type": "string"
                     },
                     "example": "680000000000000000000",
-                    "description": "The cost/amount of deposit required for the mint"
+                    "description": "The required deposit amount for minting the tweet"
                   }
                 ],
                 "responses": {
                   "200": {
-                    "description": "Reward transactions generated successfully.",
+                    "description": "Successfully generated the transaction object for minting the tweet.",
                     "content": {
                       "application/json": {
                         "schema": {
@@ -144,7 +150,7 @@ pub fn open_api_specification() -> Json<Value> {
                             "properties": {
                               "receiverId": {
                                 "type": "string",
-                                "description": "The account ID of the contract that will receive the transaction. CONTRACT_ID"
+                                "description": "The NEAR account ID of the contract that will receive the transaction. ie. CONTRACT_ID"
                               },
                               "functionCalls": {
                                 "type": "array",
@@ -153,11 +159,11 @@ pub fn open_api_specification() -> Json<Value> {
                                   "properties": {
                                     "methodName": {
                                       "type": "string",
-                                      "description": "The name of the method to be called on the contract."
+                                      "description": "The method name to be invoked on the contract."
                                     },
                                     "args": {
                                       "type": "object",
-                                      "description": "Arguments for the function call.",
+                                      "description": "The arguments required for the function call.",
                                       "properties": {
                                         "tweet_id": {
                                           "type": "string"
@@ -170,11 +176,11 @@ pub fn open_api_specification() -> Json<Value> {
                                     },
                                     "gas": {
                                       "type": "string",
-                                      "description": "The amount of gas to attach to the transaction, in yoctoNEAR."
+                                      "description": "The amount of gas to attach to the transaction, specified in yoctoNEAR."
                                     },
                                     "amount": {
                                       "type": "string",
-                                      "description": "REQUIRED: The amount of NEAR tokens to attach to the transaction, in yoctoNEAR."
+                                      "description": "REQUIRED: The amount of NEAR tokens to attach to the transaction, specified in yoctoNEAR."
                                     }
                                   },
                                   "required": [
@@ -199,8 +205,8 @@ pub fn open_api_specification() -> Json<Value> {
             },
               "/api/tweet-cancel-call": {
               "get": {
-                "summary": "Cancel an Initialed Mint Intent",
-                "description": "Cancel a previously initiated Tweet intent",
+                "summary": "Cancel an Initiatised Mint Intent",
+                "description": "Cancel a previously initiated tweet intent",
                 "operationId": "cancel-mint-intent",
                 "tags": [
                   "tweet",
@@ -215,12 +221,12 @@ pub fn open_api_specification() -> Json<Value> {
                     "schema": {
                       "type": "string"
                     },
-                    "description": "The ID of the tweet to cancel the contract call for"
+                    "description": "The ID of the tweet for which to cancel the contract call"
                   }
                 ],
                 "responses": {
                   "200": {
-                    "description": "Cancellation transactions generated successfully",
+                    "description": "Successfully generated the transaction object for cancelling the minting the tweet.",
                     "content": {
                       "application/json": {
                         "schema": {
@@ -228,7 +234,7 @@ pub fn open_api_specification() -> Json<Value> {
                             "properties": {
                               "receiverId": {
                                 "type": "string",
-                                "description": "The account ID of the contract that will receive the transaction. CONTRACT_ID"
+                                "description": "The NEAR account ID of the contract that will receive the transaction. ie. CONTRACT_ID"
                               },
                               "functionCalls": {
                                 "type": "array",
@@ -237,11 +243,11 @@ pub fn open_api_specification() -> Json<Value> {
                                   "properties": {
                                     "methodName": {
                                       "type": "string",
-                                      "description": "The name of the method to be called on the contract."
+                                      "description": "The method name to be invoked on the contract."
                                     },
                                     "args": {
                                       "type": "object",
-                                      "description": "Arguments for the function call.",
+                                      "description": "The arguments required for the function call.",
                                       "properties": {
                                         "tweet_id": {
                                           "type": "string"
@@ -251,7 +257,7 @@ pub fn open_api_specification() -> Json<Value> {
                                     },
                                     "gas": {
                                       "type": "string",
-                                      "description": "The amount of gas to attach to the transaction, in yoctoNEAR."
+                                      "description": "The amount of gas to attach to the transaction, specified in yoctoNEAR."
                                     },
                                   },
                                   "required": [
@@ -280,7 +286,7 @@ pub fn open_api_specification() -> Json<Value> {
                           "properties": {
                             "error": {
                               "type": "string",
-                              "description": "Description of the error"
+                              "description": "Invalid request error"
                             }
                           }
                         }
@@ -296,7 +302,7 @@ pub fn open_api_specification() -> Json<Value> {
                           "properties": {
                             "error": {
                               "type": "string",
-                              "description": "Description of the error"
+                              "description": "X Post/Tweet not found error"
                             }
                           }
                         }
@@ -311,40 +317,26 @@ pub fn open_api_specification() -> Json<Value> {
     Json(json!({
             "openapi": "3.0.0",
             "info": {
-              "title": "Tweet post rewarder",
-              "description": "API for retrieving a digital representation of a post image along with it's description for further image generation if necessary and clones a tweet",
+              "title": "X NFTs: Minting & Management API",
+              "description": "API for minting unique 1-of-1 NFTs from X (Twitter) posts, including capturing post snapshots, managing intents, and canceling intents.",
               "version": "1.0.0"
             },
             "servers": [
               {
-                "url": env::var("HOST_URL").unwrap_or_else(|_| {
-                    let current_dir = env::current_dir().unwrap();
-                    let mut bitte_config_path = PathBuf::from(current_dir);
-                    bitte_config_path.push(".env");
-                    let bitte_config = fs::read_to_string(bitte_config_path).unwrap();
-                    // Split the contents into lines
-                    let lines: Vec<&str> = bitte_config.split('\n').collect();
-
-                    // Collect lines starting with "BITTE_CONFIG"
-                    let config_lines: Vec<String> = lines.iter()
-                    .filter(|line| line.starts_with("BITTE_CONFIG"))
-                    .map(|line| line.to_string())
-                    .collect();
-                    if config_lines.len()==0{
-                          return "".to_string()
-                      }
-                    let plugin_info:PluginInfo  = json::serde_json::from_str(config_lines.first().unwrap().replace("BITTE_CONFIG=", "").as_str()).unwrap();
-                    plugin_info.url
-                  }
-                )
+                "url": plugin_url
               }
             ],
             "x-mb": {
-              "account-id": env::var("ACCOUNT_ID").expect("ACCOUNT_ID not defend"),
+              "account-id": account_id ,
               "assistant": {
-                "name": "Tweet Minter",
-                "description": "An assistant that provides a digital representation of a Post as an Image with its description and generates a custom transaction for the user",
-                "instructions": "Retrieve the X(twitter) post URL from the user's request. Ask the user if they want to AI generated art for the post or use the default tweet-snapshot that will be provided. If the user confirms, Show the Image and prompt them to provide the user profile to notify after minting. Confirm the user's profile and inform them that the post will be minted once verified on the Near Blockchain. Instruct the user to submit their transaction to get started and assure them that the specified profile will be notified once it's ready.",
+                "name": "X NFTs - Assistant",
+                "description": "An AI assistant designed to facilitate the minting of 1-of-1 NFTs from X (Twitter) posts, including capturing snapshots, managing intents, and handling cancellations.",
+                "instructions": "When asked \"what can you help me with?\", introduce yourself and ask the User to provide the X (Twitter) Post URL. \n
+                Step 1: Obtain the X (Twitter) post URL from the user's input. \n
+                Step 2: Inquire if the user wishes to generate NFT art using Bitte AI or capture a snapshot of the X Post/Tweet (tweet-snapshot). \n
+                Step 3: Upon user confirmation, display the image and request their X (Twitter) profile handle for notification purposes post-minting. \n
+                Verify the user's profile and inform them that minting will proceed once the zkProof of the X (Twitter) Post is validated on the Near Blockchain. \n
+                Guide the user to submit their transaction to initiate the process and ensure them that their profile will be notified upon completion.",
                 "tools": [
                   {
                     "type": "generate-image"

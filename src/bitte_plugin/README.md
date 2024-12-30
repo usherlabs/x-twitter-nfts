@@ -1,12 +1,14 @@
-# Rust Bittle AI plugin
+# Rust Bittle AI Plugin
 
 ## Prerequisites
 
-- Node >=18
-- Install `make-agent` - `pnpm i`
-  - [Reference Docs](https://docs.bitte.ai/agents/quick-start)
+- **Node.js**: Version 18 or higher
+- **Make-Agent Tool**: Install using `pnpm i`
+  - [Reference Documentation](https://docs.bitte.ai/agents/quick-start)
 
-  To use this crate effectively, you need to have one or more of the following browsers installed locally:
+### Supported Browsers
+
+To use this crate effectively, ensure you have one or more of the following browsers installed:
 
 - **Google Chrome**:
   - `google-chrome-stable`
@@ -29,78 +31,78 @@
   - `msedge`
   - `microsoft-edge`
 
+**Installation**: Use your system’s package manager to install the preferred browser binaries. For example:
 
-**Install Any of your preferred chrome engine or Binaries**: You can usually install these using your system’s package manager. For sample:
+- **Debian/Ubuntu**:
 
-  - **Debian/Ubuntu**:
+  ```bash
+  sudo apt-get install google-chrome-stable chromium-browser
+  sudo apt-get install microsoft-edge-stable
+  ```
 
-    ```bash
-    sudo apt-get install google-chrome-stable chromium-browser
-    sudo apt-get install microsoft-edge-stable
-    ```
+- **Fedora**:
 
-  - **Fedora**:
+  ```bash
+  sudo dnf install google-chrome-stable chromium
+  sudo dnf install microsoft-edge-stable
+  ```
 
-    ```bash
-    sudo dnf install google-chrome-stable chromium
-    sudo dnf install microsoft-edge-stable
-    ```
+- **macOS**: Use Homebrew:
 
-  - **macOS**: You can use Homebrew:
+  ```bash
+  brew install --cask google-chrome chromium
+  brew install --cask microsoft-edge
+  ```
 
-    ```bash
-    brew install --cask google-chrome chromium
-    brew install --cask microsoft-edge
-    ```
+- **Windows**: Download and install the browsers from their official websites.
 
-  - **Windows**: Download and install the browsers from their official websites.
+## Running the Plugin
 
+Bitte's `make-agent` tool generates a `.env` file containing critical information for Bitte AI to register and understand the plugin. Since the registration occurs immediately after file generation, we use a separate dotenv file, **`plugin.env`**, for custom environment variables.
 
-## To run
+### Setting Up Environment Files
 
-TODO: The env files switched between .env and plugin.env. We need to fix this.
+1. Copy `.env.sample` to `plugin.env` and fill in the necessary values:
 
-- create environment files
-  Copy `.env.sample` to `plugin.env` an and fill in the necessary values:
-    ```
-    cp .env.sample plugin.env
-    nano plugin.env
-    echo "BITTE_CONFIG=''" > .env
-    ```
+   ```bash
+   cp .env.sample plugin.env
+   vim plugin.env
+   ```
 
 ### Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| THIRDWEB_CLIENT_ID | Client ID for Thirdweb integration |
-| TWEET_BEARER | Bearer token for Twitter API access |
-| ACCOUNT_ID | Account ID for agent registration purposes |
-| NEAR_CONTRACT_ADDRESS | NFT Contract address for Near blockchain |
-| HOST_URL | Optional - only required to be filled on production|
+| Variable              | Description                                      |
+|-----------------------|--------------------------------------------------|
+| `THIRDWEB_CLIENT_ID`  | Client ID for Thirdweb integration               |
+| `TWEET_BEARER`        | Bearer token for Twitter API access              |
+| `ACCOUNT_ID`          | Account ID for agent registration purposes       |
+| `NEAR_CONTRACT_ADDRESS` | NFT Contract address for Near blockchain       |
+| `HOST_URL`            | Optional - only required for production          |
 
+## Execution Options
 
+### Option 1: Using Script
 
-### Option 1
-
-```
-  ./script/run.sh
-```
-
-### Option 2
-
-Start server
-
-```
-cargo run
-```
-and
-run agent mainnet
-
-```
-npx make-agent dev -p 8007
+```bash
+./script/run.sh
 ```
 
-run agent testnet
-```
-npx make-agent dev -p 8007 -t
-```
+### Option 2: Manual Execution
+
+1. Start the server:
+
+   ```bash
+   cargo run
+   ```
+
+2. Run the agent on the mainnet:
+
+   ```bash
+   npx make-agent dev -p 8007
+   ```
+
+3. Run the agent on the testnet:
+
+   ```bash
+   npx make-agent dev -p 8007 -t
+   ```

@@ -35,21 +35,27 @@ fn parse_constants(input: &str) -> Result<String, Box<dyn std::error::Error>> {
     let lines: Vec<&str> = input.split('\n').collect();
 
     // Collect lines starting with "VERIFY_ELF"
-    let selected_lines: Vec<String> = lines.iter()
+    let selected_lines: Vec<String> = lines
+        .iter()
         .filter(|line| line.contains("VERIFY_ELF"))
         .map(|line| line.to_string())
         .collect();
-    
+
     // Check if any matching lines were found
     if selected_lines.is_empty() {
         return Err("Could not find the line".into());
     }
 
     // Extract the ELF bytes from the selected line
-    let elf_bytes : String = selected_lines[0].split("include_bytes!").skip(1).collect();
+    let elf_bytes: String = selected_lines[0].split("include_bytes!").skip(1).collect();
 
     // Clean up the extracted string by removing unnecessary characters
-    let cleaned_elf_bytes = elf_bytes.replace("(", "").replace("\"", "").replace(")", "").replace(";", "").replace(" ", "");
+    let cleaned_elf_bytes = elf_bytes
+        .replace("(", "")
+        .replace("\"", "")
+        .replace(")", "")
+        .replace(";", "")
+        .replace(" ", "");
 
     // Read the actual bytes from the cleaned string
     let byte = fs::read(cleaned_elf_bytes).unwrap();
@@ -57,7 +63,6 @@ fn parse_constants(input: &str) -> Result<String, Box<dyn std::error::Error>> {
     // Format the result as a constant declaration
     Ok(format!("pub const VERIFY_ELF: &[u8] = &{:?};", byte))
 }
-
 
 /// Copies the ELF file from the build output to the specified destination folder.
 ///
@@ -103,7 +108,7 @@ mod tests {
     use alloy_sol_types::SolValue;
     use risc0_zkvm::{default_executor, ExecutorEnv};
 
-    use crate::{parse_constants,VERIFY_ELF};
+    use crate::{parse_constants, VERIFY_ELF};
 
     #[test]
     fn proves_verification() {
@@ -121,5 +126,4 @@ mod tests {
 
         assert!(req_res_hash_hex_string.len() > 10);
     }
-
 }
