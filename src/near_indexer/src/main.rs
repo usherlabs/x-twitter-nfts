@@ -104,7 +104,7 @@ pub async fn process_near_transaction(
 ) -> Result<bool, DbErr> {
     // Get the NFT contract ID from environment variable or use default value
     let nft_contract_id =
-        env::var("NEAR_NFT_CONTRACT_ACCOUNT_ID").unwrap_or("x-bitte-nft.testnet".to_owned());
+        env::var("NEAR_NFT_CONTRACT_ACCOUNT_ID").unwrap_or("x-bitte-nfts.testnet".to_owned());
     let nft_contract_id = AccountId::from_str(&nft_contract_id).unwrap();
 
     // Parse the transaction ID as an integer

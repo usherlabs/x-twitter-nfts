@@ -1,4 +1,4 @@
-export NEAR_NFT_ACCOUNT_ID="x-bitte-nft.testnet"
+export NEAR_NFT_ACCOUNT_ID="x-bitte-nfts.testnet"
 # this is the account that would be able to mint nft's, it is also the account of the verifier contract
 export NEAR_VERIFIER_CONTRACT_ACCOUNT="local-verifier.testnet"
 

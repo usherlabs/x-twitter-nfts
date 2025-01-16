@@ -22,6 +22,7 @@ use events::CancelMintRequest;
 use near_contract_standards::non_fungible_token::metadata::{
     NFTContractMetadata, NonFungibleTokenMetadataProvider, TokenMetadata, NFT_METADATA_SPEC,
 };
+use near_contract_standards::non_fungible_token::events::NftMint;
 use near_contract_standards::non_fungible_token::NonFungibleToken;
 use near_contract_standards::non_fungible_token::{Token, TokenId};
 use near_contract_tools::standard::nep297::Event;
@@ -228,7 +229,7 @@ impl Contract {
                 token_id.clone(),
                 receiver_id.clone(),
                 Some(token_metadata.clone()),
-                Some(receiver_id),
+                Some(receiver_id.clone()),
             );
 
             // Calculate refund amount
@@ -248,7 +249,12 @@ impl Contract {
             // Update request status and refund amount
             request.claimable_deposit = refund_amount;
             self.tweet_requests.insert(&token.token_id, &request);
-            self.claim_funds(token_id, request, MintRequestStatus::IsFulfilled);
+            self.claim_funds(token_id.clone(), request, MintRequestStatus::IsFulfilled);
+            NftMint{
+                owner_id: &receiver_id,
+                token_ids: &[&token_id],
+                memo: None,
+            }.emit();
             return token;
         } else {
             // penalize user by decreasing Claimable Balance
