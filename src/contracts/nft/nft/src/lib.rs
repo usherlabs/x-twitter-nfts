@@ -534,12 +534,12 @@ near_contract_standards::impl_non_fungible_token_core!(Contract, tokens);
 near_contract_standards::impl_non_fungible_token_approval!(Contract, tokens);
 near_contract_standards::impl_non_fungible_token_enumeration!(Contract, tokens);
 
-// #[near_bindgen]
-// impl NonFungibleTokenMetadataProvider for Contract {
-//     fn nft_metadata(&self) -> NFTContractMetadata {
-//         self.metadata.get().unwrap()
-//     }
-// }
+#[near_bindgen]
+impl NonFungibleTokenMetadataProvider for Contract {
+    fn nft_metadata(&self) -> NFTContractMetadata {
+        self.metadata.get().unwrap()
+    }
+}
 
 #[cfg(test)]
 mod tests {
