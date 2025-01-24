@@ -126,12 +126,19 @@ pub struct NearIndexerData {
 }
 
 #[allow(non_snake_case)]
+#[derive(Serialize, Deserialize)]
+pub struct ZenrowsPage {
+    html: String,
+}
+
+
+#[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PageProps {
     statsDetails: StatsDetails,
     // accountDetails: AccountDetails,
     data: TransactionData,
-    dataCount: DataCount,
+    // dataCount: DataCount,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -240,6 +247,7 @@ struct Inventory {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TransactionData {
+    #[serde(default)]
     cursor: Option<String>,
     txns: Vec<JSONTransaction>,
 }

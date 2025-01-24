@@ -1,10 +1,11 @@
 use regex::Regex;
 use std::error::Error;
 use std::marker::{Send, Sync};
+use std::process::Output;
 use std::time::Duration;
 use tokio::time::sleep;
 
-use super::{JSONTransaction, NearIndexerData, TransactionData};
+use super::{JSONTransaction, NearIndexerData, TransactionData, ZenrowsPage};
 
 pub struct NearExplorerIndexer<'a> {
     pub page_no: u8,
@@ -22,12 +23,7 @@ impl<'a> NearExplorerIndexer<'a> {
         Ok(NearExplorerIndexer {
             cursor: None,
             page_no: 0,
-            build_id: (if account_id.ends_with(".testnet") {
-                "0kmxltnOS1UsrfVrMd5fP"
-            } else {
-                "bE43kUihJPVfWqBYXxGBQ"
-            })
-            .to_owned(),
+            build_id: "nearblocks".to_owned(),
             account_id: &account_id,
         })
     }
@@ -92,12 +88,12 @@ impl<'a> NearExplorerIndexer<'a> {
         loop {
             let url = if self.page_no == 0 || reset {
                 format!(
-                    "https://{}/_next/data/{}/en/address/{}.json",
+                    "https://api.zenrows.com/v1/?apikey=be044f050f7b34b0a8b9abc7883dfa003c881018&url=https%3A%2F%2F{}%2F_next%2Fdata%2F{}%2Fen%2Faddress%2F{}.json&js_render=true&json_response=true",
                     base, self.build_id, self.account_id
                 )
             } else {
                 format!(
-                    "https://{}/_next/data/{}/en/address/{}.json?cursor={}&p={}",
+                    "https://api.zenrows.com/v1/?apikey=be044f050f7b34b0a8b9abc7883dfa003c881018&url=https%3A%2F%2F{}%2F_next%2Fdata%2F{}%2Fen%2Faddress%2F{}.json%3Fcursor%3D{}%26p%3D{}&js_render=true&json_response=true",
                     base,
                     self.build_id,
                     self.account_id,
@@ -118,17 +114,18 @@ impl<'a> NearExplorerIndexer<'a> {
                         self.build_id = build_number.as_str().to_owned();
                     }
                 }
-            } else {
-                match response.json::<NearIndexerData>().await {
-                    Ok(output) => {
+            } else if( &response).status() == 200 {
+                match response.json::<ZenrowsPage>().await{
+                    Ok(_output) => {
+                        let output: NearIndexerData = serde_json::from_str(&_output.html)?;
                         return Ok(output.pageProps.data);
-                    }
-                    Err(e) => {
-                        if retries >= max_retries {
-                            return Err(format!("FETCH_ERROR: {}, {}", e, &url).into());
-                        }
+                }
+                Err(e) => {
+                    if retries >= max_retries {
+                        return Err(format!("FETCH_ERROR: {}, {}", e, &url).into());
                     }
                 }
+            }
             }
             retries += 1;
             let delay = Duration::from_millis(5000);
