@@ -43,6 +43,8 @@ async fn main() {
 
     // Init Near Client
     let client = NearClient::new(Url::from_str(&near_rpc).unwrap()).unwrap();
+    let zenrows_key = env::var("ZENROWS_KEY").expect("ZENROWS_KEY must be set");
+
 
     // Initialize tracing. In order to view logs, run `RUST_LOG=info cargo run`
     tracing_subscriber::fmt()
@@ -54,7 +56,7 @@ async fn main() {
         digest(format!("{}", hex::encode(VERIFY_ELF)))
     );
 
-    let indexer = indexer::NearExplorerIndexer::new(&nft_contract_id);
+    let indexer = indexer::NearExplorerIndexer::new(&nft_contract_id,&zenrows_key);
     if indexer.is_err() {
         error!("indexer-init-error: {:?}", indexer.err());
         return;
@@ -118,7 +120,7 @@ pub async fn process_near_transaction(
         Some(_) => Ok(true), // Transaction exists, return true
         None => {
             // Check if the transaction status is failed
-            if !transaction.outcomes.status {
+            if transaction.outcomes.status.is_none() || !transaction.outcomes.status.unwrap_or(false) {
                 debug!(
                     "Found Failed BlockChain Transaction Ignored, {}",
                     transaction.transaction_hash
@@ -126,8 +128,16 @@ pub async fn process_near_transaction(
                 return Ok(false);
             }
 
+            if (&transaction.clone().actions).is_none(){
+                debug!(
+                    "Ignored Transaction: {} Invalid",
+                    transaction.transaction_hash
+                );
+                return Ok(false);
+            }
             // Check if there's no action method in the transaction
-            if transaction.actions[0].method.is_none() {
+            let _action= transaction.actions.clone().expect("REASON");
+            if _action[0].method.is_none() {
                 debug!(
                     "Ignored Transaction: {} No method Found",
                     transaction.transaction_hash
@@ -136,7 +146,7 @@ pub async fn process_near_transaction(
             }
 
             // Extract the first action from the transaction
-            let action = match transaction.actions.get(0) {
+            let action = match _action.get(0) {
                 Some(action) => action,
                 None => {
                     &(JSONAction {
@@ -288,7 +298,7 @@ pub async fn process_near_transaction(
                         block_height: Set(transaction.block.block_height.try_into().unwrap()),
                         action: Set(action.action.clone()),
                         method: Set(method.clone()),
-                        outcomes_status: Set(transaction.outcomes.status),
+                        outcomes_status: Set(transaction.outcomes.status.unwrap_or(false)),
                         tweet_id: Set(mint_data.tweet_id.clone().to_string()),
                         image_url: Set(mint_data.image_url.clone()),
                         user_to_notify: Set(Some(mint_data.notify.clone())),
