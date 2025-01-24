@@ -12,10 +12,11 @@ pub struct NearExplorerIndexer<'a> {
     pub cursor: Option<String>,
     pub account_id: &'a str,
     pub build_id: String,
+    pub zenrow_key:&'a str
 }
 
 impl<'a> NearExplorerIndexer<'a> {
-    pub fn new(account_id: &'a str) -> Result<Self, Box<dyn Error>> {
+    pub fn new(account_id: &'a str,zenrow_key:&'a str) -> Result<Self, Box<dyn Error>> {
         if !(account_id.ends_with(".testnet") || account_id.ends_with(".near")) {
             return Err("Invalid account_id".into());
         }
@@ -25,6 +26,7 @@ impl<'a> NearExplorerIndexer<'a> {
             page_no: 0,
             build_id: "nearblocks".to_owned(),
             account_id: &account_id,
+            zenrow_key
         })
     }
 
@@ -88,12 +90,13 @@ impl<'a> NearExplorerIndexer<'a> {
         loop {
             let url = if self.page_no == 0 || reset {
                 format!(
-                    "https://api.zenrows.com/v1/?apikey=be044f050f7b34b0a8b9abc7883dfa003c881018&url=https%3A%2F%2F{}%2F_next%2Fdata%2F{}%2Fen%2Faddress%2F{}.json&js_render=true&json_response=true",
-                    base, self.build_id, self.account_id
+                    "https://api.zenrows.com/v1/?apikey={}&url=https%3A%2F%2F{}%2F_next%2Fdata%2F{}%2Fen%2Faddress%2F{}.json&js_render=true&json_response=true",
+                    self.zenrow_key,base, self.build_id, self.account_id
                 )
             } else {
                 format!(
-                    "https://api.zenrows.com/v1/?apikey=be044f050f7b34b0a8b9abc7883dfa003c881018&url=https%3A%2F%2F{}%2F_next%2Fdata%2F{}%2Fen%2Faddress%2F{}.json%3Fcursor%3D{}%26p%3D{}&js_render=true&json_response=true",
+                    "https://api.zenrows.com/v1/?apikey={}&url=https%3A%2F%2F{}%2F_next%2Fdata%2F{}%2Fen%2Faddress%2F{}.json%3Fcursor%3D{}%26p%3D{}&js_render=true&json_response=true",
+                    self.zenrow_key,
                     base,
                     self.build_id,
                     self.account_id,
@@ -136,11 +139,19 @@ impl<'a> NearExplorerIndexer<'a> {
 
 #[cfg(test)]
 mod test_near_explorer_indexer {
+    use std::env;
+
+    use dotenv::dotenv;
+
     use super::*;
+    
 
     #[tokio::test]
     async fn test_near_explorer_indexer() {
-        let mut indexer = NearExplorerIndexer::new("priceoracle.near").unwrap();
+        dotenv().expect("Error occurred when loading .env");
+
+        let zenrows_key = env::var("ZENROWS_KEY").expect("ZENROWS_KEY must be set");
+        let mut indexer = NearExplorerIndexer::new("priceoracle.near",&zenrows_key).unwrap();
         assert_eq!(indexer.get_transactions().await.unwrap().len(), 25);
         assert_eq!(indexer.next_page().await.unwrap().len(), 25);
         assert_eq!(indexer.has_next_page(), true);
@@ -148,7 +159,9 @@ mod test_near_explorer_indexer {
 
     #[tokio::test]
     async fn test_near_explorer_indexer_testnet() {
-        let mut indexer = NearExplorerIndexer::new("ush_test.testnet").unwrap();
+        dotenv().expect("Error occurred when loading .env");
+        let zenrows_key = env::var("ZENROWS_KEY").expect("ZENROWS_KEY must be set");
+        let mut indexer = NearExplorerIndexer::new("ush_test.testnet",&zenrows_key).unwrap();
         let data_size = indexer.get_transactions().await.unwrap().len();
         assert!(data_size < 25);
         assert_eq!(indexer.has_next_page(), false);
