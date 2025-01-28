@@ -24,9 +24,5 @@ RUN cargo install --git https://github.com/foundry-rs/foundry --rev 398ef4a  --p
 ENV CARGO_TARGET_DIR=./src/near_indexer
 COPY . .
 RUN cargo install --path=./src/near_indexer 
-# RUN cd  ./src/near_indexer && cargo build --release
 
-
-
-# CMD ["cd","./src/near_indexer","&&", "cargo", "run"]
 CMD ["indexer"]
