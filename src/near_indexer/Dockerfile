@@ -15,8 +15,11 @@ WORKDIR /usr/x-twitter-nft
 RUN git config --global http.postBuffer 524288000
 RUN git config --global core.compression 0
 
+RUN curl -L https://foundry.paradigm.xyz | bash
+
+ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
 # forge is required by risc0-ethereum-contracts and risc0-ethereum-contracts is required by Groth16
-RUN cargo install --git https://github.com/foundry-rs/foundry --rev 398ef4a --profile release --locked forge anvil
+RUN cargo install --git https://github.com/foundry-rs/foundry  --profile release --locked forge anvil
 RUN forge init --no-git /test
 
 # required for DB migration
@@ -24,7 +27,6 @@ RUN cargo install sea-orm-cli
     
 # Set environment variable during runtime
 ENV CARGO_TARGET_DIR=./src/near_indexer
-ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
 COPY . .
 RUN cargo install --path=./src/near_indexer 
 # RUN cd  ./src/near_indexer && cargo build --release
