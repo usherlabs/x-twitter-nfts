@@ -1,6 +1,7 @@
 pub mod entity;
 pub mod generated;
 pub mod helper;
+// pub mod migration;
 
 use async_std::task::sleep;
 use aurora::TxSender;

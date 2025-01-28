@@ -4297,6 +4297,7 @@ dependencies = [
  "futures",
  "futures-util",
  "k256",
+ "migration",
  "near-client",
  "near-contract-standards",
  "near-crypto",
@@ -4871,6 +4872,14 @@ dependencies = [
  "serde",
  "serde_json",
  "verity-verify-tls",
+]
+
+[[package]]
+name = "migration"
+version = "0.1.0"
+dependencies = [
+ "async-std",
+ "sea-orm-migration",
 ]
 
 [[package]]
@@ -8429,6 +8438,8 @@ dependencies = [
  "paste",
  "percent-encoding",
  "rust_decimal",
+ "rustls 0.23.20",
+ "rustls-pemfile 2.2.0",
  "serde",
  "serde_json",
  "sha2",
@@ -8436,9 +8447,12 @@ dependencies = [
  "sqlformat",
  "thiserror 1.0.69",
  "time",
+ "tokio",
+ "tokio-stream",
  "tracing",
  "url",
  "uuid 1.11.0",
+ "webpki-roots 0.26.7",
 ]
 
 [[package]]
@@ -8477,6 +8491,7 @@ dependencies = [
  "sqlx-sqlite",
  "syn 2.0.90",
  "tempfile",
+ "tokio",
  "url",
 ]
 
