@@ -18,6 +18,7 @@ use reqwest::Url;
 use sea_orm::ActiveValue::Set;
 use sea_orm::Database;
 use sea_orm::{DbConn, DbErr, EntityTrait};
+use migration::{Migrator, MigratorTrait};
 use serde_json::{json, Error as SJError};
 use sha256::digest;
 use std::str::FromStr;
@@ -39,6 +40,7 @@ async fn main() {
         .await
         .unwrap();
 
+    Migrator::up(&db, None).await.unwrap();
     let near_rpc = env::var("NEAR_RPC_URL").expect("NEAR_RPC_URL");
 
     // Init Near Client
