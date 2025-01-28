@@ -30,7 +30,11 @@ use tracing::{debug, error, info};
 #[async_std::main]
 async fn main() {
     // Load .env
-    dotenv().expect("Error occurred when loading .env");
+    let tweet_bearer=env::var("TWEET_BEARER");
+
+    if tweet_bearer.is_err(){
+        dotenv().expect("Error occurred when loading .env");
+    } 
 
     //Load Essential for env Variables
     env::var("TWEET_BEARER").expect("TWEET_BEARER must be set");
