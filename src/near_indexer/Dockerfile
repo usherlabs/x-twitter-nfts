@@ -15,7 +15,6 @@ WORKDIR /usr/x-twitter-nft
 RUN git config --global http.postBuffer 524288000
 RUN git config --global core.compression 0
 
-RUN curl -L https://foundry.paradigm.xyz | bash
 
 ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
 # forge is required by risc0-ethereum-contracts and risc0-ethereum-contracts is required by Groth16
