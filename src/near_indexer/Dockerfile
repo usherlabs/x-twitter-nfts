@@ -20,8 +20,6 @@ RUN curl -L https://foundry.paradigm.xyz | bash
 ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
 # forge is required by risc0-ethereum-contracts and risc0-ethereum-contracts is required by Groth16
 RUN cargo install --git https://github.com/foundry-rs/foundry --rev 398ef4a  --profile release --locked forge anvil
-RUN forge init --no-git /test
-
     
 # Set environment variable during runtime
 ENV CARGO_TARGET_DIR=./src/near_indexer
