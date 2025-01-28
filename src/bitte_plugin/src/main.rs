@@ -16,7 +16,12 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[launch]
 fn rocket() -> _ {
-    dotenvy::from_filename("plugin.env").expect("Error occurred when loading plugin.env");
+    let host_url=env::var("HOST_URL");
+
+    // For Production host_url must be set has environment Variable to prevent loading plugin.env that will not exist
+    if host_url.is_err(){
+        dotenvy::from_filename("plugin.env").expect("Error occurred when loading plugin.env");
+    } 
     println!(
         "Loaded plugin.env with account_id: {}",
         env::var("ACCOUNT_ID").unwrap()
