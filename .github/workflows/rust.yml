@@ -20,9 +20,9 @@ jobs:
       - name: Install latest nightly
         uses: actions-rs/toolchain@v1
         with:
-            toolchain: stable
+            toolchain: nightly
             override: true
-            components: rustfmt, clippy, cargo
+            components: rustfmt, clippy, cargo, rustc
 
       - name: Install Prerequisites
         run: |
@@ -48,6 +48,6 @@ jobs:
         run: |
           rustup update
           cd ./src/contracts/nft/
-          cargo install  cargo-make@0.35.1 
+          cargo install  cargo-make@0.35.1  --locked
           cargo make  test
       
