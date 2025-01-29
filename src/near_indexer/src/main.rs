@@ -17,7 +17,7 @@ use openssl::sha::sha256;
 use proof::{generate_groth16_proof, get_proof};
 use reqwest::Url;
 use sea_orm::ActiveValue::Set;
-use sea_orm::Database;
+use sea_orm::{Database, QueryOrder};
 use sea_orm::{DbConn, DbErr, EntityTrait};
 use migration::{Migrator, MigratorTrait};
 use serde_json::{json, Error as SJError};
@@ -50,7 +50,7 @@ async fn main() {
 
     // Init Near Client
     let client = NearClient::new(Url::from_str(&near_rpc).unwrap()).unwrap();
-    let zenrows_key = env::var("ZENROWS_KEY").expect("ZENROWS_KEY must be set");
+    let near_block_key = env::var("NEAR_BLOCK_KEY").expect("NEAR_BLOCK_KEY must be set");
 
 
     // Initialize tracing. In order to view logs, run `RUST_LOG=info cargo run`
@@ -63,15 +63,31 @@ async fn main() {
         digest(format!("{}", hex::encode(VERIFY_ELF)))
     );
 
-    let indexer = indexer::NearExplorerIndexer::new(&nft_contract_id,&zenrows_key);
-    if indexer.is_err() {
-        error!("indexer-init-error: {:?}", indexer.err());
-        return;
-    }
     let twitter_client = twitter::OathTweeterHandler::default();
-
-    let mut indexer = indexer.unwrap();
+    
     loop {
+        let query = near_transaction::Entity::find()
+        .order_by_desc(near_transaction::Column::Id)
+        .one(&db).await;
+    
+        if query.is_err() {
+            error!("db-error: {:?}", query.err());
+            return;
+        }
+        let query= query.unwrap();
+        let cursor = if query.is_some(){
+            Some(query.unwrap().id)
+        }else{
+            Some(0)
+        };
+    
+        let indexer = indexer::NearExplorerIndexer::new(&nft_contract_id,&near_block_key,cursor);
+        if indexer.is_err() {
+            error!("indexer-init-error: {:?}", indexer.err());
+            return;
+        }
+
+        let mut indexer = indexer.unwrap();
         let mut data = indexer.get_transactions().await;
 
         if data.is_err() {
@@ -91,7 +107,7 @@ async fn main() {
                     break;
                 }
             }
-            println!("Page Number: {}", indexer.page_no);
+            println!("cursor: {}", indexer.cursor.unwrap_or(0));
             // Walk pages
             if !indexer.has_next_page() {
                 println!("All transaction indexed");
@@ -101,8 +117,8 @@ async fn main() {
         }
 
         // wait 60 seconds
-        println!("wait 60 secs");
-        sleep(Duration::from_secs(60)).await;
+        println!("wait 300 secs");
+        sleep(Duration::from_secs(300)).await;
     }
 }
 pub async fn process_near_transaction(
@@ -117,7 +133,7 @@ pub async fn process_near_transaction(
     let nft_contract_id = AccountId::from_str(&nft_contract_id).unwrap();
 
     // Parse the transaction ID as an integer
-    let pk = transaction.id.parse::<i32>().unwrap();
+    let pk = transaction.id.parse::<u64>().unwrap();
 
     // Find the near_transaction in the database by primary key
     let _near_transaction: Option<near_transaction::Model> =

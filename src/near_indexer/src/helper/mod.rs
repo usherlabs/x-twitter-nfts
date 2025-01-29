@@ -125,12 +125,6 @@ pub struct NearIndexerData {
     pageProps: PageProps,
 }
 
-#[allow(non_snake_case)]
-#[derive(Serialize, Deserialize)]
-pub struct ZenrowsPage {
-    html: String,
-}
-
 
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug)]

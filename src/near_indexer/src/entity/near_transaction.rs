@@ -6,7 +6,7 @@ use sea_orm::entity::prelude::*;
 #[sea_orm(schema_name = "public", table_name = "near_transaction")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub id: i32,
+    pub id: u64,
     #[sea_orm(unique)]
     pub transaction_hash: String,
     pub signer_account_id: String,
