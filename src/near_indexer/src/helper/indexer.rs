@@ -77,9 +77,9 @@ impl<'a> NearExplorerIndexer<'a> {
     ) -> Result<TransactionData, Box<dyn Error + Send + Sync>> {
         let client = reqwest::Client::new();
         let base = if self.account_id.ends_with(".testnet") {
-            "https://api-testnet.nearblocks.io/"
+            "https://api-testnet.nearblocks.io"
         } else {
-            "https://api.nearblocks.io/"
+            "https://api.nearblocks.io"
         };
 
         let max_retries = 5;
@@ -89,9 +89,9 @@ impl<'a> NearExplorerIndexer<'a> {
                 "{}/v1/account/{}/txns-only?cursor={}&per_page=250&order=asc",
                 base, self.account_id, self.cursor.unwrap_or(0)
             );
-            let response = client.get(&url).send().await?;
+            let response = client.get(&url).header("Authorization", self.near_block_key).send().await?;
 
-            info!("{}", (&response).status());
+            info!("{}\n{}", (&response).status(),&url);
 
             if (&response).status() == 200 {
                 match response.json::<TransactionData>().await {
@@ -106,7 +106,7 @@ impl<'a> NearExplorerIndexer<'a> {
                 }
             }
             retries += 1;
-            let delay = Duration::from_secs(30);
+            let delay = Duration::from_secs(60);
             sleep(delay).await;
         }
     }
