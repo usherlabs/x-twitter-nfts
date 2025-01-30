@@ -82,7 +82,7 @@ impl<'a> NearExplorerIndexer<'a> {
             "https://api.nearblocks.io"
         };
 
-        let max_retries = 5;
+        let max_retries = 3;
         let mut retries = 0;
         loop {
             let url = format!(
@@ -106,7 +106,7 @@ impl<'a> NearExplorerIndexer<'a> {
                 }
             }
             retries += 1;
-            let delay = Duration::from_secs(60);
+            let delay = Duration::from_secs(100);
             sleep(delay).await;
         }
     }
