@@ -11,7 +11,7 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(NearTransaction::Table)
                     .if_not_exists()
-                    .col(integer(NearTransaction::Id))
+                    .col(unsigned_uniq(NearTransaction::Id))
                     .col(string_uniq(NearTransaction::TransactionHash))
                     .col(string(NearTransaction::SignerAccountId))
                     .col(string(NearTransaction::ReceiverAccountId))

@@ -41,7 +41,6 @@ services:
       - .:/app
     command: >
       sh -c "
-        sea-orm-cli migrate up --migration-dir ./src/near_indexer/migration &&
         indexer
       "
 

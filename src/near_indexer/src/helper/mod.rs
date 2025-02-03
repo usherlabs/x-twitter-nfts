@@ -125,10 +125,11 @@ pub struct NearIndexerData {
     pageProps: PageProps,
 }
 
+
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PageProps {
-    statsDetails: StatsDetails,
+    // statsDetails: StatsDetails,
     // accountDetails: AccountDetails,
     data: TransactionData,
     dataCount: DataCount,
@@ -240,11 +241,12 @@ struct Inventory {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TransactionData {
+    #[serde(default)]
     cursor: Option<String>,
     txns: Vec<JSONTransaction>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct JSONTransaction {
     pub id: String,
     pub signer_account_id: String,
@@ -254,16 +256,16 @@ pub struct JSONTransaction {
     pub block_timestamp: String,
     pub receipt_conversion_tokens_burnt: String,
     pub block: Block,
-    pub actions: Vec<JSONAction>,
+    pub actions: Option<Vec<JSONAction>>,
     pub outcomes: Outcomes,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Block {
     pub block_height: u128,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct JSONAction {
     pub action: String,
     pub method: Option<String>,
@@ -275,9 +277,10 @@ pub struct ActionsAgg {
     pub deposit: u128,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Outcomes {
-    pub status: bool,
+    #[serde(default)]
+    pub status: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

@@ -43,6 +43,8 @@ serde = { version = "1.0.216", features = ["derive", "std"] }
 reqwest-oauth1 = "0.3.0"
 openssl = { version = "0.10.59", features = ["vendored"] }
 anyhow = "1.0.94"
+sea-orm-migration = "1.1.4"
+migration = {path = "./migration"}
 
 
 [workspace]
