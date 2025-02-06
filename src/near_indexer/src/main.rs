@@ -55,6 +55,7 @@ async fn main() {
 
     // Initialize tracing. In order to view logs, run `RUST_LOG=info cargo run`
     tracing_subscriber::fmt()
+        .with_ansi(false)
         .with_env_filter(tracing_subscriber::filter::EnvFilter::from_default_env())
         .init();
 
