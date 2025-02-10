@@ -43,7 +43,9 @@ fn rocket() -> _ {
                 }),
         ))
         // Add the fmt layer for pretty-printing logs
-        .with(tracing_subscriber::fmt::layer())
+        .with(tracing_subscriber::fmt::layer()
+        .with_ansi(false)
+    )
         // Initialize the tracing subscriber
         .init();
 

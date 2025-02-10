@@ -86,7 +86,7 @@ impl<'a> NearExplorerIndexer<'a> {
         let mut retries = 0;
         loop {
             let url = format!(
-                "{}/v1/account/{}/txns-only?cursor={}&per_page=250&order=asc",
+                "{}/v1/account/{}/txns-only?cursor={}&order=asc",
                 base, self.account_id, self.cursor.unwrap_or(0)
             );
             let response = client.get(&url).header("Authorization", self.near_block_key).send().await?;
@@ -127,7 +127,6 @@ mod test_near_explorer_indexer {
         let near_block_key = env::var("NEAR_BLOCK_KEY").expect("NEAR_BLOCK_KEY must be set");
         let mut indexer = NearExplorerIndexer::new("priceoracle.near", &near_block_key,Some(0)).unwrap();
         assert_eq!(indexer.get_transactions().await.unwrap().len(), 25);
-        // assert_eq!(indexer.next_page().await.unwrap().len(), 25);
         assert_eq!(indexer.has_next_page(), true);
     }
 
@@ -137,7 +136,7 @@ mod test_near_explorer_indexer {
         let near_block_key = env::var("NEAR_BLOCK_KEY").expect("NEAR_BLOCK_KEY must be set");
         let mut indexer = NearExplorerIndexer::new("ush_test.testnet", &near_block_key,Some(0)).unwrap();
         let data_size = indexer.get_transactions().await.unwrap().len();
-        assert!(data_size < 250);
+        assert!(data_size < 25);
         assert_eq!(indexer.has_next_page(), false);
     }
 }
