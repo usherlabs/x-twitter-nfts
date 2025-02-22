@@ -119,7 +119,7 @@ async fn main() {
 
         // wait 60 seconds
         println!("wait 300 secs");
-        sleep(Duration::from_secs(30)).await;
+        sleep(Duration::from_secs(300)).await;
     }
 }
 pub async fn process_near_transaction(
