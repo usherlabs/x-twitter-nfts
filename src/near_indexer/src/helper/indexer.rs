@@ -6,19 +6,19 @@ use tracing::info;
 
 use super::{JSONTransaction, TransactionData};
 
-fn parse_string_to_u64(opt_str: Option<String>) -> Option<u64> {
-    opt_str.map(|s| s.parse::<u64>().unwrap_or(0))
+fn parse_string_to_i64(opt_str: Option<String>) -> Option<i64> {
+    opt_str.map(|s| s.parse::<i64>().unwrap_or(0))
 }
 
 
 pub struct NearExplorerIndexer<'a> {
-    pub cursor: Option<u64>,
+    pub cursor: Option<i64>,
     pub account_id: &'a str,
     pub near_block_key: &'a str,
 }
 
 impl<'a> NearExplorerIndexer<'a> {
-    pub fn new(account_id: &'a str, near_block_key: &'a str, cursor: Option<u64>) -> Result<Self, Box<dyn Error>> {
+    pub fn new(account_id: &'a str, near_block_key: &'a str, cursor: Option<i64>) -> Result<Self, Box<dyn Error>> {
         if !(account_id.ends_with(".testnet") || account_id.ends_with(".near")) {
             return Err("Invalid account_id".into());
         }
@@ -43,7 +43,7 @@ impl<'a> NearExplorerIndexer<'a> {
         let data = self.fetch().await?;
 
         if data.cursor.is_some() {
-            self.cursor = parse_string_to_u64(data.cursor);
+            self.cursor = parse_string_to_i64(data.cursor);
         }
 
         Ok(data.txns)
@@ -61,7 +61,7 @@ impl<'a> NearExplorerIndexer<'a> {
         let data = self.fetch().await?;
 
         if let Some(cursor) = data.cursor {
-            self.cursor = Some(cursor.parse::<u64>().unwrap_or(0));
+            self.cursor = Some(cursor.parse::<i64>().unwrap_or(0));
         } else {
             self.cursor = None;
         }

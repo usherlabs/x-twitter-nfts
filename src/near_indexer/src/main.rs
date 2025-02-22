@@ -77,7 +77,7 @@ async fn main() {
         }
         let query= query.unwrap();
         let cursor = if query.is_some(){
-            Some(query.unwrap().id)
+            Some(query.clone().unwrap().id)
         }else{
             Some(0)
         };
@@ -108,7 +108,7 @@ async fn main() {
                     break;
                 }
             }
-            println!("cursor: {}", indexer.cursor.unwrap_or(0));
+            println!("cursor: {:?}", indexer.cursor);
             // Walk pages
             if !indexer.has_next_page() {
                 println!("All transaction indexed");
@@ -119,7 +119,7 @@ async fn main() {
 
         // wait 60 seconds
         println!("wait 300 secs");
-        sleep(Duration::from_secs(300)).await;
+        sleep(Duration::from_secs(30)).await;
     }
 }
 pub async fn process_near_transaction(
@@ -134,7 +134,7 @@ pub async fn process_near_transaction(
     let nft_contract_id = AccountId::from_str(&nft_contract_id).unwrap();
 
     // Parse the transaction ID as an integer
-    let pk = transaction.id.parse::<u64>().unwrap();
+    let pk = transaction.id.parse::<i64>().unwrap();
 
     // Find the near_transaction in the database by primary key
     let _near_transaction: Option<near_transaction::Model> =
