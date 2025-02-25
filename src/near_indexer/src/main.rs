@@ -72,7 +72,7 @@ async fn main() {
         .one(&db).await;
     
         if query.is_err() {
-            error!("db-error: {:?}", query.err());
+            error!("DB-error: {:?}", query.err());
             return;
         }
         let query= query.unwrap();
@@ -230,7 +230,7 @@ pub async fn process_near_transaction(
                     let proof = get_proof(mint_data.tweet_id.clone()).await;
 
                     if proof.is_err() {
-                        info!("Invalid Tweet ID{}\n", &mint_data.tweet_id);
+                        info!("Invalid Tweet ID\t{}\n{:?}", &mint_data.tweet_id, &proof.err());
                         return Ok(false);
                     }
                     let (proof, tweet_res_data) = proof.unwrap();
