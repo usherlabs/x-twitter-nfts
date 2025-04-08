@@ -1,7 +1,7 @@
+pub mod cktls;
 pub mod entity;
 pub mod generated;
 pub mod helper;
-// pub mod migration;
 
 use async_std::task::sleep;
 use aurora::TxSender;
@@ -10,6 +10,7 @@ use entity::near_transaction;
 use ethers::utils::hex;
 use generated::methods::VERIFY_ELF;
 use helper::*;
+use migration::{Migrator, MigratorTrait};
 use near::{extract_metadata_from_request, verify_near_proof};
 use near_client::client::NearClient;
 use near_client::prelude::{AccountId, Finality};
@@ -19,7 +20,6 @@ use reqwest::Url;
 use sea_orm::ActiveValue::Set;
 use sea_orm::{Database, QueryOrder};
 use sea_orm::{DbConn, DbErr, EntityTrait};
-use migration::{Migrator, MigratorTrait};
 use serde_json::{json, Error as SJError};
 use sha256::digest;
 use std::str::FromStr;
@@ -30,11 +30,11 @@ use tracing::{debug, error, info};
 #[async_std::main]
 async fn main() {
     // Load .env
-    let tweet_bearer=env::var("TWEET_BEARER");
+    let tweet_bearer = env::var("TWEET_BEARER");
 
-    if tweet_bearer.is_err(){
+    if tweet_bearer.is_err() {
         dotenv().expect("Error occurred when loading .env");
-    } 
+    }
 
     //Load Essential for env Variables
     env::var("TWEET_BEARER").expect("TWEET_BEARER must be set");
@@ -45,13 +45,13 @@ async fn main() {
         .await
         .unwrap();
 
+    Migrator::reset(&db).await.unwrap();
     Migrator::up(&db, None).await.unwrap();
     let near_rpc = env::var("NEAR_RPC_URL").expect("NEAR_RPC_URL");
 
     // Init Near Client
     let client = NearClient::new(Url::from_str(&near_rpc).unwrap()).unwrap();
     let near_block_key = env::var("NEAR_BLOCK_KEY").expect("NEAR_BLOCK_KEY must be set");
-
 
     // Initialize tracing. In order to view logs, run `RUST_LOG=info cargo run`
     tracing_subscriber::fmt()
@@ -65,24 +65,25 @@ async fn main() {
     );
 
     let twitter_client = twitter::OathTweeterHandler::default();
-    
+
     loop {
         let query = near_transaction::Entity::find()
-        .order_by_desc(near_transaction::Column::Id)
-        .one(&db).await;
-    
+            .order_by_desc(near_transaction::Column::Id)
+            .one(&db)
+            .await;
+
         if query.is_err() {
             error!("DB-error: {:?}", query.err());
             return;
         }
-        let query= query.unwrap();
-        let cursor = if query.is_some(){
+        let query = query.unwrap();
+        let cursor = if query.is_some() {
             Some(query.clone().unwrap().id)
-        }else{
+        } else {
             Some(0)
         };
-    
-        let indexer = indexer::NearExplorerIndexer::new(&nft_contract_id,&near_block_key,cursor);
+
+        let indexer = indexer::NearExplorerIndexer::new(&nft_contract_id, &near_block_key, cursor);
         if indexer.is_err() {
             error!("indexer-init-error: {:?}", indexer.err());
             return;
@@ -144,7 +145,9 @@ pub async fn process_near_transaction(
         Some(_) => Ok(true), // Transaction exists, return true
         None => {
             // Check if the transaction status is failed
-            if transaction.outcomes.status.is_none() || !transaction.outcomes.status.unwrap_or(false) {
+            if transaction.outcomes.status.is_none()
+                || !transaction.outcomes.status.unwrap_or(false)
+            {
                 debug!(
                     "Found Failed BlockChain Transaction Ignored, {}",
                     transaction.transaction_hash
@@ -152,7 +155,7 @@ pub async fn process_near_transaction(
                 return Ok(false);
             }
 
-            if (&transaction.clone().actions).is_none(){
+            if (&transaction.clone().actions).is_none() {
                 debug!(
                     "Ignored Transaction: {} Invalid",
                     transaction.transaction_hash
@@ -160,7 +163,7 @@ pub async fn process_near_transaction(
                 return Ok(false);
             }
             // Check if there's no action method in the transaction
-            let _action= transaction.actions.clone().expect("REASON");
+            let _action = transaction.actions.clone().expect("REASON");
             if _action[0].method.is_none() {
                 debug!(
                     "Ignored Transaction: {} No method Found",
@@ -230,7 +233,11 @@ pub async fn process_near_transaction(
                     let proof = get_proof(mint_data.tweet_id.clone()).await;
 
                     if proof.is_err() {
-                        info!("Invalid Tweet ID\t{}\n{:?}", &mint_data.tweet_id, &proof.err());
+                        info!(
+                            "Invalid Tweet ID\t{}\n{:?}",
+                            &mint_data.tweet_id,
+                            &proof.err()
+                        );
                         return Ok(false);
                     }
                     let (proof, tweet_res_data) = proof.unwrap();

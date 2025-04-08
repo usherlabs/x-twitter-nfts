@@ -45,6 +45,8 @@ openssl = { version = "0.10.59", features = ["vendored"] }
 anyhow = "1.0.94"
 sea-orm-migration = "1.1.4"
 migration = {path = "./migration"}
+verity-verify-tls = { git = "https://github.com/usherlabs/verity-dp.git",  version = "0.0.0"}
+verity-verify-remote={ git = "https://github.com/usherlabs/verity-dp.git",  version = "0.2.4"}
 
 
 [workspace]
