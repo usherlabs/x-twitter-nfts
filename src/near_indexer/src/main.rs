@@ -1,4 +1,3 @@
-pub mod cktls;
 pub mod entity;
 pub mod generated;
 pub mod helper;
@@ -9,6 +8,7 @@ use dotenv::dotenv;
 use entity::near_transaction;
 use ethers::utils::hex;
 use generated::methods::VERIFY_ELF;
+use helper::cktls::verify_near_proof_v2;
 use helper::*;
 use migration::{Migrator, MigratorTrait};
 use near::{extract_metadata_from_request, verify_near_proof};
@@ -229,80 +229,11 @@ pub async fn process_near_transaction(
                     }
                     debug!("fetched_nft: {:?}\nmint_data:{:?}", fetched_nft, &mint_data);
 
-                    // Generate proof using the tweet ID
-                    let proof = get_proof(mint_data.tweet_id.clone()).await;
-
-                    if proof.is_err() {
-                        info!(
-                            "Invalid Tweet ID\t{}\n{:?}",
-                            &mint_data.tweet_id,
-                            &proof.err()
-                        );
-                        return Ok(false);
-                    }
-                    let (proof, tweet_res_data) = proof.unwrap();
-
-                    // Prepare metadata for the NFT
-                    let meta_data = AssetMetadata {
-                        image_url: mint_data.image_url.to_string(),
-                        owner_account_id: transaction.signer_account_id.clone(),
-                        token_id: mint_data.tweet_id.clone(),
-                    };
-
-                    // Create ZK input parameters
-                    let zk_input = ZkInputParam {
-                        proof,
-                        meta_data: meta_data.clone(),
-                    };
-                    debug!("{:?}", &zk_input);
-
-                    // Generate Groth16 proof
-                    let (seal, journal_output) =
-                        spawn_blocking(|| generate_groth16_proof(zk_input))
-                            .await
-                            .unwrap();
-
-                    info!(
-                        "{:?} was committed to the journal",
-                        hex::encode(&journal_output)
-                    );
-                    info!("{:?} was the provided seal", hex::encode(&seal));
-
-                    // Verify the proof on Aurora to be verified on chain
-                    let aurora_client = TxSender::default();
-                    let aurora_tx_future = aurora_client
-                        .verify_proof_on_aurora(journal_output.clone(), seal)
-                        .await;
-                    let aurora_tx_response = aurora_tx_future.unwrap();
-                    info!(
-                        "Aurora transation has been verified with response: {:?}\n",
-                        aurora_tx_response
-                    );
-
-                    // Get the chain transaction hash from Aurora response
-                    let chain_transaction = aurora_tx_response.block_hash.unwrap();
-                    debug!(
-                        "ON Chain Transaction Hash {} for mint {}",
-                        chain_transaction.to_string(),
-                        transaction.transaction_hash
-                    );
-
-                    // Verify the proof on NEAR blockchain
-                    let x = serde_json::to_string(&extract_metadata_from_request(
-                        tweet_res_data.clone(),
-                        meta_data.clone(),
-                    ))
-                    .unwrap();
-                    assert_eq!(
-                        hex::encode(sha256(x.as_bytes())),
-                        hex::encode(journal_output.clone()),
-                        "invalid token_metadata"
-                    );
-
                     // send verified journal to near for the mint transaction to be triggered
-                    let near_tx_response = verify_near_proof(
-                        journal_output,
-                        extract_metadata_from_request(tweet_res_data, meta_data),
+                    let (near_tx_response,tx_hash) = verify_near_proof_v2(
+                        mint_data.tweet_id.clone(),
+                         mint_data.image_url.to_string(),
+                         transaction.signer_account_id.clone(),
                     )
                     .await;
                     if near_tx_response.is_err() {
@@ -333,7 +264,7 @@ pub async fn process_near_transaction(
                         tweet_id: Set(mint_data.tweet_id.clone().to_string()),
                         image_url: Set(mint_data.image_url.clone()),
                         user_to_notify: Set(Some(mint_data.notify.clone())),
-                        mint_transaction_hash: Set(Some(chain_transaction.to_string())),
+                        mint_transaction_hash: Set(Some(tx_hash.to_string())),
                         ..Default::default() // all other attributes are `NotSet`
                     };
                     near_transaction::Entity::insert(new_transaction)
