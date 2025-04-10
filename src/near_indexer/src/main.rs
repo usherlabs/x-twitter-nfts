@@ -3,19 +3,14 @@ pub mod generated;
 pub mod helper;
 
 use async_std::task::sleep;
-use aurora::TxSender;
 use dotenv::dotenv;
 use entity::near_transaction;
 use ethers::utils::hex;
-use generated::methods::VERIFY_ELF;
 use helper::cktls::verify_near_proof_v2;
 use helper::*;
 use migration::{Migrator, MigratorTrait};
-use near::{extract_metadata_from_request, verify_near_proof};
 use near_client::client::NearClient;
 use near_client::prelude::{AccountId, Finality};
-use openssl::sha::sha256;
-use proof::{generate_groth16_proof, get_proof};
 use reqwest::Url;
 use sea_orm::ActiveValue::Set;
 use sea_orm::{Database, QueryOrder};
@@ -24,7 +19,6 @@ use serde_json::{json, Error as SJError};
 use sha256::digest;
 use std::str::FromStr;
 use std::{env, time::Duration};
-use tokio::task::spawn_blocking;
 use tracing::{debug, error, info};
 
 #[async_std::main]
@@ -45,7 +39,6 @@ async fn main() {
         .await
         .unwrap();
 
-    Migrator::reset(&db).await.unwrap();
     Migrator::up(&db, None).await.unwrap();
     let near_rpc = env::var("NEAR_RPC_URL").expect("NEAR_RPC_URL");
 
@@ -58,12 +51,7 @@ async fn main() {
         .with_ansi(false)
         .with_env_filter(tracing_subscriber::filter::EnvFilter::from_default_env())
         .init();
-
-    info!(
-        "\n\nELF SHA\t\t:{}\n\n,",
-        digest(format!("{}", hex::encode(VERIFY_ELF)))
-    );
-
+    
     let twitter_client = twitter::OathTweeterHandler::default();
 
     loop {
@@ -82,6 +70,8 @@ async fn main() {
         } else {
             Some(0)
         };
+
+        debug!("Cursor at:{:?}\n\n",&cursor);
 
         let indexer = indexer::NearExplorerIndexer::new(&nft_contract_id, &near_block_key, cursor);
         if indexer.is_err() {
@@ -102,12 +92,9 @@ async fn main() {
             debug!("Found {} Transactions", transactions.len());
             for transaction in transactions {
                 println!("{transaction:?}");
-                let exists = process_near_transaction(&db, &transaction, &client, &twitter_client)
+                let _ = process_near_transaction(&db, &transaction, &client, &twitter_client)
                     .await
                     .unwrap();
-                if exists {
-                    break;
-                }
             }
             println!("cursor: {:?}", indexer.cursor);
             // Walk pages
@@ -230,21 +217,21 @@ pub async fn process_near_transaction(
                     debug!("fetched_nft: {:?}\nmint_data:{:?}", fetched_nft, &mint_data);
 
                     // send verified journal to near for the mint transaction to be triggered
-                    let (near_tx_response,tx_hash) = verify_near_proof_v2(
+                    let proof  = verify_near_proof_v2(
                         mint_data.tweet_id.clone(),
-                         mint_data.image_url.to_string(),
-                         transaction.signer_account_id.clone(),
+                        mint_data.image_url.to_string(),
+                        transaction.signer_account_id.clone(),
                     )
                     .await;
-                    if near_tx_response.is_err() {
+                    if proof.is_err() {
                         info!(
                             "Failed to mint {}\n {:?}\n",
                             &mint_data.tweet_id,
-                            near_tx_response.err()
+                            proof.err()
                         );
                         return Ok(false);
                     }
-                    let near_tx_response = near_tx_response.expect("successful mint response");
+                   let (near_tx_response, tx_hash) =proof.expect("NEAR_VERIFICATION FAILED");
                     debug!(
                         "Near transaction has been verified with response: {:?}\n",
                         near_tx_response

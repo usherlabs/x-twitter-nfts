@@ -21,14 +21,6 @@ pub use crate::external::*;
 const IS_JOURNAL_VERIFIED_SELECTOR: [u8; 4] = [181, 76, 30, 108];
 const DEPOSIT: u128 = 15020000000000000000000;
 
-#[near_bindgen]
-#[derive(PanicOnDefault, BorshDeserialize, BorshSerialize)]
-pub struct VerifierProxy {
-    aurora: AccountId,
-    nft_account_id: AccountId,
-    ic_remote_public_key: Address,
-    contract_address: Address,
-}
 
 /// The tweet structure gotten from the API
 ///
@@ -184,6 +176,16 @@ fn get_keccak256_hash(eth_message: &[u8]) -> Vec<u8> {
 }
 
 #[near_bindgen]
+#[derive(PanicOnDefault, BorshDeserialize, BorshSerialize)]
+pub struct VerifierProxy {
+    aurora: AccountId,
+    nft_account_id: AccountId,
+    ic_remote_public_key: Address,
+    contract_address: Address,
+}
+
+
+#[near_bindgen]
 impl VerifierProxy {
     #[init]
     pub fn init(
@@ -251,7 +253,7 @@ impl VerifierProxy {
         signature: String,
         image_url: String,
         owner_address: AccountId,
-    ) -> String {
+    ) -> Promise {
         if self.ecdsa_verification(proof.clone(), signature) {
             // Find the start of the JSON
             if let (Some(start), Some(end)) = (proof.rfind("\r\n{"), proof.rfind("}}\r\n")) {
@@ -275,11 +277,15 @@ impl VerifierProxy {
                     ))
                     .unwrap();
                 env::log_str(&format!("receiver_id: {:?}", receiver_id.minted_to));
-                nft_contract::ext(self.nft_account_id.clone())
+                return nft_contract::ext(self.nft_account_id.clone())
                     .with_static_gas(Gas(5_000_000_000_000))
                     .with_attached_deposit(DEPOSIT)
-                    .nft_mint(token_id, receiver_id.minted_to, token_metadata.clone());
-                return "".to_string();
+                    .nft_mint(token_id, receiver_id.minted_to, token_metadata.clone())
+                    .then(
+                        Self::ext(env::current_account_id())
+                            .with_static_gas(Gas(5_000_000_000_000))
+                            .nft_creation_callback(),
+                    );
             } else {
                 env::panic_str("No JSON found in input string.");
             }

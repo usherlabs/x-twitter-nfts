@@ -42,7 +42,6 @@ impl<'a> NearExplorerIndexer<'a> {
     pub async fn get_transactions(
         &mut self,
     ) -> Result<Vec<JSONTransaction>, Box<dyn Error + Send + Sync>> {
-        self.cursor = None;
         let data = self.fetch().await?;
 
         if data.cursor.is_some() {
