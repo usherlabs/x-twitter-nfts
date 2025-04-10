@@ -137,12 +137,12 @@ pub fn generate_tweet_nft_payload(
         ), // Additional data stored on-chain, can be stringified JSON
         media: Some(image_url), // URL to associated media, preferably decentralized storage
         media_hash: None, // Base64-encoded sha256 hash of content referenced by the `media` field
-        copies: Some(1), // Number of copies of this metadata in existence when token was minted
-        issued_at: None, // ISO 8601 datetime when token was issued or minted
+        copies: Some(1),  // Number of copies of this metadata in existence when token was minted
+        issued_at: None,  // ISO 8601 datetime when token was issued or minted
         expires_at: None, // ISO 8601 datetime when token expires
-        starts_at: None, // ISO 8601 datetime when token starts being valid
+        starts_at: None,  // ISO 8601 datetime when token starts being valid
         updated_at: None, // ISO 8601 datetime when token was last updated
-        reference: None, // URL to an off-chain JSON file with more info
+        reference: None,  // URL to an off-chain JSON file with more info
         reference_hash: None, // Base64-encoded sha256 hash of JSON referenced by the `reference` field
     };
 
@@ -213,10 +213,10 @@ fn get_keccak256_hash(eth_message: &[u8]) -> Vec<u8> {
 #[near_bindgen]
 #[derive(PanicOnDefault, BorshDeserialize, BorshSerialize)]
 pub struct VerifierProxy {
-    aurora: AccountId, // Account ID of the Aurora contract
-    nft_account_id: AccountId, // Account ID of the NFT contract
+    aurora: AccountId,             // Account ID of the Aurora contract
+    nft_account_id: AccountId,     // Account ID of the NFT contract
     ic_remote_public_key: Address, // Remote public key address
-    contract_address: Address, // Contract address
+    contract_address: Address,     // Contract address
 }
 
 #[near_bindgen]
