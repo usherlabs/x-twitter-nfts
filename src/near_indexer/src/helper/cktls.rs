@@ -85,7 +85,6 @@ pub async fn verify_near_proof_v2(
         .await
         .unwrap();
 
-
     let rpc_url = env::var("NEAR_RPC_URL").expect("RPC_URL_NOT_PRESENT");
     let account_id = env::var("NEAR_SIGNER_ACCOUNT_ID").expect("ACCOUNT_ID_NOT_PRESENT");
     let secret_key = env::var("NEAR_ACCOUNT_SECRET_KEY").expect("SECRET_KEY_NOT_PRESENT");
@@ -150,14 +149,14 @@ pub async fn verify_near_proof_v2(
     let tx_hash = client.call(request).await?;
 
     let response = client
-    .call(methods::tx::RpcTransactionStatusRequest {
-        transaction_info: TransactionInfo::TransactionId {
-            tx_hash: tx_hash,
-            sender_account_id: signer.account_id.clone(),
-        },
-        wait_until: TxExecutionStatus::Executed,
-    })
-    .await;
+        .call(methods::tx::RpcTransactionStatusRequest {
+            transaction_info: TransactionInfo::TransactionId {
+                tx_hash: tx_hash,
+                sender_account_id: signer.account_id.clone(),
+            },
+            wait_until: TxExecutionStatus::Executed,
+        })
+        .await;
 
     // loop {
     //     let response = client

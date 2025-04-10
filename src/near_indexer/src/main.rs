@@ -51,7 +51,7 @@ async fn main() {
         .with_ansi(false)
         .with_env_filter(tracing_subscriber::filter::EnvFilter::from_default_env())
         .init();
-    
+
     let twitter_client = twitter::OathTweeterHandler::default();
 
     loop {
@@ -71,7 +71,7 @@ async fn main() {
             Some(0)
         };
 
-        debug!("Cursor at:{:?}\n\n",&cursor);
+        debug!("Cursor at:{:?}\n\n", &cursor);
 
         let indexer = indexer::NearExplorerIndexer::new(&nft_contract_id, &near_block_key, cursor);
         if indexer.is_err() {
@@ -217,7 +217,7 @@ pub async fn process_near_transaction(
                     debug!("fetched_nft: {:?}\nmint_data:{:?}", fetched_nft, &mint_data);
 
                     // send verified journal to near for the mint transaction to be triggered
-                    let proof  = verify_near_proof_v2(
+                    let proof = verify_near_proof_v2(
                         mint_data.tweet_id.clone(),
                         mint_data.image_url.to_string(),
                         transaction.signer_account_id.clone(),
@@ -231,7 +231,7 @@ pub async fn process_near_transaction(
                         );
                         return Ok(false);
                     }
-                   let (near_tx_response, tx_hash) =proof.expect("NEAR_VERIFICATION FAILED");
+                    let (near_tx_response, tx_hash) = proof.expect("NEAR_VERIFICATION FAILED");
                     debug!(
                         "Near transaction has been verified with response: {:?}\n",
                         near_tx_response

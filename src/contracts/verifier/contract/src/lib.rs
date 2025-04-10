@@ -21,7 +21,6 @@ pub use crate::external::*;
 const IS_JOURNAL_VERIFIED_SELECTOR: [u8; 4] = [181, 76, 30, 108];
 const DEPOSIT: u128 = 15020000000000000000000;
 
-
 /// The tweet structure gotten from the API
 ///
 /// Containing the details about a tweet
@@ -183,7 +182,6 @@ pub struct VerifierProxy {
     ic_remote_public_key: Address,
     contract_address: Address,
 }
-
 
 #[near_bindgen]
 impl VerifierProxy {
