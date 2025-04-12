@@ -1,7 +1,7 @@
 # both accounts must be the same
 export NEAR_CONTRACT_ACCOUNT="x-bitte-nfts.testnet"
 export NEAR_SIGNER_ACCOUNT=local-verifier.testnet
-export TWEET_ID=1583095539742408706
+export TWEET_ID=1910371020072247555
 export IMAGE_URL="https://ipfs.io/ipfs/QmXLiZP95g8h71QTqzkPvQjKkc52cus4QnkYYbAmnekmRs"
 export NOTIFY="xlassix"
 

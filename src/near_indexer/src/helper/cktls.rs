@@ -10,20 +10,25 @@ use serde_json::json;
 use std::env;
 use verity_verify_remote::{
     config::Config,
-    ic::{Verifier, DEFAULT_IC_GATEWAY_LOCAL},
+    ic::{Verifier, DEFAULT_IC_GATEWAY_LOCAL, DEFAULT_IC_GATEWAY_MAINNET_TRAILING_SLASH},
 };
 
 use verity_verify_tls::verify_proof;
 
 use crate::helper::proof::get_verity_client;
 
-pub const DEFAULT_VERITY_VERIFIER_ID: &str = "bkyz2-fmaaa-aaaaa-qaaaq-cai";
-
 pub async fn verify_near_proof_v2(
     tweet_id: String,
     image_url: String,
     nft_owner: String,
 ) -> Result<(RpcTransactionResponse, String), Box<dyn std::error::Error>> {
+    let is_production = env::var("NEAR_NFT_CONTRACT_ACCOUNT_ID").expect("NEAR_NFT_CONTRACT_ACCOUNT_ID must be set").ends_with(".near");
+
+    let rv_id= if is_production {
+        "yf57k-fyaaa-aaaaj-azw2a-cai"
+    } else {
+        "bkyz2-fmaaa-aaaaa-qaaaq-cai"
+    };
     println!("Proving a GET request using VerityClient...");
 
     let client = get_verity_client();
@@ -61,11 +66,14 @@ pub async fn verify_near_proof_v2(
 
     // TODO: This should eventually be abstracted away from the user...
     let rv_identity_path = "./src/fixtures/identity.pem";
-    let rv_id = DEFAULT_VERITY_VERIFIER_ID.to_string();
     let rv_config = Config::new(
-        DEFAULT_IC_GATEWAY_LOCAL.to_string(),
+        if is_production {
+            DEFAULT_IC_GATEWAY_MAINNET_TRAILING_SLASH.to_string()
+        } else {
+            DEFAULT_IC_GATEWAY_LOCAL.to_string()
+        },
         rv_identity_path.to_string(),
-        rv_id,
+        rv_id.to_string()
     );
 
     // 2. Create verifier from a config file
