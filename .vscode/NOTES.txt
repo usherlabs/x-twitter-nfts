@@ -1,1 +1,0 @@
-- "./src/contracts/verifier/integration-tests/Cargo.toml" removed from linked projects in settings.json due to build errors. See ../src/contracts/verifier/integration-tests/WARNING.md for details.

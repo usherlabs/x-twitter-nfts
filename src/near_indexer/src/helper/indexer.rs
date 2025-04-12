@@ -6,19 +6,22 @@ use tracing::info;
 
 use super::{JSONTransaction, TransactionData};
 
-fn parse_string_to_u64(opt_str: Option<String>) -> Option<u64> {
-    opt_str.map(|s| s.parse::<u64>().unwrap_or(0))
+fn parse_string_to_i64(opt_str: Option<String>) -> Option<i64> {
+    opt_str.map(|s| s.parse::<i64>().unwrap_or(0))
 }
 
-
 pub struct NearExplorerIndexer<'a> {
-    pub cursor: Option<u64>,
+    pub cursor: Option<i64>,
     pub account_id: &'a str,
     pub near_block_key: &'a str,
 }
 
 impl<'a> NearExplorerIndexer<'a> {
-    pub fn new(account_id: &'a str, near_block_key: &'a str, cursor: Option<u64>) -> Result<Self, Box<dyn Error>> {
+    pub fn new(
+        account_id: &'a str,
+        near_block_key: &'a str,
+        cursor: Option<i64>,
+    ) -> Result<Self, Box<dyn Error>> {
         if !(account_id.ends_with(".testnet") || account_id.ends_with(".near")) {
             return Err("Invalid account_id".into());
         }
@@ -39,11 +42,10 @@ impl<'a> NearExplorerIndexer<'a> {
     pub async fn get_transactions(
         &mut self,
     ) -> Result<Vec<JSONTransaction>, Box<dyn Error + Send + Sync>> {
-        self.cursor = None;
         let data = self.fetch().await?;
 
         if data.cursor.is_some() {
-            self.cursor = parse_string_to_u64(data.cursor);
+            self.cursor = parse_string_to_i64(data.cursor);
         }
 
         Ok(data.txns)
@@ -61,7 +63,7 @@ impl<'a> NearExplorerIndexer<'a> {
         let data = self.fetch().await?;
 
         if let Some(cursor) = data.cursor {
-            self.cursor = Some(cursor.parse::<u64>().unwrap_or(0));
+            self.cursor = Some(cursor.parse::<i64>().unwrap_or(0));
         } else {
             self.cursor = None;
         }
@@ -72,9 +74,7 @@ impl<'a> NearExplorerIndexer<'a> {
     pub fn has_next_page(&self) -> bool {
         self.cursor.is_some()
     }
-    async fn fetch(
-        &mut self
-    ) -> Result<TransactionData, Box<dyn Error + Send + Sync>> {
+    async fn fetch(&mut self) -> Result<TransactionData, Box<dyn Error + Send + Sync>> {
         let client = reqwest::Client::new();
         let base = if self.account_id.ends_with(".testnet") {
             "https://api-testnet.nearblocks.io"
@@ -87,11 +87,17 @@ impl<'a> NearExplorerIndexer<'a> {
         loop {
             let url = format!(
                 "{}/v1/account/{}/txns-only?cursor={}&order=asc",
-                base, self.account_id, self.cursor.unwrap_or(0)
+                base,
+                self.account_id,
+                self.cursor.unwrap_or(0)
             );
-            let response = client.get(&url).header("Authorization", self.near_block_key).send().await?;
+            let response = client
+                .get(&url)
+                .header("Authorization", self.near_block_key)
+                .send()
+                .await?;
 
-            info!("{}\n{}", (&response).status(),&url);
+            info!("{}\n{}", (&response).status(), &url);
 
             if (&response).status() == 200 {
                 match response.json::<TransactionData>().await {
@@ -125,7 +131,8 @@ mod test_near_explorer_indexer {
         dotenv().expect("Error occurred when loading .env");
 
         let near_block_key = env::var("NEAR_BLOCK_KEY").expect("NEAR_BLOCK_KEY must be set");
-        let mut indexer = NearExplorerIndexer::new("priceoracle.near", &near_block_key,Some(0)).unwrap();
+        let mut indexer =
+            NearExplorerIndexer::new("priceoracle.near", &near_block_key, Some(0)).unwrap();
         assert_eq!(indexer.get_transactions().await.unwrap().len(), 25);
         assert_eq!(indexer.has_next_page(), true);
     }
@@ -134,7 +141,8 @@ mod test_near_explorer_indexer {
     async fn test_near_explorer_indexer_testnet() {
         dotenv().expect("Error occurred when loading .env");
         let near_block_key = env::var("NEAR_BLOCK_KEY").expect("NEAR_BLOCK_KEY must be set");
-        let mut indexer = NearExplorerIndexer::new("ush_test.testnet", &near_block_key,Some(0)).unwrap();
+        let mut indexer =
+            NearExplorerIndexer::new("ush_test.testnet", &near_block_key, Some(0)).unwrap();
         let data_size = indexer.get_transactions().await.unwrap().len();
         assert!(data_size < 25);
         assert_eq!(indexer.has_next_page(), false);

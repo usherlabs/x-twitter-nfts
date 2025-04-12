@@ -1,0 +1,30 @@
+#!/usr/bin/env sh
+CARGO_MANIFESTS=(
+  "./src/contracts/nft/Cargo.toml"
+  "./src/contracts/verifier/contract/Cargo.toml"
+  "./src/contracts/nft/nft/Cargo.toml"
+  "./src/bitte_plugin/Cargo.toml"
+  "./src/near_indexer/Cargo.toml"
+)
+
+fail=0
+
+for manifest in "${CARGO_MANIFESTS[@]}"; do
+  echo "Formatting project at $manifest"
+  # Run formatting
+  cargo fmt --manifest-path "$manifest"
+  # Run check
+  cargo fmt --manifest-path "$manifest" -- --check
+  if [ $? -ne 0 ]; then
+    echo "Rust formatting check failed for $manifest! Please run 'cargo fmt --manifest-path $manifest' to fix formatting."
+    fail=1
+  else
+    echo "Project at $manifest is correctly formatted! ✅"
+  fi
+done
+
+if [ $fail -ne 0 ]; then
+  exit 1
+fi
+
+echo "All Rust files in all projects are correctly formatted! ✅"

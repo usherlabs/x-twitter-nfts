@@ -1,40 +1,32 @@
 pub mod entity;
 pub mod generated;
 pub mod helper;
-// pub mod migration;
 
 use async_std::task::sleep;
-use aurora::TxSender;
 use dotenv::dotenv;
 use entity::near_transaction;
-use ethers::utils::hex;
-use generated::methods::VERIFY_ELF;
+use helper::cktls::verify_near_proof_v2;
 use helper::*;
-use near::{extract_metadata_from_request, verify_near_proof};
+use migration::{Migrator, MigratorTrait};
 use near_client::client::NearClient;
 use near_client::prelude::{AccountId, Finality};
-use openssl::sha::sha256;
-use proof::{generate_groth16_proof, get_proof};
 use reqwest::Url;
 use sea_orm::ActiveValue::Set;
 use sea_orm::{Database, QueryOrder};
 use sea_orm::{DbConn, DbErr, EntityTrait};
-use migration::{Migrator, MigratorTrait};
 use serde_json::{json, Error as SJError};
-use sha256::digest;
 use std::str::FromStr;
 use std::{env, time::Duration};
-use tokio::task::spawn_blocking;
 use tracing::{debug, error, info};
 
 #[async_std::main]
 async fn main() {
     // Load .env
-    let tweet_bearer=env::var("TWEET_BEARER");
+    let tweet_bearer = env::var("TWEET_BEARER");
 
-    if tweet_bearer.is_err(){
+    if tweet_bearer.is_err() {
         dotenv().expect("Error occurred when loading .env");
-    } 
+    }
 
     //Load Essential for env Variables
     env::var("TWEET_BEARER").expect("TWEET_BEARER must be set");
@@ -52,37 +44,34 @@ async fn main() {
     let client = NearClient::new(Url::from_str(&near_rpc).unwrap()).unwrap();
     let near_block_key = env::var("NEAR_BLOCK_KEY").expect("NEAR_BLOCK_KEY must be set");
 
-
     // Initialize tracing. In order to view logs, run `RUST_LOG=info cargo run`
     tracing_subscriber::fmt()
         .with_ansi(false)
         .with_env_filter(tracing_subscriber::filter::EnvFilter::from_default_env())
         .init();
 
-    info!(
-        "\n\nELF SHA\t\t:{}\n\n,",
-        digest(format!("{}", hex::encode(VERIFY_ELF)))
-    );
-
     let twitter_client = twitter::OathTweeterHandler::default();
-    
+
     loop {
         let query = near_transaction::Entity::find()
-        .order_by_desc(near_transaction::Column::Id)
-        .one(&db).await;
-    
+            .order_by_desc(near_transaction::Column::Id)
+            .one(&db)
+            .await;
+
         if query.is_err() {
-            error!("db-error: {:?}", query.err());
+            error!("DB-error: {:?}", query.err());
             return;
         }
-        let query= query.unwrap();
-        let cursor = if query.is_some(){
-            Some(query.unwrap().id)
-        }else{
+        let query = query.unwrap();
+        let cursor = if query.is_some() {
+            Some(query.clone().unwrap().id)
+        } else {
             Some(0)
         };
-    
-        let indexer = indexer::NearExplorerIndexer::new(&nft_contract_id,&near_block_key,cursor);
+
+        debug!("Cursor at:{:?}\n\n", &cursor);
+
+        let indexer = indexer::NearExplorerIndexer::new(&nft_contract_id, &near_block_key, cursor);
         if indexer.is_err() {
             error!("indexer-init-error: {:?}", indexer.err());
             return;
@@ -101,14 +90,11 @@ async fn main() {
             debug!("Found {} Transactions", transactions.len());
             for transaction in transactions {
                 println!("{transaction:?}");
-                let exists = process_near_transaction(&db, &transaction, &client, &twitter_client)
+                let _ = process_near_transaction(&db, &transaction, &client, &twitter_client)
                     .await
                     .unwrap();
-                if exists {
-                    break;
-                }
             }
-            println!("cursor: {}", indexer.cursor.unwrap_or(0));
+            println!("cursor: {:?}", indexer.cursor);
             // Walk pages
             if !indexer.has_next_page() {
                 println!("All transaction indexed");
@@ -134,7 +120,7 @@ pub async fn process_near_transaction(
     let nft_contract_id = AccountId::from_str(&nft_contract_id).unwrap();
 
     // Parse the transaction ID as an integer
-    let pk = transaction.id.parse::<u64>().unwrap();
+    let pk = transaction.id.parse::<i64>().unwrap();
 
     // Find the near_transaction in the database by primary key
     let _near_transaction: Option<near_transaction::Model> =
@@ -144,7 +130,9 @@ pub async fn process_near_transaction(
         Some(_) => Ok(true), // Transaction exists, return true
         None => {
             // Check if the transaction status is failed
-            if transaction.outcomes.status.is_none() || !transaction.outcomes.status.unwrap_or(false) {
+            if transaction.outcomes.status.is_none()
+                || !transaction.outcomes.status.unwrap_or(false)
+            {
                 debug!(
                     "Found Failed BlockChain Transaction Ignored, {}",
                     transaction.transaction_hash
@@ -152,7 +140,7 @@ pub async fn process_near_transaction(
                 return Ok(false);
             }
 
-            if (&transaction.clone().actions).is_none(){
+            if (&transaction.clone().actions).is_none() {
                 debug!(
                     "Ignored Transaction: {} Invalid",
                     transaction.transaction_hash
@@ -160,7 +148,7 @@ pub async fn process_near_transaction(
                 return Ok(false);
             }
             // Check if there's no action method in the transaction
-            let _action= transaction.actions.clone().expect("REASON");
+            let _action = transaction.actions.clone().expect("REASON");
             if _action[0].method.is_none() {
                 debug!(
                     "Ignored Transaction: {} No method Found",
@@ -226,87 +214,22 @@ pub async fn process_near_transaction(
                     }
                     debug!("fetched_nft: {:?}\nmint_data:{:?}", fetched_nft, &mint_data);
 
-                    // Generate proof using the tweet ID
-                    let proof = get_proof(mint_data.tweet_id.clone()).await;
-
-                    if proof.is_err() {
-                        info!("Invalid Tweet ID{}\n", &mint_data.tweet_id);
-                        return Ok(false);
-                    }
-                    let (proof, tweet_res_data) = proof.unwrap();
-
-                    // Prepare metadata for the NFT
-                    let meta_data = AssetMetadata {
-                        image_url: mint_data.image_url.to_string(),
-                        owner_account_id: transaction.signer_account_id.clone(),
-                        token_id: mint_data.tweet_id.clone(),
-                    };
-
-                    // Create ZK input parameters
-                    let zk_input = ZkInputParam {
-                        proof,
-                        meta_data: meta_data.clone(),
-                    };
-                    debug!("{:?}", &zk_input);
-
-                    // Generate Groth16 proof
-                    let (seal, journal_output) =
-                        spawn_blocking(|| generate_groth16_proof(zk_input))
-                            .await
-                            .unwrap();
-
-                    info!(
-                        "{:?} was committed to the journal",
-                        hex::encode(&journal_output)
-                    );
-                    info!("{:?} was the provided seal", hex::encode(&seal));
-
-                    // Verify the proof on Aurora to be verified on chain
-                    let aurora_client = TxSender::default();
-                    let aurora_tx_future = aurora_client
-                        .verify_proof_on_aurora(journal_output.clone(), seal)
-                        .await;
-                    let aurora_tx_response = aurora_tx_future.unwrap();
-                    info!(
-                        "Aurora transation has been verified with response: {:?}\n",
-                        aurora_tx_response
-                    );
-
-                    // Get the chain transaction hash from Aurora response
-                    let chain_transaction = aurora_tx_response.block_hash.unwrap();
-                    debug!(
-                        "ON Chain Transaction Hash {} for mint {}",
-                        chain_transaction.to_string(),
-                        transaction.transaction_hash
-                    );
-
-                    // Verify the proof on NEAR blockchain
-                    let x = serde_json::to_string(&extract_metadata_from_request(
-                        tweet_res_data.clone(),
-                        meta_data.clone(),
-                    ))
-                    .unwrap();
-                    assert_eq!(
-                        hex::encode(sha256(x.as_bytes())),
-                        hex::encode(journal_output.clone()),
-                        "invalid token_metadata"
-                    );
-
                     // send verified journal to near for the mint transaction to be triggered
-                    let near_tx_response = verify_near_proof(
-                        journal_output,
-                        extract_metadata_from_request(tweet_res_data, meta_data),
+                    let proof = verify_near_proof_v2(
+                        mint_data.tweet_id.clone(),
+                        mint_data.image_url.to_string(),
+                        transaction.signer_account_id.clone(),
                     )
                     .await;
-                    if near_tx_response.is_err() {
+                    if proof.is_err() {
                         info!(
                             "Failed to mint {}\n {:?}\n",
                             &mint_data.tweet_id,
-                            near_tx_response.err()
+                            proof.err()
                         );
                         return Ok(false);
                     }
-                    let near_tx_response = near_tx_response.expect("successful mint response");
+                    let (near_tx_response, tx_hash) = proof.expect("NEAR_VERIFICATION FAILED");
                     debug!(
                         "Near transaction has been verified with response: {:?}\n",
                         near_tx_response
@@ -326,7 +249,7 @@ pub async fn process_near_transaction(
                         tweet_id: Set(mint_data.tweet_id.clone().to_string()),
                         image_url: Set(mint_data.image_url.clone()),
                         user_to_notify: Set(Some(mint_data.notify.clone())),
-                        mint_transaction_hash: Set(Some(chain_transaction.to_string())),
+                        mint_transaction_hash: Set(Some(tx_hash.to_string())),
                         ..Default::default() // all other attributes are `NotSet`
                     };
                     near_transaction::Entity::insert(new_transaction)

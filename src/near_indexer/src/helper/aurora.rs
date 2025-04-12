@@ -58,6 +58,7 @@ impl TxSender {
         &self,
         calldata: Vec<u8>,
     ) -> Result<Option<TransactionReceipt>, Box<dyn Error + Send + Sync>> {
+        info!("{:?}", &self.client.address());
         let tx = TransactionRequest::new()
             .chain_id(self.chain_id)
             .to(self.contract)

@@ -11,7 +11,7 @@ impl MigrationTrait for Migration {
                 Table::create()
                     .table(NearTransaction::Table)
                     .if_not_exists()
-                    .col(unsigned_uniq(NearTransaction::Id))
+                    .col(big_unsigned_uniq(NearTransaction::Id))
                     .col(string_uniq(NearTransaction::TransactionHash))
                     .col(string(NearTransaction::SignerAccountId))
                     .col(string(NearTransaction::ReceiverAccountId))
@@ -29,19 +29,20 @@ impl MigrationTrait for Migration {
                     .primary_key(
                         Index::create()
                             .name("pk-transaction")
-                            .col(NearTransaction::Id)
+                            .col(NearTransaction::Id),
                     )
                     .to_owned(),
             )
             .await?;
 
-            manager
+        manager
             .create_index(
                 Index::create()
                     .if_not_exists()
                     .name("idx-near-transaction-hash")
                     .table(NearTransaction::Table)
-                    .col(NearTransaction::TransactionHash).to_owned()                 
+                    .col(NearTransaction::TransactionHash)
+                    .to_owned(),
             )
             .await?;
 
@@ -49,9 +50,9 @@ impl MigrationTrait for Migration {
     }
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-
-        manager.drop_index(Index::drop().name("idx-near-transaction-hash").to_owned()   )
-        .await?;
+        manager
+            .drop_index(Index::drop().name("idx-near-transaction-hash").to_owned())
+            .await?;
 
         manager
             .drop_table(Table::drop().table(NearTransaction::Table).to_owned())
@@ -76,5 +77,5 @@ enum NearTransaction {
     MintTransactionHash,
     UserToNotify,
     NotarizedProof,
-    ZkProof
+    ZkProof,
 }
