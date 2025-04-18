@@ -13,12 +13,11 @@ use near_contract_standards::non_fungible_token::metadata::TokenMetadata;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
-
-use once_cell::sync::Lazy;
-use verity_verify_remote::ic::{DEFAULT_IC_GATEWAY_LOCAL, DEFAULT_IC_GATEWAY_MAINNET};
-use std::{env,fs};
-use near_primitives::types::AccountId;
 use near_crypto::SecretKey;
+use near_primitives::types::AccountId;
+use once_cell::sync::Lazy;
+use std::{env, fs};
+use verity_verify_remote::ic::{DEFAULT_IC_GATEWAY_LOCAL, DEFAULT_IC_GATEWAY_MAINNET};
 
 #[derive(Debug, Clone)]
 pub struct Settings {
@@ -40,7 +39,8 @@ impl Settings {
         let near_rpc_url = env::var("NEAR_RPC_URL")?;
         let signer_account_id: AccountId = env::var("NEAR_SIGNER_ACCOUNT_ID")?.parse()?;
         let signer_secret_key: SecretKey = env::var("NEAR_ACCOUNT_SECRET_KEY")?.parse()?;
-        let contract_account_id: AccountId = env::var("NEAR_VERIFIER_CONTRACT_ACCOUNT_ID")?.parse()?;
+        let contract_account_id: AccountId =
+            env::var("NEAR_VERIFIER_CONTRACT_ACCOUNT_ID")?.parse()?;
 
         let tweet_bearer = env::var("TWEET_BEARER")?;
 
@@ -52,7 +52,10 @@ impl Settings {
         }
         // Ensure the file starts with the expected EC PRIVATE KEY header
         let content = fs::read_to_string(&rv_identity_file)?;
-        if !content.trim_start().starts_with("-----BEGIN EC PRIVATE KEY-----") {
+        if !content
+            .trim_start()
+            .starts_with("-----BEGIN EC PRIVATE KEY-----")
+        {
             return Err(format!(
                 "RV identity file at {} does not begin with the required EC PRIVATE KEY header",
                 rv_identity_file
@@ -60,9 +63,8 @@ impl Settings {
             .into());
         }
 
-
         let nft_contract = env::var("NEAR_NFT_CONTRACT_ACCOUNT_ID").unwrap_or_default();
-        let is_production = true;//nft_contract.ends_with(".near");
+        let is_production = true; //nft_contract.ends_with(".near");
 
         // choose your Verity canister ID and gateway once
         let (verity_ic_id, verity_ic_gateway) = if is_production {
@@ -87,17 +89,13 @@ impl Settings {
             is_production,
             verity_ic_id,
             verity_ic_gateway,
-            nft_contract
+            nft_contract,
         })
     }
 }
 
-
 // 3. Create a single static instance
-pub static SETTINGS: Lazy<Settings> = Lazy::new(|| {
-    Settings::from_env().unwrap()
-});
-
+pub static SETTINGS: Lazy<Settings> = Lazy::new(|| Settings::from_env().unwrap());
 
 /// Containing the details needed for verification of a proof
 #[derive(Serialize, Deserialize, Debug, Clone)]

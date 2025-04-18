@@ -7,11 +7,7 @@ use near_primitives::transaction::{Action, FunctionCallAction, Transaction};
 use near_primitives::types::BlockReference;
 use near_primitives::views::{QueryRequest, TxExecutionStatus};
 use serde_json::json;
-use verity_verify_remote::{
-    config::Config,
-    ic::Verifier,
-};
-
+use verity_verify_remote::{config::Config, ic::Verifier};
 
 use crate::helper::proof::get_verity_client;
 use crate::helper::SETTINGS;
@@ -21,7 +17,6 @@ pub async fn verify_near_proof_v2(
     image_url: String,
     nft_owner: String,
 ) -> Result<(RpcTransactionResponse, String), Box<dyn std::error::Error>> {
-
     // grab your pre‑loaded config
     let cfg = &*SETTINGS;
 
@@ -50,8 +45,6 @@ pub async fn verify_near_proof_v2(
 
     let notary_pub_key = notaryinfo.expect("success").public_key;
 
-
-
     let rv_identity_path = &cfg.rv_identity_file;
 
     println!("notary_pub_key: {:#?}\n", notary_pub_key);
@@ -59,11 +52,10 @@ pub async fn verify_near_proof_v2(
     let rv_config = Config::new(
         cfg.verity_ic_gateway.clone(),
         rv_identity_path.to_string(),
-        cfg.verity_ic_id.to_string()
+        cfg.verity_ic_id.to_string(),
     );
 
     let remote_verifier = Verifier::from_config(&rv_config).await.unwrap();
-
 
     let proof_value: serde_json::Value = serde_json::from_str(&response.proof).unwrap();
     let session = proof_value.to_string();
@@ -77,14 +69,14 @@ pub async fn verify_near_proof_v2(
         .await
         .unwrap();
 
+    let signer = near_crypto::InMemorySigner::from_secret_key(
+        cfg.signer_account_id.clone(),
+        cfg.signer_secret_key.clone(),
+    );
 
-    
-    let signer = near_crypto::InMemorySigner::from_secret_key(cfg.signer_account_id.clone(), cfg.signer_secret_key.clone());
-    
-    
     let client = JsonRpcClient::connect(cfg.near_rpc_url.clone());
     let access_key_query_response = client
-    .call(RpcQueryRequest {
+        .call(RpcQueryRequest {
             block_reference: BlockReference::latest(),
             request: QueryRequest::ViewAccessKey {
                 account_id: signer.account_id.clone(),
@@ -93,14 +85,12 @@ pub async fn verify_near_proof_v2(
         })
         .await
         .expect("access_key_query_response error");
-    
+
     let current_nonce = match access_key_query_response.kind {
         QueryResponseKind::AccessKey(access_key) => access_key.nonce,
         _ => 0,
     };
-    
-    
-    
+
     let transaction = Transaction {
         signer_id: signer.account_id.clone(),
         public_key: signer.public_key.clone(),
@@ -126,10 +116,10 @@ pub async fn verify_near_proof_v2(
         signed_transaction: transaction.sign(&signer),
     };
     let tx_hash = client.call(request).await?;
-    
+
     let response = client
-    .call(methods::tx::RpcTransactionStatusRequest {
-        transaction_info: TransactionInfo::TransactionId {
+        .call(methods::tx::RpcTransactionStatusRequest {
+            transaction_info: TransactionInfo::TransactionId {
                 tx_hash: tx_hash,
                 sender_account_id: signer.account_id.clone(),
             },
@@ -137,7 +127,7 @@ pub async fn verify_near_proof_v2(
         })
         .await;
 
-     println!("proof:{:?}", &response);
-    
+    println!("proof:{:?}", &response);
+
     Ok((response.unwrap(), tx_hash.to_string()))
 }
