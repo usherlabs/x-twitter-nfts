@@ -3,6 +3,13 @@ use std::env;
 
 use crate::handler::utils::extract_plugin_url;
 
+#[get("/")]
+pub fn welcome() -> Json<Value> {
+    Json(json!({
+        "data":"Welcome To UsherLabs X NFTs"
+      }
+    ))
+}
 /// Route handler for serving the OpenAPI specification
 #[get("/ai-plugin.json")]
 pub fn open_api_specification() -> Json<Value> {
