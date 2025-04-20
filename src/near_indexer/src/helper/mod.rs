@@ -37,15 +37,15 @@ pub struct Settings {
 impl Settings {
     pub fn from_env() -> Result<Self, Box<dyn std::error::Error>> {
         let near_rpc_url = env::var("NEAR_RPC_URL")?;
-        let signer_account_id: AccountId = env::var("NEAR_SIGNER_ACCOUNT_ID")?.parse()?;
-        let signer_secret_key: SecretKey = env::var("NEAR_ACCOUNT_SECRET_KEY")?.parse()?;
+        let signer_account_id: AccountId = env::var("NEAR_SIGNER_ACCOUNT_ID").expect("NEAR_SIGNER_ACCOUNT_ID_NOT_PRESENT").parse()?;
+        let signer_secret_key: SecretKey = env::var("NEAR_ACCOUNT_SECRET_KEY").expect("NEAR_ACCOUNT_SECRET_KEY_NOT_PRESENT").parse()?;
         let contract_account_id: AccountId =
-            env::var("NEAR_VERIFIER_CONTRACT_ACCOUNT_ID")?.parse()?;
+            env::var("NEAR_VERIFIER_CONTRACT_ACCOUNT_ID").expect("NEAR_VERIFIER_CONTRACT_ACCOUNT_ID_NOT_PRESENT").parse()?;
 
-        let tweet_bearer = env::var("TWEET_BEARER")?;
+        let tweet_bearer = env::var("TWEET_BEARER").expect("TWEET_BEARER_NOT_PRESENT");
 
         // Load RV identity file path from env and verify existence
-        let rv_identity_file = env::var("RV_IDENTITY_FILE")?;
+        let rv_identity_file = env::var("RV_IDENTITY_FILE").expect("RV_IDENTITY_FILE_NOT_PRESENT");
         let path = Path::new(&rv_identity_file);
         if !path.exists() {
             return Err(format!("RV identity file not found at: {}", rv_identity_file).into());
@@ -63,7 +63,7 @@ impl Settings {
             .into());
         }
 
-        let nft_contract = env::var("NEAR_NFT_CONTRACT_ACCOUNT_ID").unwrap_or_default();
+        let nft_contract = env::var("NEAR_NFT_CONTRACT_ACCOUNT_ID").expect("NEAR_NFT_CONTRACT_ACCOUNT_ID_NOT_FOUND");
         let is_production = true; //nft_contract.ends_with(".near");
 
         // choose your Verity canister ID and gateway once

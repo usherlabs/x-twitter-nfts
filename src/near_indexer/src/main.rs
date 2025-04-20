@@ -36,7 +36,7 @@ async fn main() {
     let db = Database::connect(env::var("DATABASE_URL").expect("DATABASE_URL must be set"))
         .await
         .unwrap();
-
+    
     Migrator::up(&db, None).await.unwrap();
     let near_rpc = env::var("NEAR_RPC_URL").expect("NEAR_RPC_URL");
 

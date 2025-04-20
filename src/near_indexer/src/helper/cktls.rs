@@ -1,5 +1,4 @@
 use near_jsonrpc_client::methods::query::RpcQueryRequest;
-use near_jsonrpc_client::methods::tx::RpcTransactionResponse;
 use near_jsonrpc_client::{methods, JsonRpcClient};
 use near_jsonrpc_primitives::types::query::QueryResponseKind;
 use near_jsonrpc_primitives::types::transactions::TransactionInfo;
@@ -16,7 +15,7 @@ pub async fn verify_near_proof_v2(
     tweet_id: String,
     image_url: String,
     nft_owner: String,
-) -> Result<(RpcTransactionResponse, String), Box<dyn std::error::Error>> {
+) -> Result<(Vec<u8>, String), Box<dyn std::error::Error>> {
     // grab your pre‑loaded config
     let cfg = &*SETTINGS;
 
@@ -129,5 +128,12 @@ pub async fn verify_near_proof_v2(
 
     println!("proof:{:?}", &response);
 
-    Ok((response.unwrap(), tx_hash.to_string()))
+   let response= response.unwrap();
+   let _res=response.final_execution_outcome.unwrap().into_outcome();
+   
+   match  _res.status {
+    near_primitives::views::FinalExecutionStatus::Failure(err)=>Err(err.to_string().into()),
+    near_primitives::views::FinalExecutionStatus::SuccessValue(value)=> Ok((value ,tx_hash.to_string())),
+    _=> Ok((vec![], tx_hash.to_string()))
+   }
 }
