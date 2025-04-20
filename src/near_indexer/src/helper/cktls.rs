@@ -128,12 +128,14 @@ pub async fn verify_near_proof_v2(
 
     println!("proof:{:?}", &response);
 
-   let response= response.unwrap();
-   let _res=response.final_execution_outcome.unwrap().into_outcome();
-   
-   match  _res.status {
-    near_primitives::views::FinalExecutionStatus::Failure(err)=>Err(err.to_string().into()),
-    near_primitives::views::FinalExecutionStatus::SuccessValue(value)=> Ok((value ,tx_hash.to_string())),
-    _=> Ok((vec![], tx_hash.to_string()))
-   }
+    let response = response.unwrap();
+    let _res = response.final_execution_outcome.unwrap().into_outcome();
+
+    match _res.status {
+        near_primitives::views::FinalExecutionStatus::Failure(err) => Err(err.to_string().into()),
+        near_primitives::views::FinalExecutionStatus::SuccessValue(value) => {
+            Ok((value, tx_hash.to_string()))
+        }
+        _ => Ok((vec![], tx_hash.to_string())),
+    }
 }

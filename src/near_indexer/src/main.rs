@@ -36,7 +36,7 @@ async fn main() {
     let db = Database::connect(env::var("DATABASE_URL").expect("DATABASE_URL must be set"))
         .await
         .unwrap();
-    
+
     Migrator::up(&db, None).await.unwrap();
     let near_rpc = env::var("NEAR_RPC_URL").expect("NEAR_RPC_URL");
 
@@ -227,6 +227,27 @@ pub async fn process_near_transaction(
                             &mint_data.tweet_id,
                             proof.err()
                         );
+                                            // Create a new transaction record
+                    let new_transaction = near_transaction::ActiveModel {
+                        id: Set(pk),
+                        transaction_hash: Set(transaction.transaction_hash.clone()),
+                        signer_account_id: Set(transaction.signer_account_id.clone()),
+                        receiver_account_id: Set(transaction.receiver_account_id.clone()),
+                        block_timestamp: Set(transaction.transaction_hash.clone()),
+                        block_height: Set(transaction.block.block_height.try_into().unwrap()),
+                        action: Set(action.action.clone()),
+                        method: Set(method.clone()),
+                        outcomes_status: Set(transaction.outcomes.status.unwrap_or(false)),
+                        tweet_id: Set(mint_data.tweet_id.clone().to_string()),
+                        image_url: Set(mint_data.image_url.clone()),
+                        user_to_notify: Set(Some(mint_data.notify.clone())),
+                        mint_transaction_hash: Set(Some("".to_string())),
+                        ..Default::default() // all other attributes are `NotSet`
+                    };
+                    near_transaction::Entity::insert(new_transaction)
+                        .exec(db)
+                        .await?;
+
                         return Ok(false);
                     }
                     let (near_tx_response, tx_hash) = proof.expect("NEAR_VERIFICATION FAILED");
