@@ -1,19 +1,18 @@
 use std::{env, ops::Index, str::FromStr};
 
-use indexer::helper::TweetResponse;
 use near_client::{
     client::NearClient,
     prelude::{AccountId, Finality},
 };
-use reqwest::{
-    multipart::{Form, Part},
-    Client,
+use reqwest::{ multipart::{Form, Part}, Client
 };
 use rocket::serde::json::{json, Json, Value};
 use tracing::debug;
 use url::Url;
 
 use crate::{handler::IpfsData, helper, models::response::NetworkResponse};
+
+use super::TweetResponse;
 
 /// Handles the request to mint a new tweet.
 ///
@@ -34,7 +33,7 @@ pub async fn mint_tweet_request(tweet_id: Option<String>) -> NetworkResponse {
     }
 
     let tweet_id = tweet_id.unwrap();
-    let thirdweb_client_id = env::var("THIRDWEB_CLIENT_ID").expect("MY_VAR must be set");
+    let lighthouse_token = env::var("LIGHTHOUSE_TOKEN").expect("MY_VAR must be set");
 
     let _tweet_id = tweet_id.parse::<u64>();
 
@@ -81,7 +80,7 @@ pub async fn mint_tweet_request(tweet_id: Option<String>) -> NetworkResponse {
     let image = helper::create_twitter_post_image_from_id(_tweet_id.unwrap()).await;
 
     if image.is_err() {
-        debug!("{}", format!("{:#?}", image.err()));
+        debug!("Error {}", format!("{:#?}", image.err()));
         return NetworkResponse::StatusOk(json!({
             "description": description,
             "imageURL": ""
@@ -93,22 +92,24 @@ pub async fn mint_tweet_request(tweet_id: Option<String>) -> NetworkResponse {
     let client = Client::new();
 
     let form = Form::new()
-        .part("file", Part::bytes(image).file_name("image.png"))
-        .part("pinataOptions", Part::text("{\"wrapWithDirectory\":false}"))
-        .part("pinataOptions", Part::text("{\"wrapWithDirectory\":false}"))
-        .part(
-            "pinataMetadata",
-            Part::text("{\"name\":\"Storage SDK\",\"keyvalues\":{}}"),
+        .part("file", Part::bytes(image).file_name("image.png")
         );
 
     // Return a JSON response
-    let url = "https://storage.thirdweb.com/ipfs/upload";
+    let url ="https://node.lighthouse.storage/api/v0/add?pin=true";
     let response = client
         .post(url)
-        .header("X-Client-Id", &thirdweb_client_id)
         .header(
             "Content-Type",
             format!("multipart/form-data; boundary={}", form.boundary()),
+        )
+        .header(
+            "Encryption", "false",
+        )
+        .header(
+            "Mime-Type", "null",
+        ).header(
+            "Authorization", format!("Bearer {}",lighthouse_token),
         )
         .multipart(form)
         .send()
@@ -129,12 +130,11 @@ pub async fn mint_tweet_request(tweet_id: Option<String>) -> NetworkResponse {
     }
 
     let image_url = format!(
-        "https://{}.ipfscdn.io/ipfs/{}",
-        thirdweb_client_id,
-        response.unwrap().IpfsHash
+        "https://gateway.lighthouse.storage/ipfs/{}",
+        response.unwrap().Hash
     );
 
-    debug!(
+    println!(
         "image_url: {} \ncomputed_cost:{}",
         &image_url,
         &(computed_cost * 12 / 10).to_string()
