@@ -4,7 +4,9 @@ use near_client::{
     client::NearClient,
     prelude::{AccountId, Finality},
 };
-use reqwest::{ multipart::{Form, Part}, Client
+use reqwest::{
+    multipart::{Form, Part},
+    Client,
 };
 use rocket::serde::json::{json, Json, Value};
 use tracing::debug;
@@ -91,26 +93,19 @@ pub async fn mint_tweet_request(tweet_id: Option<String>) -> NetworkResponse {
 
     let client = Client::new();
 
-    let form = Form::new()
-        .part("file", Part::bytes(image).file_name("image.png")
-        );
+    let form = Form::new().part("file", Part::bytes(image).file_name("image.png"));
 
     // Return a JSON response
-    let url ="https://node.lighthouse.storage/api/v0/add?pin=true";
+    let url = "https://node.lighthouse.storage/api/v0/add?pin=true";
     let response = client
         .post(url)
         .header(
             "Content-Type",
             format!("multipart/form-data; boundary={}", form.boundary()),
         )
-        .header(
-            "Encryption", "false",
-        )
-        .header(
-            "Mime-Type", "null",
-        ).header(
-            "Authorization", format!("Bearer {}",lighthouse_token),
-        )
+        .header("Encryption", "false")
+        .header("Mime-Type", "null")
+        .header("Authorization", format!("Bearer {}", lighthouse_token))
         .multipart(form)
         .send()
         .await;

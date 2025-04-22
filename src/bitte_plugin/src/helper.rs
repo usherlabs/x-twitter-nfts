@@ -1,10 +1,10 @@
-use std::error::Error;
-use std::marker::{Send, Sync};
-use headless_chrome::LaunchOptionsBuilder;
 use headless_chrome::protocol::cdp::Page;
 use headless_chrome::Browser;
+use headless_chrome::LaunchOptionsBuilder;
 use serde::{Deserialize, Serialize};
+use std::error::Error;
 use std::ffi::OsStr;
+use std::marker::{Send, Sync};
 
 pub async fn create_twitter_post_image(
     url: String,
@@ -18,8 +18,8 @@ pub async fn create_twitter_post_image(
 
     // let mut builder = headless_chrome::LaunchOptions::default_builder();
     let options = LaunchOptionsBuilder::default()
-    .args(vec![OsStr::new("--no-sandbox")])
-    .build()?;
+        .args(vec![OsStr::new("--no-sandbox")])
+        .build()?;
     // Set headless mode based on whether it's in test mode
     // #[cfg(test)]
     // builder.headless(false); // Headful mode for tests

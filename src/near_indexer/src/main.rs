@@ -280,9 +280,9 @@ pub async fn process_near_transaction(
                     // Notify the user on Twitter if specified
                     if !mint_data.notify.is_empty() {
                         let _notification = notifier
-                        .notifier(&mint_data.tweet_id.clone(), &mint_data.notify)
-                        .await;
-                        info!("notified: {},\n{:?}",mint_data.notify,_notification);
+                            .notifier(&mint_data.tweet_id.clone(), &mint_data.notify)
+                            .await;
+                        info!("notified: {},\n{:?}", mint_data.notify, _notification);
                     }
                     return Ok(false);
                 }

@@ -28,7 +28,6 @@ pub struct PublicMetric {
     retweet_count: u128,
 }
 
-
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct TweetResponse {
     /// data
