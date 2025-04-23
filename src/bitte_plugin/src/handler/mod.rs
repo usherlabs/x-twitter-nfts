@@ -15,6 +15,12 @@ struct PluginInfo {
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize)]
 struct IpfsData {
+    IpfsHash: String,
+}
+
+#[allow(non_snake_case)]
+#[derive(Serialize, Deserialize)]
+struct LighthouseRespone {
     Hash: String,
 }
 

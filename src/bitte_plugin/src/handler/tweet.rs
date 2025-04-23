@@ -4,15 +4,12 @@ use near_client::{
     client::NearClient,
     prelude::{AccountId, Finality},
 };
-use reqwest::{
-    multipart::{Form, Part},
-    Client,
-};
+use reqwest::Client;
 use rocket::serde::json::{json, Json, Value};
 use tracing::debug;
 use url::Url;
 
-use crate::{handler::IpfsData, helper, models::response::NetworkResponse};
+use crate::{handler::utils::pinata_upload, helper, models::response::NetworkResponse};
 
 use super::TweetResponse;
 
@@ -35,7 +32,6 @@ pub async fn mint_tweet_request(tweet_id: Option<String>) -> NetworkResponse {
     }
 
     let tweet_id = tweet_id.unwrap();
-    let lighthouse_token = env::var("LIGHTHOUSE_TOKEN").expect("MY_VAR must be set");
 
     let _tweet_id = tweet_id.parse::<u64>();
 
@@ -91,43 +87,15 @@ pub async fn mint_tweet_request(tweet_id: Option<String>) -> NetworkResponse {
 
     let image = image.unwrap();
 
-    let client = Client::new();
+    let image_url= pinata_upload(image).await;
 
-    let form = Form::new().part("file", Part::bytes(image).file_name("image.png"));
-
-    // Return a JSON response
-    let url = "https://node.lighthouse.storage/api/v0/add?pin=true";
-    let response = client
-        .post(url)
-        .header(
-            "Content-Type",
-            format!("multipart/form-data; boundary={}", form.boundary()),
-        )
-        .header("Encryption", "false")
-        .header("Mime-Type", "null")
-        .header("Authorization", format!("Bearer {}", lighthouse_token))
-        .multipart(form)
-        .send()
-        .await;
-
-    if response.is_err() {
+    if image_url.is_err() {
         return NetworkResponse::BadRequest(json!({
-            "error": format!("IPFS_ERROR: {}",response.err().expect("IPFS Upload Failed"))
+            "error": image_url.err()
         }));
     }
 
-    let response = response.unwrap().json::<IpfsData>().await;
-
-    if response.is_err() {
-        return NetworkResponse::BadRequest(json!({
-            "error": format!("IPFS_ERROR: {}",response.err().expect("IPFS Upload Failed"))
-        }));
-    }
-
-    let image_url = format!(
-        "https://gateway.lighthouse.storage/ipfs/{}",
-        response.unwrap().Hash
-    );
+    let image_url = image_url.expect("IMAGE_URL MUST EXIST");
 
     println!(
         "image_url: {} \ncomputed_cost:{}",
