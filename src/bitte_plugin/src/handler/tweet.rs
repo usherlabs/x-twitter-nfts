@@ -87,7 +87,7 @@ pub async fn mint_tweet_request(tweet_id: Option<String>) -> NetworkResponse {
 
     let image = image.unwrap();
 
-    let image_url= pinata_upload(image).await;
+    let image_url = pinata_upload(image).await;
 
     if image_url.is_err() {
         return NetworkResponse::BadRequest(json!({

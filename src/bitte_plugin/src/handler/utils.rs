@@ -1,6 +1,7 @@
 use reqwest::{
+    multipart::{Form, Part},
     Client,
-    multipart::{Form,Part}};
+};
 use rocket::serde::json;
 use std::{env, fs, path::PathBuf};
 
@@ -36,9 +37,7 @@ pub fn extract_plugin_url() -> String {
     })
 }
 
-
-pub async fn lighthouse_upload(image: Vec<u8>) -> Result<String,String> {
-
+pub async fn lighthouse_upload(image: Vec<u8>) -> Result<String, String> {
     let client = Client::new();
 
     let form = Form::new().part("file", Part::bytes(image).file_name("image.png"));
@@ -60,24 +59,29 @@ pub async fn lighthouse_upload(image: Vec<u8>) -> Result<String,String> {
         .await;
 
     if response.is_err() {
-        return Err(format!("IPFS_ERROR: {}",response.err().expect("IPFS Upload Failed")));
+        return Err(format!(
+            "IPFS_ERROR: {}",
+            response.err().expect("IPFS Upload Failed")
+        ));
     }
 
     let response = response.unwrap().json::<LighthouseRespone>().await;
 
     if response.is_err() {
-        return Err(format!("IPFS_ERROR: {}",response.err().expect("IPFS Upload Failed")));
+        return Err(format!(
+            "IPFS_ERROR: {}",
+            response.err().expect("IPFS Upload Failed")
+        ));
     }
 
     let image_url = format!(
         "https://gateway.lighthouse.storage/ipfs/{}",
         response.unwrap().Hash
     );
-    return  Ok(image_url);
+    return Ok(image_url);
 }
 
-
-pub async fn pinata_upload(image: Vec<u8>) -> Result<String,String> {
+pub async fn pinata_upload(image: Vec<u8>) -> Result<String, String> {
     let pinata_token = env::var("PINATA_TOKEN").expect("PINATA_TOKEN must be set");
 
     let client = Client::new();
@@ -103,18 +107,24 @@ pub async fn pinata_upload(image: Vec<u8>) -> Result<String,String> {
         .await;
 
     if response.is_err() {
-        return Err(format!("IPFS_ERROR: {}",response.err().expect("IPFS Upload Failed")));
+        return Err(format!(
+            "IPFS_ERROR: {}",
+            response.err().expect("IPFS Upload Failed")
+        ));
     }
 
     let response = response.unwrap().json::<IpfsData>().await;
 
     if response.is_err() {
-        return Err(format!("IPFS_ERROR: {}",response.err().expect("IPFS Upload Failed")));
+        return Err(format!(
+            "IPFS_ERROR: {}",
+            response.err().expect("IPFS Upload Failed")
+        ));
     }
 
     let image_url = format!(
         "https://violet-charming-canidae-581.mypinata.cloud/ipfs/{}",
         response.unwrap().IpfsHash
     );
-    return  Ok(image_url);
+    return Ok(image_url);
 }
