@@ -7,7 +7,7 @@ pub mod models;
 
 use handler::{
     catcher_handler::*,
-    open_api_handler::open_api_specification,
+    open_api_handler::{open_api_specification, welcome},
     tweet::{mint_tweet_request, tweet_contract_call, tweet_contract_cancel_call},
 };
 
@@ -62,6 +62,7 @@ fn rocket() -> _ {
                 tweet_contract_cancel_call
             ],
         )
+        .mount("/", routes![welcome])
         // Register error catchers
         .register("/", catchers![unprocessable_entity_catcher, not_found])
 }

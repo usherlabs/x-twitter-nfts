@@ -274,7 +274,7 @@ impl VerifierProxy {
     /// # Returns
     ///
     /// * `String` - The Merkle root as a hexadecimal string
-    pub fn generate_merkle_tree(&self, proof: String) -> String {
+    pub fn compute_merkle_root_from_proof(&self, proof: String) -> String {
         // Convert each ProofResponse into a 32-byte hash to serve as a leaf in the Merkle tree.
         let leaves: Vec<[u8; 32]> = vec![proof]
             .iter()
@@ -300,8 +300,8 @@ impl VerifierProxy {
     /// # Returns
     ///
     /// * `bool` - True if the verification is successful, false otherwise
-    pub fn ecdsa_verification(&self, proof: String, signature: String) -> bool {
-        let root_hash = hash_eth_message(self.generate_merkle_tree(proof));
+    pub fn check_proof_signature_validity(&self, proof: String, signature: String) -> bool {
+        let root_hash = hash_eth_message(self.compute_merkle_root_from_proof(proof));
         let signature = string_to_vec_u8(&signature);
         if signature.len() != 65 {
             env::panic_str("INVALID_ETH_SIGNATURE");
@@ -335,7 +335,7 @@ impl VerifierProxy {
         image_url: String,
         owner_address: AccountId,
     ) -> Promise {
-        if self.ecdsa_verification(proof.clone(), signature) {
+        if self.check_proof_signature_validity(proof.clone(), signature) {
             // Find the start of the JSON
             if let (Some(start), Some(end)) = (proof.rfind("\r\n{"), proof.rfind("}}\r\n")) {
                 let json_str = &proof[start + 2..=end + 1];

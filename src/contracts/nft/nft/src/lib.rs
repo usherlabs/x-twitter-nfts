@@ -318,6 +318,11 @@ impl Contract {
         entry
     }
 
+    #[private]
+    pub fn change_owner(&mut self, owner_id: AccountId) {
+        self.tokens.owner_id = owner_id;
+    }
+
     #[payable]
     pub fn cancel_mint_request(&mut self, tweet_id: String) {
         let tweet_request = self.tweet_requests.get(&tweet_id);

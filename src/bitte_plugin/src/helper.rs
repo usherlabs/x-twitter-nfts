@@ -1,9 +1,10 @@
-use std::error::Error;
-use std::marker::{Send, Sync};
-
 use headless_chrome::protocol::cdp::Page;
 use headless_chrome::Browser;
+use headless_chrome::LaunchOptionsBuilder;
 use serde::{Deserialize, Serialize};
+use std::error::Error;
+use std::ffi::OsStr;
+use std::marker::{Send, Sync};
 
 pub async fn create_twitter_post_image(
     url: String,
@@ -16,15 +17,17 @@ pub async fn create_twitter_post_image(
     );
 
     // let mut builder = headless_chrome::LaunchOptions::default_builder();
-    let builder = headless_chrome::LaunchOptions::default_builder();
+    let options = LaunchOptionsBuilder::default()
+        .args(vec![OsStr::new("--no-sandbox")])
+        .build()?;
     // Set headless mode based on whether it's in test mode
     // #[cfg(test)]
     // builder.headless(false); // Headful mode for tests
 
     // #[cfg(not(test))]
-    // builder.headless(true); // Headless mode for non-test
+    // options.headless(true); // Headless mode for non-test
 
-    let browser = Browser::new(builder.build()?)?;
+    let browser = Browser::new(options)?;
 
     let tab = browser.new_tab()?;
     tab.set_default_timeout(std::time::Duration::from_secs(60));
@@ -39,7 +42,7 @@ pub async fn create_twitter_post_image(
         left: Some(0),
         top: Some(0),
         width: Some(475.0),
-        height: Some(2000.0),
+        height: Some(4000.0),
     })?;
 
     // Navigate to wikipedia
@@ -84,7 +87,7 @@ pub async fn create_twitter_post_image(
             x: view_port.x - 10.0,
             y: view_port.y - 10.0,
             width: view_port.width + 20.0,
-            height: view_port.height - 146.0 + 20.0,
+            height: view_port.height - 146.0 + 60.0,
             scale: 2.0,
         }),
         true,

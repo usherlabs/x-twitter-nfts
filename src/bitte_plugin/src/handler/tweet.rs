@@ -1,19 +1,17 @@
 use std::{env, ops::Index, str::FromStr};
 
-use indexer::helper::TweetResponse;
 use near_client::{
     client::NearClient,
     prelude::{AccountId, Finality},
 };
-use reqwest::{
-    multipart::{Form, Part},
-    Client,
-};
+use reqwest::Client;
 use rocket::serde::json::{json, Json, Value};
 use tracing::debug;
 use url::Url;
 
-use crate::{handler::IpfsData, helper, models::response::NetworkResponse};
+use crate::{handler::utils::pinata_upload, helper, models::response::NetworkResponse};
+
+use super::TweetResponse;
 
 /// Handles the request to mint a new tweet.
 ///
@@ -34,7 +32,6 @@ pub async fn mint_tweet_request(tweet_id: Option<String>) -> NetworkResponse {
     }
 
     let tweet_id = tweet_id.unwrap();
-    let thirdweb_client_id = env::var("THIRDWEB_CLIENT_ID").expect("MY_VAR must be set");
 
     let _tweet_id = tweet_id.parse::<u64>();
 
@@ -81,7 +78,7 @@ pub async fn mint_tweet_request(tweet_id: Option<String>) -> NetworkResponse {
     let image = helper::create_twitter_post_image_from_id(_tweet_id.unwrap()).await;
 
     if image.is_err() {
-        debug!("{}", format!("{:#?}", image.err()));
+        debug!("Error {}", format!("{:#?}", image.err()));
         return NetworkResponse::StatusOk(json!({
             "description": description,
             "imageURL": ""
@@ -90,51 +87,17 @@ pub async fn mint_tweet_request(tweet_id: Option<String>) -> NetworkResponse {
 
     let image = image.unwrap();
 
-    let client = Client::new();
+    let image_url = pinata_upload(image).await;
 
-    let form = Form::new()
-        .part("file", Part::bytes(image).file_name("image.png"))
-        .part("pinataOptions", Part::text("{\"wrapWithDirectory\":false}"))
-        .part("pinataOptions", Part::text("{\"wrapWithDirectory\":false}"))
-        .part(
-            "pinataMetadata",
-            Part::text("{\"name\":\"Storage SDK\",\"keyvalues\":{}}"),
-        );
-
-    // Return a JSON response
-    let url = "https://storage.thirdweb.com/ipfs/upload";
-    let response = client
-        .post(url)
-        .header("X-Client-Id", &thirdweb_client_id)
-        .header(
-            "Content-Type",
-            format!("multipart/form-data; boundary={}", form.boundary()),
-        )
-        .multipart(form)
-        .send()
-        .await;
-
-    if response.is_err() {
+    if image_url.is_err() {
         return NetworkResponse::BadRequest(json!({
-            "error": format!("IPFS_ERROR: {}",response.err().expect("IPFS Upload Failed"))
+            "error": image_url.err()
         }));
     }
 
-    let response = response.unwrap().json::<IpfsData>().await;
+    let image_url = image_url.expect("IMAGE_URL MUST EXIST");
 
-    if response.is_err() {
-        return NetworkResponse::BadRequest(json!({
-            "error": format!("IPFS_ERROR: {}",response.err().expect("IPFS Upload Failed"))
-        }));
-    }
-
-    let image_url = format!(
-        "https://{}.ipfscdn.io/ipfs/{}",
-        thirdweb_client_id,
-        response.unwrap().IpfsHash
-    );
-
-    debug!(
+    println!(
         "image_url: {} \ncomputed_cost:{}",
         &image_url,
         &(computed_cost * 12 / 10).to_string()

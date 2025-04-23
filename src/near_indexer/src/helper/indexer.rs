@@ -93,7 +93,7 @@ impl<'a> NearExplorerIndexer<'a> {
             );
             let response = client
                 .get(&url)
-                .header("Authorization", self.near_block_key)
+                .header("Authorization", format!("Bearer {}", self.near_block_key))
                 .send()
                 .await?;
 

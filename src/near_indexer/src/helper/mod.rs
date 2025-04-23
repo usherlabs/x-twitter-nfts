@@ -11,6 +11,97 @@ use std::collections::HashMap;
 
 use near_contract_standards::non_fungible_token::metadata::TokenMetadata;
 use serde::{Deserialize, Serialize};
+use std::path::Path;
+
+use near_crypto::SecretKey;
+use near_primitives::types::AccountId;
+use once_cell::sync::Lazy;
+use std::{env, fs};
+use verity_verify_remote::ic::{DEFAULT_IC_GATEWAY_LOCAL, DEFAULT_IC_GATEWAY_MAINNET};
+
+#[derive(Debug, Clone)]
+pub struct Settings {
+    pub near_rpc_url: String,
+    pub signer_account_id: AccountId,
+    pub signer_secret_key: SecretKey,
+    pub contract_account_id: AccountId,
+    pub tweet_bearer: String,
+    pub rv_identity_file: String,
+    pub is_production: bool,
+    pub verity_ic_id: &'static str,
+    pub verity_ic_gateway: String,
+    pub nft_contract: String,
+}
+
+// Read ALL env-vars exactly once at startup
+impl Settings {
+    pub fn from_env() -> Result<Self, Box<dyn std::error::Error>> {
+        let near_rpc_url = env::var("NEAR_RPC_URL")?;
+        let signer_account_id: AccountId = env::var("NEAR_SIGNER_ACCOUNT_ID")
+            .expect("NEAR_SIGNER_ACCOUNT_ID_NOT_PRESENT")
+            .parse()?;
+        let signer_secret_key: SecretKey = env::var("NEAR_ACCOUNT_SECRET_KEY")
+            .expect("NEAR_ACCOUNT_SECRET_KEY_NOT_PRESENT")
+            .parse()?;
+        let contract_account_id: AccountId = env::var("NEAR_VERIFIER_CONTRACT_ACCOUNT_ID")
+            .expect("NEAR_VERIFIER_CONTRACT_ACCOUNT_ID_NOT_PRESENT")
+            .parse()?;
+
+        let tweet_bearer = env::var("TWEET_BEARER").expect("TWEET_BEARER_NOT_PRESENT");
+
+        // Load RV identity file path from env and verify existence
+        let rv_identity_file = env::var("RV_IDENTITY_FILE").expect("RV_IDENTITY_FILE_NOT_PRESENT");
+        let path = Path::new(&rv_identity_file);
+        if !path.exists() {
+            return Err(format!("RV identity file not found at: {}", rv_identity_file).into());
+        }
+        // Ensure the file starts with the expected EC PRIVATE KEY header
+        let content = fs::read_to_string(&rv_identity_file)?;
+        if !content
+            .trim_start()
+            .starts_with("-----BEGIN EC PRIVATE KEY-----")
+        {
+            return Err(format!(
+                "RV identity file at {} does not begin with the required EC PRIVATE KEY header",
+                rv_identity_file
+            )
+            .into());
+        }
+
+        let nft_contract = env::var("NEAR_NFT_CONTRACT_ACCOUNT_ID")
+            .expect("NEAR_NFT_CONTRACT_ACCOUNT_ID_NOT_FOUND");
+        let is_production = true; //nft_contract.ends_with(".near");
+
+        // choose your Verity canister ID and gateway once
+        let (verity_ic_id, verity_ic_gateway) = if is_production {
+            (
+                "yf57k-fyaaa-aaaaj-azw2a-cai",
+                DEFAULT_IC_GATEWAY_MAINNET.to_string(),
+            )
+        } else {
+            (
+                "bkyz2-fmaaa-aaaaa-qaaaq-cai",
+                DEFAULT_IC_GATEWAY_LOCAL.to_string(),
+            )
+        };
+
+        Ok(Settings {
+            near_rpc_url,
+            signer_account_id,
+            signer_secret_key,
+            contract_account_id,
+            tweet_bearer,
+            rv_identity_file,
+            is_production,
+            verity_ic_id,
+            verity_ic_gateway,
+            nft_contract,
+        })
+    }
+}
+
+// 3. Create a single static instance
+pub static SETTINGS: Lazy<Settings> = Lazy::new(|| Settings::from_env().unwrap());
 
 /// Containing the details needed for verification of a proof
 #[derive(Serialize, Deserialize, Debug, Clone)]
